@@ -27,7 +27,7 @@ sub_model = ref_model.project(ref_model, num_params=p)
 sub_model.plot()
 ```
 
-###Project Organization
+### Project Organization
 
 ```
     ├── LICENSE
