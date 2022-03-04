@@ -1,57 +1,60 @@
-pyprojpred
-==============================
+# Projection predictive model selection
 
-Projection predictive variable selection
+## Example prototype workflow
 
-Project Organization
-------------
+Note that this proposed workflow is meant only to define the next step of the desired UI, and is by no means representative of this project's full scope.
 
+```python
+import bambi as bmb
+import pyprojpred as proj
+
+# define model data
+data = pd.DataFrame({
+    "y": np.random.normal(size=50),
+    "g": np.random.choice(["Yes", "No"], size=50),
+    "x1": np.random.normal(size=50),
+    "x2": np.random.normal(size=50)
+})
+# define and fit model with MCMC
+model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
+posterior = model.fit()
+# build reference model object
+ref_model = proj.Projector(model)
+# project the reference model to `p` parameters
+p = 1
+sub_model = ref_model.project(ref_model, num_params=p)
+# visualise the projected model posterior
+sub_model.plot()
+```
+
+###Project Organization
+
+```
     ├── LICENSE
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
+    ├── README.md          <- The top-level README for developers using this project
     │
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
     │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    │                         `01-jqp-initial-data-exploration`
     │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
+    ├── poetry.lock        <- Poetry package management lock file
+    ├── pyproject.toml     <- Poetry package management project dependency definition
     │
     ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
+    ├── pyprojpred         <- Source code for use in this project
     │   ├── __init__.py    <- Makes src a Python module
+    │   ├── plotting       <- Visualisation module
+    │   |   └── visualise.py
     │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    |   ├── projection     <- Kullback-Leibler projections module
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
+    |   └── search         <- Parameter search module
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+```
 
-
---------
-
+---
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
