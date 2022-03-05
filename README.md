@@ -6,7 +6,7 @@ Note that this proposed workflow is meant only to define the next step of the de
 
 ```python
 import bambi as bmb
-import pyprojpred as proj
+import kulprit as kpt
 
 # define model data
 data = pd.DataFrame({
@@ -19,7 +19,7 @@ data = pd.DataFrame({
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 posterior = model.fit()
 # build reference model object
-ref_model = proj.Projector(model, posterior)
+ref_model = kpt.Projector(model, posterior)
 # project the reference model to `p` parameters
 p = 1
 sub_model = ref_model.project(ref_model, num_params=p)
@@ -31,7 +31,7 @@ sub_model.plot()
 
 Currently, this package is only available for download directly from GitHub with the command
 ```bash
-pip install git+https://github.com/yannmclatchie/pyprojpred.git
+pip install git+https://github.com/yannmclatchie/kulprit.git
 ```
 
 ## Development
@@ -44,7 +44,7 @@ $ brew install pyenv
 ```
 and a new version of Python installed and applied in your local repo with
 ```bash
-$ cd ~path/to/pyprojpred
+$ cd ~path/to/kulprit
 $ pyenv install 3.7.2
 $ pyenv local 3.7.2
 $ eval "$(pyenv init --path)"
@@ -57,8 +57,9 @@ $ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-po
 ```
 and simply locking and installing the `pyproject.toml` file given in the repo with
 ```bash
-$ cd ~path/to/pyprojpred
+$ cd ~path/to/kulprit
 $ poetry config virtualenvs.in-project true
+$ poetry env use $(which python)
 $ poetry lock
 $ poetry install
 ```
@@ -85,7 +86,7 @@ More information on the two tools can be found at the following links:
     ├── pyproject.toml     <- Poetry package management project dependency definition
     │
     ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── pyprojpred         <- Source code for use in this project
+    ├── kulprit         <- Source code for use in this project
     │   ├── __init__.py    <- Makes src a Python module
     │   ├── utils.py       <- Utility functions for workflow
     │   ├── plotting       <- Visualisation module

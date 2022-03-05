@@ -999,7 +999,7 @@ python-versions = "*"
 
 [[package]]
 name = "pywinpty"
-version = "2.0.4"
+version = "2.0.5"
 description = "Pseudo terminal support for Windows from Python."
 category = "main"
 optional = false
@@ -1996,11 +1996,11 @@ pywin32 = [
     {file = "pywin32-303-cp39-cp39-win_amd64.whl", hash = "sha256:79cbb862c11b9af19bcb682891c1b91942ec2ff7de8151e2aea2e175899cda34"},
 ]
 pywinpty = [
-    {file = "pywinpty-2.0.4-cp310-none-win_amd64.whl", hash = "sha256:b13b6736e41437492f2e322294b7ed5b1ac71586f72de998515be2e9b3077b21"},
-    {file = "pywinpty-2.0.4-cp37-none-win_amd64.whl", hash = "sha256:a024231bd077c17cc2d27b63a60d0717745f37e5ef6c1f688cc20a438e761e59"},
-    {file = "pywinpty-2.0.4-cp38-none-win_amd64.whl", hash = "sha256:50209e09fbc96dc6a7d9d5300c87528e2987c55f0761bab0a233e304319429cc"},
-    {file = "pywinpty-2.0.4-cp39-none-win_amd64.whl", hash = "sha256:1eab7442f4a42dfd2a8f5e0b195e018884a58331e8c0289f041b03d3fd875d7f"},
-    {file = "pywinpty-2.0.4.tar.gz", hash = "sha256:a5002c74afc1ddcc85fca25de58ce9cef1a22957582981418c81aaee218675ad"},
+    {file = "pywinpty-2.0.5-cp310-none-win_amd64.whl", hash = "sha256:f86c76e2881c37e69678cbbf178109f8da1fa8584db24d58e1b9369b0276cfcb"},
+    {file = "pywinpty-2.0.5-cp37-none-win_amd64.whl", hash = "sha256:ff9b52f182650cfdf3db1b264a6fe0963eb9d996a7a1fa843ac406c1e32111f8"},
+    {file = "pywinpty-2.0.5-cp38-none-win_amd64.whl", hash = "sha256:651ee1467bd7eb6f64d44dbc954b7ab7d15ab6d8adacc4e13299692c67c5d5d2"},
+    {file = "pywinpty-2.0.5-cp39-none-win_amd64.whl", hash = "sha256:e59a508ae78374febada3e53b5bbc90b5ad07ae68cbfd72a2e965f9793ae04f3"},
+    {file = "pywinpty-2.0.5.tar.gz", hash = "sha256:e125d3f1804d8804952b13e33604ad2ca8b9b2cac92b27b521c005d1604794f8"},
 ]
 pyzmq = [
     {file = "pyzmq-22.3.0-cp310-cp310-macosx_10_15_universal2.whl", hash = "sha256:6b217b8f9dfb6628f74b94bdaf9f7408708cb02167d644edca33f38746ca12dd"},

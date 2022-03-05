@@ -11,10 +11,10 @@ def get_requirements():
 
 
 setup(
-    name="pyprojpred",
+    name="kulprit",
     packages=find_packages(),
     version="0.1.0",
-    description="projection predictive variable selection",
+    description="Kullback-Leibler projection predictive variable selection",
     author="Yann McLatchie",
     license="MIT",
     install_requires=get_requirements(),
