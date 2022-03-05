@@ -27,7 +27,48 @@ sub_model = ref_model.project(ref_model, num_params=p)
 sub_model.plot()
 ```
 
-### Project Organization
+## Installation
+
+Currently, this package is only available for download directly from GitHub with the command
+```bash
+pip install git+https://github.com/yannmclatchie/pyprojpred.git
+```
+
+## Development
+
+Contributions to the package are very welcome! We recommend using `pyenv` to install a Python version compatible with `bambi` (these are versions `python>=3.7.2`), and then `poetry` for dependency management and virtual environment creation for development.
+
+For those using Mac, `pyenv` can be installed via homebrew with
+```bash
+$ brew install pyenv
+```
+and a new version of Python installed and applied in your local repo with
+```bash
+$ cd ~path/to/pyprojpred
+$ pyenv install 3.7.2
+$ pyenv local 3.7.2
+$ eval "$(pyenv init --path)"
+$ python --version # check that new version is being used
+```
+
+`poetry` can be installed with
+```bash
+$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+```
+and simply locking and installing the `pyproject.toml` file given in the repo with
+```bash
+$ cd ~path/to/pyprojpred
+$ poetry config virtualenvs.in-project true
+$ poetry lock
+$ poetry install
+```
+will spawn a virtual environment within the repo with all the necessary development tools and package requirements.
+
+More information on the two tools can be found at the following links:
+- [`poetry` documentation](https://python-poetry.org/)
+- [`pyenv` documentation and repo](https://github.com/pyenv/pyenv)
+
+## Project Organization
 
 ```
     ├── LICENSE
