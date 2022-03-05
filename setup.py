@@ -1,4 +1,14 @@
+import os
+
 from setuptools import find_packages, setup
+
+REQUIREMENTS_FILE = os.path.join(PROJECT_ROOT, "requirements.txt")
+
+
+def get_requirements():
+    with codecs.open(REQUIREMENTS_FILE) as buff:
+        return buff.read().splitlines()
+
 
 setup(
     name="pyprojpred",
@@ -7,4 +17,5 @@ setup(
     description="projection predictive variable selection",
     author="Yann McLatchie",
     license="MIT",
+    install_requires=get_requirements(),
 )

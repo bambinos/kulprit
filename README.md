@@ -19,7 +19,7 @@ data = pd.DataFrame({
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 posterior = model.fit()
 # build reference model object
-ref_model = proj.Projector(model)
+ref_model = proj.Projector(model, posterior)
 # project the reference model to `p` parameters
 p = 1
 sub_model = ref_model.project(ref_model, num_params=p)
@@ -46,12 +46,16 @@ sub_model.plot()
     ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
     ├── pyprojpred         <- Source code for use in this project
     │   ├── __init__.py    <- Makes src a Python module
+    │   ├── utils.py       <- Utility functions for workflow
     │   ├── plotting       <- Visualisation module
     │   |   └── visualise.py
     │   │
     |   ├── projection     <- Kullback-Leibler projections module
+    │   |   ├── project.py
+    │   |   └── divergences.py
     │   │
     |   └── search         <- Parameter search module
+    │       └── forward.py
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
 ```
