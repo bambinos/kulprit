@@ -1,10 +1,13 @@
-# Projection predictive model selection
+# Kulprit: Kullback-Leibler projection predictive model selection
 
 ## Example prototype workflow
 
-Note that this proposed workflow is meant only to define the next step of the desired UI, and is by no means representative of this project's full scope.
+Note that this proposed workflow is meant only to define the current iteration of the UI, and is by no means representative of this project's full scope.
 
 ```python
+import pandas as pd
+import numpy as np
+
 import bambi as bmb
 import kulprit as kpt
 
@@ -17,14 +20,16 @@ data = pd.DataFrame({
 })
 # define and fit model with MCMC
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-posterior = model.fit()
+num_draws, num_chains = 100, 1
+posterior = model.fit(draws=num_draws, chains=num_chains)
 # build reference model object
 ref_model = kpt.Projector(model, posterior)
-# project the reference model to `p` parameters
-p = 1
-sub_model = ref_model.project(ref_model, num_params=p)
+# project the reference model to some parameter subset
+params = ["x1", "x2"]
+theta_perp = ref_model.project(params=params)
+print(theta_perp.shape)
 # visualise the projected model posterior
-sub_model.plot()
+ref_model.plot_projection(params=params)
 ```
 
 ## Installation
@@ -86,17 +91,20 @@ More information on the two tools can be found at the following links:
     ├── pyproject.toml     <- Poetry package management project dependency definition
     │
     ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── kulprit         <- Source code for use in this project
+    ├── kulprit            <- Source code for use in this project
     │   ├── __init__.py    <- Makes src a Python module
     │   ├── utils.py       <- Utility functions for workflow
     │   ├── plotting       <- Visualisation module
     │   |   └── visualise.py
     │   │
     |   ├── projection     <- Kullback-Leibler projections module
+    |   |   ├── __init__.py
+    │   |   ├── divergences.py
     │   |   ├── project.py
-    │   |   └── divergences.py
+    │   |   └── submodel.py
     │   │
     |   └── search         <- Parameter search module
+            ├── __init__.py
     │       └── forward.py
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io

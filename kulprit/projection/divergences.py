@@ -1,70 +1,80 @@
-class Projector:
-    def __init__(self, model):
-        self.model = model
+"""Kullback-Leibler divergence module."""
 
-    def project(self, num_params=1):
-        """Primary projection method for a Bayesian linear regression.
+import torch
 
-        The projection function for this method is taken from Equation (6) in
-        @Piirnonen2016, and the projection of the linear model variance is from
-        Equation (7).
 
-        To do:
-            * Fix `vmap` axes bug for sigma_perp projection
+class KLDiv:
+    """Kullback-Leibler divergence functions switch class.
 
-        Args:
-            theta (ndarray): MCMC samples of the learned full parameters
-            sigma (ndarray): MCMC samples of the learned regression noise
-            X (ndarray): Full data space
-            num_params (int): The size of the restricted parameter space
+    In the KLDivSurrogateLoss class, we introduce a private method
+    ```python
+    def _div_fun(family):
+        KLDiv.switch(family)
+    ```
+    and then compute the loss in a module manner with
+    ```python
+    kl_div = _div_fun(self.family, ...)
+    ```
 
-        Returns:
-            ndarray: Restricted rojection of the parameter parameters
-        """
+    """
 
-        def _proj_theta(theta):
-            """Analytic projection of the full parameters.
+    DEFAULT = "_DEFAULT"
+    _func_map = {}
 
-            Args:
-                theta (ndarray): The full parameter space
-                X (ndarray): The full data set
-                X_perp (ndarray): The restricted data set
+    def __init__(self, case):
+        self.case = case
 
-            Returns:
-                ndarray: The restricted projections of the parameters
-            """
+    def __call__(self, f):
+        self._func_map[self.case] = f
+        return f
 
-            f = X @ theta
-            theta_perp = jnp.linalg.inv(X_perp.T @ X_perp) @ X_perp.T @ f
-            return theta_perp
+    @classmethod
+    def _default(cls):
+        raise NotImplementedError("Unsupported family.")
 
-        def _proj_sigma(theta, theta_perp):
-            """Analytic projection of the full noise parameter.
+    @classmethod
+    def switch(cls, case, mu_ast, mu_perp):
+        return cls._func_map.get(case, cls._default)(mu_ast, mu_perp)
 
-            Args:
-                theta (ndarray): The full parameter space
-                theta_perp (ndarray): The restricted parameter space
 
-            Returns:
-                ndarray: The restricted projections of the model noise
-            """
+@KLDiv("gaussian")
+def _gaussian_kl(mu_ast, mu_perp):
+    """Kullback-Leibler divergence between two Gaussians surrogate function.
 
-            f = X @ theta
-            f_perp = X_perp @ theta_perp
-            sigma_perp = jnp.sqrt(sigma ** 2 + 1 / n * (f - f_perp).T @ (f - f_perp))
-            return sigma_perp
+    To do:
+        * Fix this method to return the true KL divergence, currently the
+            reduction returns an untrue value.
 
-        if model.family != "gaussian":
-            raise UserWarning("Only Gaussian-distributed variates handled currently")
-        # extract the number of data observations
-        n = X.shape[0]
-        # build restricted data space
-        X_perp = X[:, :num_params]
-        # perform projections
-        theta_perp = jax.vmap(_proj_theta, in_axes=0, out_axes=0)(theta)
-        sigma_perp = jax.vmap(_proj_sigma, in_axes=(0, 0), out_axes=0)(
-            theta, theta_perp
-        ).mean(
-            axis=0
-        )  #  TODO: fix vmap for sigma projection
-        return theta_perp, sigma_perp
+    Args:
+        mu_ast (torch.tensor): Tensor of learned reference model parameters
+        mu_perp (torch.tensor): Tensor of submodel parameters to learn
+
+    Returns:
+        torch.tensor: (TODO)
+    """
+    div = torch.sum(mu_perp - mu_ast, dim=-1).reshape(-1) ** 2
+    s = mu_ast.shape[0]
+    assert div.shape == torch.Size(
+        [s]
+    ), f"Expected data dimensions {(s)}, received {div.shape}."
+    return div
+
+
+@KLDiv("binomial")
+def _binomial_kl():
+    """Kullback-Leibler between two Binomials surrogate function.
+
+    To do:
+        * Implement function.
+    """
+    raise NotImplementedError
+
+
+@KLDiv("poisson")
+def _poisson_kl():
+    """Kullback-Leibler between two Poissons surrogate function.
+
+    To do:
+        * Implement function.
+    """
+    raise NotImplementedError
