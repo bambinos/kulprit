@@ -68,11 +68,24 @@ $ poetry env use $(which python)
 $ poetry lock
 $ poetry install
 ```
-will spawn a virtual environment within the repo with all the necessary development tools and package requirements.
+will spawn a virtual environment within the repo with all the necessary development tools and package requirements. Activate and work within this virtual environment by running
+```bash
+$ poetry shell
+```
 
 More information on the two tools can be found at the following links:
 - [`poetry` documentation](https://python-poetry.org/)
 - [`pyenv` documentation and repo](https://github.com/pyenv/pyenv)
+
+Before submitting a pull request, please ensure that your code is appropriately formatted and written. The project uses Black formatting, which can be executed with
+```bash
+$ black kulprit/
+```
+Further, check your code with `flake8` and `pylint`
+```bash
+$ flake8 kulprit/
+$ pylint kulprit/
+```
 
 ## Project Organisation
 
