@@ -28,6 +28,29 @@ flake8 = "^4.0.1"
 pylint = "^2.12.2"
 pre-commit = "^2.17.0"
 
+[tool.black]
+line-length = 79
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[flake8]
+ignore = "E203, E266, E501, W503, F403, F401"
+max-line-length = 79
+max-complexity = 18
+select = "B,C,E,F,W,T4,B9"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
