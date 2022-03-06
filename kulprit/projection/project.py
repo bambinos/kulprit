@@ -1,8 +1,5 @@
 """Projection class."""
 
-import numpy as np
-import pandas as pd
-
 import torch
 
 import arviz as az
@@ -13,7 +10,12 @@ from .submodel import SubModel, KLDivSurrogateLoss
 
 class Projector:
     def __init__(
-        self, model, posterior, n_iters=200, lr=0.01, device=torch.device("cpu")
+        self,
+        model,
+        posterior,
+        n_iters=200,
+        learning_rate=0.01,
+        device=torch.device("cpu"),
     ):
         """Reference model builder for projection predictive model selection.
 
@@ -46,7 +48,7 @@ class Projector:
         # define optimsation parameters
         self.device = device
         self.n_iters = n_iters
-        self.lr = lr
+        self.learning_rate = learning_rate
 
     def project(self, params=None):
         """Primary projection method for GLM reference model.
@@ -74,7 +76,7 @@ class Projector:
         sub_model = SubModel(self.inv_link, self.s, self.n, self.m)
         sub_model.to(self.device)
         sub_model.zero_grad()
-        opt = torch.optim.Adam(sub_model.parameters(), lr=self.lr)
+        opt = torch.optim.Adam(sub_model.parameters(), lr=self.learning_rate)
         criterion = KLDivSurrogateLoss(self.family)
         # extract reference model posterior predictions
         y_ast = (

@@ -6,15 +6,15 @@ import torch
 class KLDiv:
     """Kullback-Leibler divergence functions switch class.
 
-    In the KLDivSurrogateLoss class, we introduce a private method
-    ```python
+    In the KLDivSurrogateLoss class, we introduce a private method::
+
     def _div_fun(family):
         KLDiv.switch(family)
-    ```
-    and then compute the loss in a module manner with
-    ```python
+
+    and then compute the loss in a module manner with::
+
     kl_div = _div_fun(self.family, ...)
-    ```
+
 
     """
 

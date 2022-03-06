@@ -2,7 +2,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from .divergences import KLDiv
 
@@ -113,5 +112,5 @@ class SubModel(nn.Module):
         assert y.shape == (
             self.n,
             self.s,
-        ), f"Expected variates dimensions {(n, s)}, received {y.shape}."
+        ), f"Expected variates dimensions {(self.n, self.s)}, received {y.shape}."
         return y
