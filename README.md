@@ -95,6 +95,7 @@ More information on the two tools can be found at the following links:
     │   ├── __init__.py    <- Makes src a Python module
     │   ├── utils.py       <- Utility functions for workflow
     │   ├── plotting       <- Visualisation module
+    |   |   ├── __init__.py
     │   |   └── visualise.py
     │   │
     |   ├── projection     <- Kullback-Leibler projections module
@@ -104,7 +105,7 @@ More information on the two tools can be found at the following links:
     │   |   └── submodel.py
     │   │
     |   └── search         <- Parameter search module
-            ├── __init__.py
+    |       ├── __init__.py
     │       └── forward.py
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
