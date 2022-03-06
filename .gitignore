@@ -54,6 +54,9 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# Pre-commit hooks
+.pre-commit-config.yaml
+
 # PyBuilder
 target/
 
