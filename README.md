@@ -74,7 +74,7 @@ More information on the two tools can be found at the following links:
 - [`poetry` documentation](https://python-poetry.org/)
 - [`pyenv` documentation and repo](https://github.com/pyenv/pyenv)
 
-## Project Organization
+## Project Organisation
 
 ```
     ├── LICENSE
