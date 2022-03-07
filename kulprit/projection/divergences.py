@@ -8,12 +8,12 @@ class KLDiv:
 
     In the KLDivSurrogateLoss class, we introduce a private method::
 
-    def _div_fun(family):
-        KLDiv.switch(family)
+    def _div_fun(family, y_ast, y_perp):
+        KLDiv.switch(family, y_ast, y_perp)
 
     and then compute the loss in a module manner with::
 
-    kl_div = _div_fun(self.family, ...)
+    kl_div = _div_fun(self.family, y_ast, y_perp)
 
 
     """
@@ -33,35 +33,41 @@ class KLDiv:
         raise NotImplementedError("Unsupported family.")
 
     @classmethod
-    def switch(cls, case, mu_ast, mu_perp):
-        return cls._func_map.get(case, cls._default)(mu_ast, mu_perp)
+    def switch(cls, case, y_ast, y_perp):
+        return cls._func_map.get(case, cls._default)(y_ast, y_perp)
 
 
 @KLDiv("gaussian")
-def _gaussian_kl(mu_ast, mu_perp):
+def _gaussian_kl(y_ast, y_perp):
     """Kullback-Leibler divergence between two Gaussians surrogate function.
-
-    To do:
-        * Fix this method to return the true KL divergence, currently the
-            reduction returns an untrue value.
 
     Args:
         mu_ast (torch.tensor): Tensor of learned reference model parameters
         mu_perp (torch.tensor): Tensor of submodel parameters to learn
 
     Returns:
-        torch.tensor: (TODO)
+        torch.tensor: Tensor of shape () containing sample KL divergence
     """
-    div = torch.sum(mu_perp - mu_ast, dim=-1).reshape(-1) ** 2
-    s = mu_ast.shape[0]
-    assert div.shape == torch.Size(
-        [s]
-    ), f"Expected data dimensions {(s)}, received {div.shape}."
+
+    # compute sufficient statistics
+    mu_ast, mu_perp = torch.mean(y_ast), torch.mean(y_perp)
+    std_ast, std_perp = torch.std(y_ast), torch.std(y_perp)
+    # compute KL divergence using full formula
+    div = (
+        torch.log(std_perp / std_ast)
+        + (std_ast**2 + (mu_ast - mu_perp) ** 2) / (2 * std_perp**2)
+        - 1 / 2
+    )
+    # compute KL divergence using surrogate
+    # div = (mu_ast - mu_perp) ** 2
+    assert (
+        div.shape == ()
+    ), f"Expected data dimensions {()}, received {div.shape}."
     return div
 
 
 @KLDiv("binomial")
-def _binomial_kl():
+def _binomial_kl(y_ast, y_perp):
     """Kullback-Leibler between two Binomials surrogate function.
 
     To do:
@@ -71,7 +77,7 @@ def _binomial_kl():
 
 
 @KLDiv("poisson")
-def _poisson_kl():
+def _poisson_kl(y_ast, y_perp):
     """Kullback-Leibler between two Poissons surrogate function.
 
     To do:

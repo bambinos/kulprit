@@ -16,7 +16,7 @@ class KLDivSurrogateLoss(nn.Module):
         family (str): The reference model variate's family
     """
 
-    def __init__(self, family):
+    def __init__(self, family, reduction=torch.sum):
         """Loss module constructor.
 
         Args:
@@ -24,28 +24,36 @@ class KLDivSurrogateLoss(nn.Module):
         """
         super(KLDivSurrogateLoss, self).__init__()
         self.family = family
+        self.reduction = reduction
 
-    def _div_fun(self, family, mu_perp, mu_ast):
+    def _div_fun(self, family, y_ast, y_perp):
         """Switch function for KL divergence surrogate."""
-        return KLDiv.switch(family, mu_perp, mu_ast)
+        return KLDiv.switch(family, y_ast, y_perp)
 
-    def forward(self, mu_ast, mu_perp):
+    def forward(self, y_ast, y_perp):
         """Forward method in learning loop.
+
+        This method computes the Kullback-Leibler divergence between the
+        reference model variate draws ``y_ast``and the restricted model's
+        variate draws ``y_perp``. This is done using the two samples' respective
+        sufficient sample statistics and a surrogate divergence equation found
+        in the ``KLDiv`` class.
 
         Args:
             mu_ast (torch.tensor): Tensor of learned reference model parameters
             mu_perp (torch.tensor): Tensor of submodel parameters to learn
 
         Returns:
-            torch.tensor: (TODO)
+            torch.tensor: (Todo)
 
         Raises:
             AssertionError if unexpected input dimensions
         """
 
-        divs = self._div_fun(self.family, mu_perp, mu_ast)
+        divs = self._div_fun(self.family, y_ast, y_perp)
         # perform reducion to scalar to use PyTorch's autograd
-        return torch.mean(divs)
+        # return self.reduction(divs)
+        return divs
 
 
 class SubModel(nn.Module):
@@ -67,9 +75,8 @@ class SubModel(nn.Module):
     Methods:
         forward: performs the forward step of the module
 
-    To do:
-        * Fix KL divergence loss module; currently working on a reduction which
-            does not return the true KL divergence.
+    Todo:
+        * Find way to optimise without needing a loss reduction
     """
 
     def __init__(self, inv_link, s, n, m):
@@ -108,9 +115,9 @@ class SubModel(nn.Module):
             self.m,
         ), f"Expected data dimensions {(self.n, self.m)}, received {X.shape}."
         # perform forward prediction step
-        y = self.inv_link(self.lin(X))
+        y = self.inv_link(self.lin.forward(X).T)
         assert y.shape == (
-            self.n,
             self.s,
-        ), f"Expected variates dimensions {(self.n, self.s)}, received {y.shape}."
+            self.n,
+        ), f"Expected variates dimensions {(self.s, self.n)}, received {y.shape}."
         return y
