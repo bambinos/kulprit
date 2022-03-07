@@ -1,4 +1,22 @@
-# Kulprit: Kullback-Leibler projection predictive model selection
+# kulprit
+
+[![PyPI](https://img.shields.io/pypi/v/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
+[![PyPI - License](https://img.shields.io/pypi/l/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
+[![Coookiecutter - Wolt](https://img.shields.io/badge/cookiecutter-Wolt-00c2e8?style=flat-square&logo=cookiecutter&logoColor=D4AA00&link=https://github.com/woltapp/wolt-python-package-cookiecutter)](https://github.com/woltapp/wolt-python-package-cookiecutter)
+
+
+---
+
+**Documentation**: [https://yannmclatchie.github.io/kulprit](https://yannmclatchie.github.io/kulprit)
+
+**Source Code**: [https://github.com/yannmclatchie/kulprit](https://github.com/yannmclatchie/kulprit)
+
+**PyPI**: [https://pypi.org/project/kulprit/](https://pypi.org/project/kulprit/)
+
+---
+
+Kullback-Leibler projections for Bayesian model selection in Generalised Linear Models.
 
 ## Example prototype workflow
 
@@ -77,52 +95,92 @@ More information on the two tools can be found at the following links:
 - [`poetry` documentation](https://python-poetry.org/)
 - [`pyenv` documentation and repo](https://github.com/pyenv/pyenv)
 
-Before submitting a pull request, please ensure that your code is appropriately formatted and written. The project uses Black formatting, which can be executed with
-```bash
-$ black kulprit/
+### Testing
+
+```sh
+pytest
 ```
-Further, check your code with `flake8` and `pylint`
-```bash
-$ flake8 kulprit/
-$ pylint kulprit/
+
+### Documentation
+
+The documentation is automatically generated from the content of the [docs directory](./docs) and from the docstrings
+ of the public signatures of the source code. The documentation is updated and published as a [Github project page
+ ](https://pages.github.com/) automatically as part each release.
+
+### Releasing
+
+Trigger the [Draft release workflow](https://github.com/yannmclatchie/kulprit/actions/workflows/draft_release.yml)
+(press _Run workflow_). This will update the changelog & version and create a GitHub release which is in _Draft_ state.
+
+Find the draft release from the
+[GitHub releases](https://github.com/yannmclatchie/kulprit/releases) and publish it. When
+ a release is published, it'll trigger [release](https://github.com/yannmclatchie/kulprit/blob/master/.github/workflows/release.yml) workflow which creates PyPI
+ release and deploys updated documentation.
+
+### Pre-commit
+
+Pre-commit hooks run all the auto-formatters (e.g. `black`, `isort`), linters (e.g. `mypy`, `flake8`), and other quality
+ checks to make sure the changeset is in good shape before a commit/push happens.
+
+You can install the hooks with (runs for each commit):
+
+```sh
+pre-commit install
+```
+
+Or if you want them to run only for each push:
+
+```sh
+pre-commit install -t pre-push
+```
+
+Or if you want e.g. want to run all checks manually for all files:
+
+```sh
+pre-commit run --all-files
 ```
 
 ## Project Organisation
 
 ```
     ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project
+    ├── Makefile               <- Makefile with commands like `make data` or `make train`
+    ├── README.md              <- The top-level README for developers using this project
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
+    ├── docs                   <- A default Sphinx project; see sphinx-doc.org for details
+    |
+    ├── mkdocs.yaml            <- Project configuration file
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
+    ├── notebooks              <- Jupyter notebooks. Naming convention is a number (for ordering),
     │                         the creator's initials, and a short `-` delimited description, e.g.
     │                         `01-jqp-initial-data-exploration`
     │
-    ├── poetry.lock        <- Poetry package management lock file
-    ├── pyproject.toml     <- Poetry package management project dependency definition
+    ├── poetry.lock            <- Poetry package management lock file
+    ├── pyproject.toml         <- Poetry package management project dependency definition
     │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── kulprit            <- Source code for use in this project
-    │   ├── __init__.py    <- Makes src a Python module
-    │   ├── utils.py       <- Utility functions for workflow
-    │   ├── plotting       <- Visualisation module
-    |   |   ├── __init__.py
-    │   |   └── visualise.py
-    │   │
-    |   ├── projection     <- Kullback-Leibler projections module
-    |   |   ├── __init__.py
-    │   |   ├── divergences.py
-    │   |   ├── project.py
-    │   |   └── submodel.py
-    │   │
-    |   └── search         <- Parameter search module
-    |       ├── __init__.py
-    │       └── forward.py
+    ├── setup.cfg              <- Project configuration file
+    ├── src
+    |   └── kulprit            <- Source code for use in this project
+    |       ├── __init__.py    <- Makes src a Python module
+    |       ├── utils.py       <- Utility functions for workflow
+    |       ├── plotting       <- Visualisation module
+    |       |   ├── __init__.py
+    |       |   └── visualise.py
+    |       │
+    |       ├── projection     <- Kullback-Leibler projections module
+    |       |   ├── __init__.py
+    |       |   ├── divergences.py
+    |       |   ├── project.py
+    |       |   └── submodel.py
+    |       │
+    |       └── search         <- Parameter search module
+    |           ├── __init__.py
+    |           └── forward.py
     │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    └── tests                  <- pytests module
+        └── __init__.py
 ```
 
 ---
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+
+This project was generated using the [wolt-python-package-cookiecutter](https://github.com/woltapp/wolt-python-package-cookiecutter) template.

@@ -22,7 +22,7 @@ class KLDivSurrogateLoss(nn.Module):
         Args:
             family (str): The reference model variate's family
         """
-        super(KLDivSurrogateLoss, self).__init__()
+        super().__init__()
         self.family = family
         self.reduction = reduction
 
@@ -44,15 +44,13 @@ class KLDivSurrogateLoss(nn.Module):
             mu_perp (torch.tensor): Tensor of submodel parameters to learn
 
         Returns:
-            torch.tensor: (Todo)
+            torch.tensor: Tensor of shape () containing sample KL divergence
 
         Raises:
             AssertionError if unexpected input dimensions
         """
 
         divs = self._div_fun(self.family, y_ast, y_perp)
-        # perform reducion to scalar to use PyTorch's autograd
-        # return self.reduction(divs)
         return divs
 
 
@@ -89,7 +87,7 @@ class SubModel(nn.Module):
             m (int): Number of parameters in the submodel
         """
 
-        super(SubModel, self).__init__()
+        super().__init__()
         # assign data shapes and GLM inverse link function
         self.s = s
         self.n = n

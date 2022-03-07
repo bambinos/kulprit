@@ -58,11 +58,7 @@ def _gaussian_kl(y_ast, y_perp):
         + (std_ast**2 + (mu_ast - mu_perp) ** 2) / (2 * std_perp**2)
         - 1 / 2
     )
-    # compute KL divergence using surrogate
-    # div = (mu_ast - mu_perp) ** 2
-    assert (
-        div.shape == ()
-    ), f"Expected data dimensions {()}, received {div.shape}."
+    assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
     return div
 
 

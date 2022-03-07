@@ -1,6 +1,0 @@
-arviz>=0.11.2
-bambi>=0.7.1
-matplotlib
-numpy
-pandas
-torch

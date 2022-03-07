@@ -43,7 +43,6 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-.flake8
 
 # Translations
 *.mo
@@ -54,9 +53,6 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
-
-# Pre-commit hooks
-.pre-commit-config.yaml
 
 # PyBuilder
 target/
