@@ -108,7 +108,7 @@ class Projector:
             params (list): The names parameters to use in the restricted model
         """
 
-        if self.theta_perp is None:
+        if not hasattr(self, "theta_perp"):
             self.theta_perp = self.project(params)
         datadict = {
             "Intercept": self.theta_perp[:, 0],
