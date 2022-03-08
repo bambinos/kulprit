@@ -1,14 +1,13 @@
 """Projection class."""
 
+import arviz as az
 import torch
 
-import arviz as az
-
-from .submodel import SubModel, KLDivSurrogateLoss
+from .submodel import KLDivSurrogateLoss, SubModel
 
 
 class Projector:
-    def __init__(self, model, posterior, device=torch.device("cpu")):
+    def __init__(self, model, posterior):
         """Reference model builder for projection predictive model selection.
 
         This object initialises the reference model and handles the core
@@ -20,16 +19,12 @@ class Projector:
                 fitting Bambi model
             device (torch.device): The PyTorch device being used
         """
-        # set pytorch device
-        self.device = device
         # define model-specific attributed
         self.model = model
         self.family = self.model.family.name
         self.inv_link = self.model.family.link.linkinv
         self.full_params = [
-            param
-            for param in self.model.term_names
-            if param in self.model.data.columns
+            param for param in self.model.term_names if param in self.model.data.columns
         ]
         self.posterior = posterior
         self.preds = self.model.predict(idata=self.posterior, inplace=False)
@@ -39,16 +34,8 @@ class Projector:
             len(self.model.term_names),
         )
         self.s = self.posterior.posterior.Intercept.values.ravel().shape[0]
-        self.y = (
-            torch.from_numpy(self.model.data["y"].values)
-            .float()
-            .to(self.device)
-        )
-        self.X_ref = (
-            torch.from_numpy(self.model.data[self.full_params].values)
-            .float()
-            .to(self.device)
-        )
+        self.y = torch.from_numpy(self.model.data["y"].values).float()
+        self.X_ref = torch.from_numpy(self.model.data[self.full_params].values).float()
         self.X_ref = torch.concat((self.X_ref, torch.ones((self.n, 1))), dim=1)
 
     def project(
@@ -85,21 +72,15 @@ class Projector:
         self.num_iters = num_iters
         self.learning_rate = learning_rate
         # build restricted data space with intercept in design matrix
-        self.X_perp = (
-            torch.from_numpy(self.model.data[params].values)
-            .float()
-            .to(self.device)
-        )
-        self.X_perp = torch.concat(
-            (self.X_perp, torch.ones((self.n, 1))), dim=1
-        )
+        self.X_perp = torch.from_numpy(self.model.data[params].values).float()
+        self.X_perp = torch.concat((self.X_perp, torch.ones((self.n, 1))), dim=1)
         assert self.X_perp.shape == (self.n, self.p,), (
             f"Expected variates dimensions {(self.n, self.p,)}, "
             + f"received {self.X_perp.shape}."
         )
         # build submodel object
         sub_model = SubModel(self.inv_link, self.s, self.n, self.p)
-        sub_model.to(self.device)
+        sub_model
         sub_model.zero_grad()
         opt = torch.optim.Adam(sub_model.parameters(), lr=self.learning_rate)
         criterion = KLDivSurrogateLoss(self.family)
@@ -107,7 +88,6 @@ class Projector:
         y_ast = (
             torch.from_numpy(self.preds.posterior.y_mean.values)
             .float()
-            .to(self.device)
             .reshape(self.s, self.n)
         )
         # run optimisation loop
@@ -128,14 +108,13 @@ class Projector:
             params (list): The names parameters to use in the restricted model
         """
 
-        if self.theta_perp is None:
+        if not hasattr(self, "theta_perp"):
             self.theta_perp = self.project(params)
         datadict = {
             "Intercept": self.theta_perp[:, 0],
         }
         paramdict = {
-            f"{params[i]}_perp": self.theta_perp[:, i + 1]
-            for i in range(len(params))
+            f"{params[i]}_perp": self.theta_perp[:, i + 1] for i in range(len(params))
         }
         datadict.update(paramdict)
         dataset = az.convert_to_inference_data(datadict)

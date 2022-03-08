@@ -29,7 +29,7 @@ class KLDiv:
         return f
 
     @classmethod
-    def _default(cls):
+    def _default(cls, y_ast, y_perp):
         raise NotImplementedError("Unsupported family.")
 
     @classmethod
@@ -58,29 +58,5 @@ def _gaussian_kl(y_ast, y_perp):
         + (std_ast**2 + (mu_ast - mu_perp) ** 2) / (2 * std_perp**2)
         - 1 / 2
     )
-    # compute KL divergence using surrogate
-    # div = (mu_ast - mu_perp) ** 2
-    assert (
-        div.shape == ()
-    ), f"Expected data dimensions {()}, received {div.shape}."
+    assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
     return div
-
-
-@KLDiv("binomial")
-def _binomial_kl(y_ast, y_perp):
-    """Kullback-Leibler between two Binomials surrogate function.
-
-    To do:
-        * Implement function.
-    """
-    raise NotImplementedError
-
-
-@KLDiv("poisson")
-def _poisson_kl(y_ast, y_perp):
-    """Kullback-Leibler between two Poissons surrogate function.
-
-    To do:
-        * Implement function.
-    """
-    raise NotImplementedError
