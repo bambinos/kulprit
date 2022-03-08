@@ -54,7 +54,7 @@ ref_model.plot_projection(params=params)
 
 Currently, this package is only available for download directly from GitHub with the command
 ```bash
-pip install git+https://github.com/yannmclatchie/kulprit.git
+$ pip install git+https://github.com/yannmclatchie/kulprit.git
 ```
 
 ## Development
@@ -98,7 +98,7 @@ More information on the two tools can be found at the following links:
 ### Testing
 
 ```sh
-pytest
+$ poetry run pytest
 ```
 
 ### Documentation
@@ -125,19 +125,19 @@ Pre-commit hooks run all the auto-formatters (e.g. `black`, `isort`), linters (e
 You can install the hooks with (runs for each commit):
 
 ```sh
-pre-commit install
+$ pre-commit install
 ```
 
 Or if you want them to run only for each push:
 
 ```sh
-pre-commit install -t pre-push
+$ pre-commit install -t pre-push
 ```
 
 Or if you want e.g. want to run all checks manually for all files:
 
 ```sh
-pre-commit run --all-files
+$ pre-commit run --all-files
 ```
 
 ## Project Organisation
