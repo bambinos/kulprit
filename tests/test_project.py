@@ -14,44 +14,36 @@ data = pd.DataFrame(
         "x2": np.random.normal(size=50),
     }
 )
+# define and fit model with MCMC
+model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
+num_draws, num_chains = 100, 1
+num_draws * num_chains
+posterior = model.fit(draws=num_draws, chains=num_chains)
+# build reference model object
+ref_model = kpt.Projector(model, posterior)
+
+
+def test_kl_opt_forward():
+    solver = kpt.projection.optimise._KulOpt(ref_model.full_model)
+    y = solver.forward(ref_model.full_model.X)
+    assert y.shape == (ref_model.full_model.s, ref_model.full_model.n)
 
 
 def test_project_method():
-    # define and fit model with MCMC
-    model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-    num_draws, num_chains = 100, 1
-    s = num_draws * num_chains
-    posterior = model.fit(draws=num_draws, chains=num_chains)
-    # build reference model object
-    ref_model = kpt.Projector(model, posterior)
     # project the reference model to some parameter subset
-    params = ["x1", "x2"]
-    p = len(params) + 1
-    theta_perp = ref_model.project(params=params)
-    assert theta_perp.shape == (s, p)
+    cov_names = ["x1", "x2"]
+    ref_model.project(cov_names=cov_names)
+    # to do: add shape test
 
 
 def test_default_projection_set():
-    # define and fit model with MCMC
-    model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-    num_draws, num_chains = 100, 1
-    s = num_draws * num_chains
-    posterior = model.fit(draws=num_draws, chains=num_chains)
-    # build reference model object
-    ref_model = kpt.Projector(model, posterior)
-    # project the reference model to some parameter subset
-    theta_perp = ref_model.project()
-    p = len(model.common_terms) + 1
-    assert theta_perp.shape == (s, p)
+    # project the reference model to the default parameter subset
+    ref_model.project()
+    # to do: add shape test
 
 
 def test_plot_projection():
-    # define and fit model with MCMC
-    model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-    num_draws, num_chains = 100, 1
-    posterior = model.fit(draws=num_draws, chains=num_chains)
-    # build reference model object
-    ref_model = kpt.Projector(model, posterior)
     # project the reference model to some parameter subset
-    params = ["x1", "x2"]
-    ref_model.plot_projection(params=params)
+    cov_names = ["x1", "x2"]
+    ref_model.plot_projection(cov_names=cov_names)
+    # to do: define more rigid test

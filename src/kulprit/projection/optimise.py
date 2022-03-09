@@ -1,34 +1,35 @@
-"""Submodel optimsation module."""
+"""Restricted model projection optimiser module."""
 
 import torch
 import torch.nn as nn
 
-from .divergences import KLDiv
+from ..families import Family
 
 
-class KLDivSurrogateLoss(nn.Module):
-    """Custom Kullback-Leibler divergence surrogate loss module.
+class _DivLoss(nn.Module):
+    """Custom Kullback-Leibler divergence loss module.
 
     This class computes some KL divergence loss surrogate for observations seen
     from the GLM given the reference model variate's family.
 
     Attributes:
-        family (str): The reference model variate's family
+        family (kulprit.families.Family): The reference model family object
     """
 
-    def __init__(self, family, reduction=torch.sum):
+    def __init__(self, family):
         """Loss module constructor.
 
+        We instantiate a `kulprit.Family` object based on the model variate's
+        family which includes a Kullback-Leibler divergence function, and in the
+        cases where the distribution has dispersion parameters, functions
+        allowing for their respective projections.
+
         Args:
-            family (str): The reference model variate's family
+            family (kulprit.families.Family): The reference model family object
         """
+
         super().__init__()
         self.family = family
-        self.reduction = reduction
-
-    def _div_fun(self, family, y_ast, y_perp):
-        """Switch function for KL divergence surrogate."""
-        return KLDiv.switch(family, y_ast, y_perp)
 
     def forward(self, y_ast, y_perp):
         """Forward method in learning loop.
@@ -50,12 +51,12 @@ class KLDivSurrogateLoss(nn.Module):
             AssertionError if unexpected input dimensions
         """
 
-        divs = self._div_fun(self.family, y_ast, y_perp)
+        divs = self.family.kl_div(y_ast, y_perp)
         return divs
 
 
-class SubModel(nn.Module):
-    """Core submodel solver class.
+class _KulOpt(nn.Module):
+    """Core optimisation solver class.
 
     This class solves the general problem of Kullback-Leibler divergence
     projection onto a submodel using a PyTorch neural network architecture
@@ -69,30 +70,21 @@ class SubModel(nn.Module):
         n (int): Number of observations in the GLM
         m (int): Number of parameters in the submodel
         lin (torch.nn module): The linear transformation module
-
-    Methods:
-        forward: performs the forward step of the module
-
-    Todo:
-        * Find way to optimise without needing a loss reduction
     """
 
-    def __init__(self, inv_link, s, n, m):
+    def __init__(self, res_model):
         """SubModel class constructor method.
 
         Args:
-            inv_link (function): The inverse link function of the GLM
-            s (int): Number of MCMC posterior samples
-            n (int): Number of observations in the GLM
-            m (int): Number of parameters in the submodel
+            res_model (kulprit.ModelData): The projection restricted model object
         """
 
         super().__init__()
         # assign data shapes and GLM inverse link function
-        self.s = s
-        self.n = n
-        self.m = m
-        self.inv_link = inv_link
+        self.s = res_model.s
+        self.n = res_model.n
+        self.m = res_model.m
+        self.inv_link = res_model.link.linkinv
         # build linear component of GLM without intercept
         self.lin = nn.Linear(self.m, self.s, bias=False)
 
@@ -108,14 +100,6 @@ class SubModel(nn.Module):
         Raises:
             AssertionError if unexpected input dimensions
         """
-        assert X.shape == (
-            self.n,
-            self.m,
-        ), f"Expected data dimensions {(self.n, self.m)}, received {X.shape}."
         # perform forward prediction step
         y = self.inv_link(self.lin.forward(X).T)
-        assert y.shape == (
-            self.s,
-            self.n,
-        ), f"Expected variates dimensions {(self.s, self.n)}, received {y.shape}."
         return y
