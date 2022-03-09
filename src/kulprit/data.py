@@ -12,7 +12,7 @@ from .families import Family
 
 
 @dataclasses.dataclass
-class _Prit:
+class ModelData:
     """Data class for handling model data.
 
     This class serves as the primary data container passed throughout the

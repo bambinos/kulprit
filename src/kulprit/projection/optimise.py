@@ -76,7 +76,7 @@ class _KulOpt(nn.Module):
         """SubModel class constructor method.
 
         Args:
-            res_model (kulprit._Prit): The projection restricted model object
+            res_model (kulprit.ModelData): The projection restricted model object
         """
 
         super().__init__()

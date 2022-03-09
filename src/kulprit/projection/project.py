@@ -4,8 +4,12 @@ import arviz as az
 import torch
 
 from .optimise import _DivLoss, _KulOpt
-from ..data import _Prit
-from ..utils import _build_restricted_model, _extract_theta_perp
+from ..data import ModelData
+from ..utils import (
+    _build_restricted_model,
+    _extract_theta_perp,
+    _extract_insample_predictions,
+)
 from ..families import Family
 
 
@@ -31,10 +35,10 @@ class Projector:
         data = model.data
         cov_names = [cov for cov in model.term_names if cov in model.data.columns]
         n, m = model._design.common.design_matrix.shape
-        s = posterior.posterior.Intercept.values.ravel().shape[0]
+        s = posterior.posterior.dims["chain"] * posterior.posterior.dims["draw"]
         has_intercept = model.intercept_term is not None
         # build full model object
-        self.full_model = _Prit(
+        self.full_model = ModelData(
             X=X,
             y=y,
             data=data,
@@ -79,17 +83,14 @@ class Projector:
         res_model = _build_restricted_model(self.full_model, cov_names)
         # extract restricted design matrix
         X_perp = res_model.X
+        # extract reference model posterior predictions
+        y_ast = _extract_insample_predictions(self.full_model)
+
         # build optimisation solver object
         solver = _KulOpt(res_model)
         solver.zero_grad()
         opt = torch.optim.Adam(solver.parameters(), lr=learning_rate)
         criterion = _DivLoss(res_model.family)
-        # extract reference model posterior predictions
-        y_ast = (
-            torch.from_numpy(self.full_model.predictions.posterior.y_mean.values)
-            .float()
-            .reshape(res_model.s, res_model.n)
-        )
         # run optimisation loop
         for _ in range(num_iters):
             opt.zero_grad()
@@ -97,7 +98,8 @@ class Projector:
             loss = criterion(y_ast, y_perp)
             loss.backward()
             opt.step()
-        # extract projected parameters
+
+        # extract projected parameters from the solver
         theta_perp = _extract_theta_perp(solver, res_model.cov_names)
         return theta_perp
 
