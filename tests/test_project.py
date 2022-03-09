@@ -23,6 +23,12 @@ posterior = model.fit(draws=num_draws, chains=num_chains)
 ref_model = kpt.Projector(model, posterior)
 
 
+def test_kl_opt_forward():
+    solver = kpt.projection.optimise._KulOpt(ref_model.full_model)
+    y = solver.forward(ref_model.full_model.X)
+    assert y.shape == (ref_model.full_model.s, ref_model.full_model.n)
+
+
 def test_project_method():
     # project the reference model to some parameter subset
     cov_names = ["x1", "x2"]
@@ -40,3 +46,4 @@ def test_plot_projection():
     # project the reference model to some parameter subset
     cov_names = ["x1", "x2"]
     ref_model.plot_projection(cov_names=cov_names)
+    # to do: define more rigid test

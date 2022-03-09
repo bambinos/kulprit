@@ -28,3 +28,10 @@ def test_gaussian_kl():
     draws = torch.from_numpy(np.random.normal(0, 1, 100)).float()
     family = kpt.families.Family.create("gaussian")
     assert family.kl_div(draws, draws) == 0.0
+
+
+def test_gaussian_kl_shape():
+    draws = torch.from_numpy(np.random.normal(0, 1, 100)).float()
+    family = kpt.families.Family.create("gaussian")
+    div = family.kl_div(draws, draws)
+    assert div.shape == ()

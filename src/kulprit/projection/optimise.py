@@ -100,14 +100,6 @@ class _KulOpt(nn.Module):
         Raises:
             AssertionError if unexpected input dimensions
         """
-        assert X.shape == (
-            self.n,
-            self.m,
-        ), f"Expected data dimensions {(self.n, self.m)}, received {X.shape}."
         # perform forward prediction step
         y = self.inv_link(self.lin.forward(X).T)
-        assert y.shape == (
-            self.s,
-            self.n,
-        ), f"Expected variates dimensions {(self.s, self.n)}, received {y.shape}."
         return y
