@@ -43,9 +43,8 @@ def _extract_insample_predictions(model):
     """
 
     y_pred = (
-        torch.from_numpy(model.predictions.posterior.y_mean.values)
+        torch.from_numpy(model.predictions.stack(samples=("chain", "draw")).values.T)
         .float()
-        .reshape(model.s, model.n)
     )
     return y_pred
 

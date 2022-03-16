@@ -48,14 +48,15 @@ class Gaussian(Family):
         """
 
         # compute sufficient statistics
-        mu_ast, mu_perp = torch.mean(y_ast), torch.mean(y_perp)
-        std_ast, std_perp = torch.std(y_ast), torch.std(y_perp)
+        mu_ast, mu_perp = torch.mean(y_ast, 1), torch.mean(y_perp, 1)
+        std_ast, std_perp = torch.std(y_ast, 1), torch.std(y_perp, 1)
         # compute KL divergence using full formula
-        div = (
+        div = torch.mean(
             torch.log(std_perp / std_ast)
             + (std_ast**2 + (mu_ast - mu_perp) ** 2) / (2 * std_perp**2)
-            - 1 / 2
+            - 0.5
         )
+        #div = torch.mean((y_ast - y_perp)**2)
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
         return div
 
