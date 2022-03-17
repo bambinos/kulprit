@@ -11,7 +11,7 @@ import bambi
 from .families import Family
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(order=True)
 class ModelData:
     """Data class for handling model data.
 
@@ -29,8 +29,12 @@ class ModelData:
         m (int): Number of variables observed (including intercept)
         s (int): Number of posterior draws in the model
         has_intercept (bool): Flag whether intercept included in model
+        dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
+            between this model and the reference model
         posterior (arviz.InferenceData): Posterior draws from the model
         predictions (arviz.InferenceData): In-sample model predictions
+        elpd (arviz.ELPDData): Model ELPD LOO estimates
+        sort_index (int): Sorting index attribute used in forward search method
     """
 
     X: torch.tensor
@@ -43,5 +47,11 @@ class ModelData:
     m: int
     s: int
     has_intercept: bool
+    dist_to_ref_model: torch.tensor
     posterior: arviz.InferenceData = None
     predictions: arviz.InferenceData = None
+    elpd: arviz.ELPDData = None
+    sort_index: int = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.sort_index = self.dist_to_ref_model

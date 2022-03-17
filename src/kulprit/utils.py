@@ -50,6 +50,19 @@ def _extract_insample_predictions(model):
     return y_pred
 
 
+def _extract_posterior_covariate_samples(model):
+    """Extract some model's parameter posterior draws.
+
+    Args:
+        model (kulprit.ModelData): Some model we wish to get predictions from
+
+    Returns:
+        torch.tensor: The posterior draws of the model covariates
+    """
+
+    raise NotImplementedError
+
+
 def _extract_theta_perp(solver, cov_names):
     """Extract restricted parameter projections from PyTorch optimisation.
 
@@ -57,16 +70,47 @@ def _extract_theta_perp(solver, cov_names):
         solver: Trained PyTorch optimisation solver object
 
     Returns:
-        arviz.InferenceData: Projected parameter samples
+        torch.tensor: Projected parameter samples
     """
 
     theta_perp = list(solver.parameters())[0].data
-    datadict = {
+    return theta_perp
+
+
+def _build_posterior(theta_perp, cov_names, ref_model, disp_perp=None):
+    """Convert some set of pytorch tensors into an arViz InferenceData object.
+
+    Args:
+        theta_perp:
+        cov_names:
+        ref_model:
+        disp_perp:
+
+    Returns:
+        arviz.InferenceData: Restricted model posterior
+    """
+
+    data_dict = {
         "Intercept": theta_perp[:, 0],
     }
-    paramdict = {
+    cov_dict = {
         f"{cov_names[i]}_perp": theta_perp[:, i + 1] for i in range(len(cov_names))
     }
-    datadict.update(paramdict)
-    dataset = az.convert_to_inference_data(datadict)
+    data_dict.update(cov_dict)
+    if disp_perp:
+        raise NotImplementedError
+    dataset = az.convert_to_inference_data(data_dict)
     return dataset
+
+
+def _compute_elpd(model):
+    """Compute the ELPD LOO estimates from a fitted model.
+
+    Args:
+        model (kulprit.ModelData): The model to diagnose
+
+    Returns:
+        arviz.ELPDData: The ELPD LOO estimates
+    """
+
+    raise NotImplementedError

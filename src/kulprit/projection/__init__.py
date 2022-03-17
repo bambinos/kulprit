@@ -1,3 +1,3 @@
 """Top-level projection module."""
 
-from .project import Projector
+from .optimise import _DivLoss, _KulOpt

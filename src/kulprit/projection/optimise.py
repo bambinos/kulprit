@@ -9,8 +9,8 @@ from ..families import Family
 class _DivLoss(nn.Module):
     """Custom Kullback-Leibler divergence loss module.
 
-    This class computes some KL divergence loss surrogate for observations seen
-    from the GLM given the reference model variate's family.
+    This class computes some KL divergence loss for observations seen from the
+    GLM given the reference model variate's family.
 
     Attributes:
         family (kulprit.families.Family): The reference model family object
@@ -37,8 +37,8 @@ class _DivLoss(nn.Module):
         This method computes the Kullback-Leibler divergence between the
         reference model variate draws ``y_ast``and the restricted model's
         variate draws ``y_perp``. This is done using the two samples' respective
-        sufficient sample statistics and a surrogate divergence equation found
-        in the ``KLDiv`` class.
+        sufficient sample statistics and a divergence equation found in the
+        ``Family`` class.
 
         Args:
             mu_ast (torch.tensor): Tensor of learned reference model parameters
