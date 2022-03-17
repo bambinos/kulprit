@@ -29,7 +29,10 @@ class Projector:
         # define key model attributes
         family = Family.create(model.family.name)
         link = model.family.link
-        predictions = model.predict(idata=posterior, inplace=False)
+        response_name = model.response.name
+        predictions = model.predict(
+            idata=posterior, inplace=False, kind="pps"
+        ).posterior_predictive[response_name]
         X = torch.from_numpy(model._design.common.design_matrix).float()
         y = torch.from_numpy(model._design.response.design_vector).float()
         data = model.data
@@ -81,6 +84,7 @@ class Projector:
 
         # build restricted model object
         res_model = _build_restricted_model(self.full_model, cov_names)
+
         # extract restricted design matrix
         X_perp = res_model.X
         # extract reference model posterior predictions

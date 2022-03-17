@@ -40,22 +40,15 @@ class Gaussian(Family):
         """Kullback-Leibler divergence between two Gaussians surrogate function.
 
         Args:
-            mu_ast (torch.tensor): Tensor of learned reference model parameters
-            mu_perp (torch.tensor): Tensor of submodel parameters to learn
+            y_ast (torch.tensor): Tensor of reference model posterior draws
+            y_perp (torch.tensor): Tensor of restricted model posterior draws
 
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
-        # compute sufficient statistics
-        mu_ast, mu_perp = torch.mean(y_ast), torch.mean(y_perp)
-        std_ast, std_perp = torch.std(y_ast), torch.std(y_perp)
-        # compute KL divergence using full formula
-        div = (
-            torch.log(std_perp / std_ast)
-            + (std_ast**2 + (mu_ast - mu_perp) ** 2) / (2 * std_perp**2)
-            - 1 / 2
-        )
+        # compute Wasserstein distance as a KL divergence surrogate
+        div = torch.mean((y_ast - y_perp) ** 2)
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
         return div
 
