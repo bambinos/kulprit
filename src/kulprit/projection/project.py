@@ -30,7 +30,9 @@ class Projector:
         family = Family.create(model.family.name)
         link = model.family.link
         response_name = model.response.name
-        predictions = model.predict(idata=posterior, inplace=False, kind="pps").posterior_predictive[response_name]
+        predictions = model.predict(
+            idata=posterior, inplace=False, kind="pps"
+        ).posterior_predictive[response_name]
         X = torch.from_numpy(model._design.common.design_matrix).float()
         y = torch.from_numpy(model._design.response.design_vector).float()
         data = model.data

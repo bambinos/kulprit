@@ -46,7 +46,7 @@ class Gaussian(Family):
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
-        
+
         # compute Wasserstein distance as a KL divergence surrogate
         div = torch.mean((y_ast - y_perp) ** 2)
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."

@@ -42,10 +42,9 @@ def _extract_insample_predictions(model):
         torch.tensor: The in-sample predictions
     """
 
-    y_pred = (
-        torch.from_numpy(model.predictions.stack(samples=("chain", "draw")).values.T)
-        .float()
-    )
+    y_pred = torch.from_numpy(
+        model.predictions.stack(samples=("chain", "draw")).values.T
+    ).float()
     return y_pred
 
 
