@@ -97,14 +97,14 @@ class Gaussian(Family):
         X_ast = ref_model.X
         X_perp = res_model.X
         # todo: vectorise the dispersion parameter projection method
-        sigma_perp = torch.from_numpy(
-            np.array(
-                [
-                    _proj(theta_ast[i, :], theta_perp[i, :], sigma_ast[i])
-                    for i in range(ref_model.num_draws)
-                ]
-            ).reshape(-1)
-        ).float()
+        _vec_proj = np.vectorize(
+            _proj, signature="(n),(m),()->()", doc="Vectorised `_proj` method"
+        )
+        sigma_perp = (
+            torch.from_numpy(_vec_proj(theta_ast, theta_perp, sigma_ast))
+            .reshape(-1)
+            .float()
+        )
         # assure correct shape
         assert sigma_perp.shape == sigma_ast.shape
         return sigma_perp
