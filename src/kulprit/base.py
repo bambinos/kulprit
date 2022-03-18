@@ -22,7 +22,7 @@ class Projector:
         projection and variable search methods of the model selection procedure.
 
         Args:
-            model (bambi.models.Model): The referemce GLM model to project
+            model (bambi.models.Model): The reference GLM model to project
             posterior (arviz.InferenceData): The posterior arViz object of the
                 fitting Bambi model
         """
