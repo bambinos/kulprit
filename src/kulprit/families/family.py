@@ -101,7 +101,7 @@ class Gaussian(Family):
             np.array(
                 [
                     _proj(theta_ast[i, :], theta_perp[i, :], sigma_ast[i])
-                    for i in range(sigma_ast.shape[0])
+                    for i in range(ref_model.s)
                 ]
             ).reshape(-1)
         ).float()
