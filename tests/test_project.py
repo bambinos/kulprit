@@ -4,6 +4,8 @@ import numpy as np
 import bambi as bmb
 import kulprit as kpt
 
+import pytest
+
 
 # define model data
 data = pd.DataFrame(
@@ -23,10 +25,14 @@ posterior = model.fit(draws=num_draws, chains=num_chains)
 proj = kpt.Projector(model, posterior)
 
 
+def test_posterior_is_none():
+    kpt.Projector(model)
+
+
 def test_kl_opt_forward():
-    solver = kpt.projection.optimise._KulOpt(proj.full_model)
-    y = solver.forward(proj.full_model.X)
-    assert y.shape == (proj.full_model.s, proj.full_model.n)
+    solver = kpt.projection.optimise._KulOpt(proj.ref_model)
+    y = solver.forward(proj.ref_model.X)
+    assert y.shape == (proj.ref_model.s, proj.ref_model.n)
 
 
 def test_project_method():
@@ -42,5 +48,6 @@ def test_default_projection_set():
     # to do: add shape test
 
 
-def test_project_gaussian_dispersion():
-    raise NotImplementedError()
+def test_elpd():
+    with pytest.raises(NotImplementedError):
+        kpt.utils._compute_elpd(proj.ref_model)

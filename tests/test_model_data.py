@@ -28,7 +28,7 @@ proj = kpt.Projector(model, posterior)
 
 
 def test_has_intercept():
-    assert proj.full_model.has_intercept
+    assert proj.ref_model.has_intercept
 
 
 def test_no_intercept_error():
@@ -42,19 +42,19 @@ def test_no_intercept_error():
 
 def test_copy_reference_model():
     cov_names = ["x1", "x2"]
-    res_model = _build_restricted_model(proj.full_model, cov_names)
-    assert res_model.X.shape == (proj.full_model.n, len(cov_names) + 1)
+    res_model = _build_restricted_model(proj.ref_model, cov_names)
+    assert res_model.X.shape == (proj.ref_model.n, len(cov_names) + 1)
 
 
 def test_default_reference_model():
-    res_model = _build_restricted_model(proj.full_model)
+    res_model = _build_restricted_model(proj.ref_model)
     assert res_model.X.shape == (
-        proj.full_model.n,
-        len(proj.full_model.cov_names) + 1,
+        proj.ref_model.n,
+        len(proj.ref_model.cov_names) + 1,
     )
 
 
 def test_build_restricted_model():
     cov_names = ["x1"]
-    res_model = _build_restricted_model(proj.full_model, cov_names)
-    assert res_model.X.shape == (proj.full_model.n, len(cov_names) + 1)
+    res_model = _build_restricted_model(proj.ref_model, cov_names)
+    assert res_model.X.shape == (proj.ref_model.n, len(cov_names) + 1)

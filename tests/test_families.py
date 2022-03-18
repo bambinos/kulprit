@@ -8,6 +8,8 @@ import torch
 
 import pytest
 
+import dataclasses
+
 # define model data
 data = pd.DataFrame(
     {
@@ -19,50 +21,42 @@ data = pd.DataFrame(
 )
 # define and fit model with MCMC
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-num_draws, num_chains = 100, 1
-posterior = model.fit(draws=num_draws, chains=num_chains)
+NUM_DRAWS, NUM_CHAINS = 100, 1
+posterior = model.fit(draws=NUM_DRAWS, chains=NUM_CHAINS)
 # build reference model object
 proj = kpt.Projector(model, posterior)
 
 
-def test_not_implemented_family_kl():
+def test_not_implemented_family():
     with pytest.raises(NotImplementedError):
-        kpt.families.Family.create("weibull")
-
-
-def test_no_div_fun_family_kl():
-    with pytest.raises(TypeError):
-
-        class NewFamily(kpt.families.Family):
-            _FAMILY_NAME = "my_new_family"
-
-            def __init__(self):  # pragma: no cover
-                super().__init__()
-
-        torch.from_numpy(np.random.normal(0, 1, 100)).float()
-        kpt.families.Family.create("my_new_family")
+        # load baseball data
+        df = bmb.load_data("batting")
+        # build model with a variate family not yet implemented
+        bad_model = bmb.Model("p(H, AB) ~ 0 + playerID", df, family="binomial")
+        # build reference model object
+        kpt.Projector(bad_model, posterior)
 
 
 def test_gaussian_kl():
     draws = torch.from_numpy(np.random.normal(0, 1, 100)).float()
-    family = kpt.families.Family.create("gaussian")
-    assert family.kl_div(draws, draws) == 0.0
+    assert proj.ref_model.family.kl_div(draws, draws) == 0.0
 
 
 def test_gaussian_disp_proj():
     # todo: extract theta_ast and theta_perp
-    theta_ast = 1
-    theta_perp = 2
-    proj.full_model.family._project_disp_params(theta_ast, theta_perp)
+    pass
+    # build restricted model
+    res_model = dataclasses.replace(proj.ref_model)
+    proj.ref_model.family._project_disp_params(proj.ref_model, res_model)
 
 
 def test_gaussian_disp_attribute():
-    family = kpt.families.Family.create("gaussian")
+    family = kpt.families.Family.create(model)
     assert family.has_disp_params
 
 
 def test_gaussian_kl_shape():
     draws = torch.from_numpy(np.random.normal(0, 1, 100)).float()
-    family = kpt.families.Family.create("gaussian")
+    family = kpt.families.Family.create(model)
     div = family.kl_div(draws, draws)
     assert div.shape == ()
