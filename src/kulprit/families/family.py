@@ -3,8 +3,7 @@
 import abc
 
 import torch
-
-from ..utils import _extract_theta_perp, _extract_theta_ast, _extract_sigma_ast
+import numpy as np
 
 
 class Family(abc.ABC):
@@ -28,15 +27,14 @@ class Family(abc.ABC):
         if model.family.name not in cls.subclasses:
             raise NotImplementedError("Unsupported family.")
 
-        return cls.subclasses[model.family.name](model)
+        return cls.subclasses[model.family.name]()
 
 
 class Gaussian(Family):
     _FAMILY_NAME = "gaussian"
 
-    def __init__(self, model):
+    def __init__(self):
         super().__init__()
-        self.model = model
         self.has_disp_params = True
 
     def kl_div(self, y_ast, y_perp):
@@ -55,7 +53,7 @@ class Gaussian(Family):
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
         return div
 
-    def _project_disp_params(self, res_model):
+    def _project_disp_params(self, ref_model, res_model):
         """Analytic projection of the model dispersion parameters.
 
         Args:
@@ -66,23 +64,47 @@ class Gaussian(Family):
             torch.tensor: The restricted projections of the dispersion parameters
         """
 
-        def _proj(theta_ast, theta_perp):
+        def _proj(theta_ast, theta_perp, sigma_ast):
             """Projection method to aid with vectorisation."""
 
             f = X_ast @ theta_ast
             f_perp = X_perp @ theta_perp
             sigma_perp = torch.sqrt(
-                sigma_ast**2 + 1 / self.ref_model.n * (f - f_perp).T @ (f - f_perp)
+                sigma_ast**2 + 1 / ref_model.n * (f - f_perp).T @ (f - f_perp)
             )
-            return sigma_perp
+            return sigma_perp.numpy()
 
-        # extract design matrix and parameter draws from both models
-        theta_ast = _extract_theta_ast(self.ref_model)
-        sigma_ast = _extract_sigma_ast(self.ref_model)
-        theta_perp = _extract_theta_perp(res_model)
-        X_ast = self.ref_model.X
+        # define covariate names
+        # todo: find a way of including `Intercept` in `cov_names` throughout
+        ref_covs = ["Intercept"] + ref_model.cov_names
+        res_covs = ["Intercept"] + res_model.cov_names
+        # extract parameter draws from both models
+        theta_ast = torch.from_numpy(
+            ref_model.posterior.posterior.stack(samples=("chain", "draw"))[ref_covs]
+            .to_array()
+            .values.T
+        ).float()
+        sigma_ast = torch.from_numpy(
+            ref_model.posterior.posterior.stack(samples=("chain", "draw"))[
+                ref_model.response_name + "_sigma"
+            ].values.T
+        ).float()
+        theta_perp = torch.from_numpy(
+            res_model.posterior.posterior.stack(samples=("chain", "draw"))[res_covs]
+            .to_array()
+            .values.T
+        ).float()
+        X_ast = ref_model.X
         X_perp = res_model.X
-        # vectorise the projection method and perform sample-wise projection
-        _proj_vmap = torch.vmap(_proj)
-        sigma_perp = _proj_vmap(theta_ast, theta_perp)
+        # todo: vectorise the dispersion parameter projection method
+        sigma_perp = torch.from_numpy(
+            np.array(
+                [
+                    _proj(theta_ast[i, :], theta_perp[i, :], sigma_ast[i])
+                    for i in range(sigma_ast.shape[0])
+                ]
+            ).reshape(-1)
+        ).float()
+        # assure correct shape
+        assert sigma_perp.shape == sigma_ast.shape
         return sigma_perp

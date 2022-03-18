@@ -100,6 +100,7 @@ class _KulOpt(nn.Module):
         Raises:
             AssertionError if unexpected input dimensions
         """
+
         # perform forward prediction step
         y = self.inv_link(self.lin.forward(X).T)
         return y

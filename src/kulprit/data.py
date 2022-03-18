@@ -7,6 +7,7 @@ import torch
 import arviz
 
 import bambi
+import kulprit
 
 from .families import Family
 
@@ -25,6 +26,7 @@ class ModelData:
         link (bambi.families.Link): GLM link function object
         family (kulprit.families.Family): Model variate family object
         cov_names (list): List of model covariates in their order of appearance
+        response_name (str): The name of the response given to the Bambi model
         n (int): Number of data observations
         m (int): Number of variables observed (including intercept)
         s (int): Number of posterior draws in the model
@@ -41,8 +43,9 @@ class ModelData:
     y: torch.tensor
     data: pandas.DataFrame
     link: bambi.families.Link
-    family: Family
+    family: kulprit.families.family.Family
     cov_names: list
+    response_name: str
     n: int
     m: int
     s: int

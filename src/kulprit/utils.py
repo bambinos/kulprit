@@ -48,41 +48,14 @@ def _extract_insample_predictions(model):
     return y_pred
 
 
-def _extract_posterior_covariate_samples(model):
-    """Extract some model's parameter posterior draws.
-
-    Args:
-        model (kulprit.ModelData): Some model we wish to get predictions from
-
-    Returns:
-        torch.tensor: The posterior draws of the model covariates
-    """
-
-    raise NotImplementedError
-
-
-def _extract_theta_perp(solver, cov_names):
-    """Extract restricted parameter projections from PyTorch optimisation.
-
-    Args:
-        solver: Trained PyTorch optimisation solver object
-
-    Returns:
-        torch.tensor: Projected parameter samples
-    """
-
-    theta_perp = list(solver.parameters())[0].data
-    return theta_perp
-
-
-def _build_posterior(theta_perp, cov_names, ref_model, disp_perp=None):
+def _build_posterior(theta_perp, model, disp_perp=None):
     """Convert some set of pytorch tensors into an arViz InferenceData object.
 
     Args:
-        theta_perp:
-        cov_names:
-        ref_model:
-        disp_perp:
+        theta_perp (torch.tensor): Restricted parameter posterior projections
+        model (kulprit.ModelData): The model whose posterior to build
+        disp_perp (torch.tensor): Restricted model dispersions parameter
+            posterior projections
 
     Returns:
         arviz.InferenceData: Restricted model posterior
@@ -92,11 +65,14 @@ def _build_posterior(theta_perp, cov_names, ref_model, disp_perp=None):
         "Intercept": theta_perp[:, 0],
     }
     cov_dict = {
-        f"{cov_names[i]}_perp": theta_perp[:, i + 1] for i in range(len(cov_names))
+        f"{model.cov_names[i]}": theta_perp[:, i + 1]
+        for i in range(len(model.cov_names))
     }
     data_dict.update(cov_dict)
-    if disp_perp:
-        raise NotImplementedError
+    if disp_perp is not None:
+        disp_dict = {f"{model.response_name}_sigma": disp_perp}
+        data_dict.update(disp_dict)
+    data_dict.update(cov_dict)
     dataset = az.convert_to_inference_data(data_dict)
     return dataset
 
