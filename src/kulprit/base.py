@@ -23,7 +23,7 @@ class Projector:
 
         Args:
             model (bambi.models.Model): The reference GLM model to project
-            posterior (arviz.InferenceData): The posterior arViz object of the
+            posterior (arviz.InferenceData): The posterior ArviZ object of the
                 fitting Bambi model
         """
 
