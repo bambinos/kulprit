@@ -33,7 +33,7 @@ class ModelData:
         has_intercept (bool): Flag whether intercept included in model
         dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
             between this model and the reference model
-        posterior (arviz.InferenceData): Posterior draws from the model
+        inferencedata (arviz.InferenceData): InferenceData object of the model
         predictions (arviz.InferenceData): In-sample model predictions
         elpd (arviz.ELPDData): Model ELPD LOO estimates
         sort_index (int): Sorting index attribute used in forward search method
@@ -51,7 +51,7 @@ class ModelData:
     s: int
     has_intercept: bool
     dist_to_ref_model: torch.tensor
-    posterior: arviz.InferenceData = None
+    inferencedata: arviz.InferenceData = None
     predictions: arviz.InferenceData = None
     elpd: arviz.ELPDData = None
     sort_index: int = dataclasses.field(init=False)

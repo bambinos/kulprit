@@ -80,17 +80,17 @@ class Gaussian(Family):
         res_covs = ["Intercept"] + res_model.cov_names
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
-            ref_model.posterior.posterior.stack(samples=("chain", "draw"))[ref_covs]
+            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[ref_covs]
             .to_array()
             .values.T
         ).float()
         sigma_ast = torch.from_numpy(
-            ref_model.posterior.posterior.stack(samples=("chain", "draw"))[
+            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
                 ref_model.response_name + "_sigma"
             ].values.T
         ).float()
         theta_perp = torch.from_numpy(
-            res_model.posterior.posterior.stack(samples=("chain", "draw"))[res_covs]
+            res_model.inferencedata.posterior.stack(samples=("chain", "draw"))[res_covs]
             .to_array()
             .values.T
         ).float()

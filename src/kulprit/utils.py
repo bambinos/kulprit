@@ -19,7 +19,7 @@ def _build_restricted_model(full_model, cov_names=None):
     """
 
     if cov_names == full_model.cov_names or cov_names is None:
-        return dataclasses.replace(full_model, posterior=None, predictions=None)
+        return dataclasses.replace(full_model, inferencedata=None, predictions=None)
 
     keep_vars = [(cov in cov_names) for cov in full_model.cov_names]
     if full_model.has_intercept:
@@ -27,7 +27,12 @@ def _build_restricted_model(full_model, cov_names=None):
     X_res = full_model.X[:, keep_vars]
     n, m = X_res.shape
     res_model = dataclasses.replace(
-        full_model, X=X_res, m=m, cov_names=cov_names, posterior=None, predictions=None
+        full_model,
+        X=X_res,
+        m=m,
+        cov_names=cov_names,
+        inferencedata=None,
+        predictions=None,
     )
     return res_model
 

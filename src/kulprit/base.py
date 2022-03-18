@@ -15,27 +15,27 @@ from .utils import (
 
 
 class Projector:
-    def __init__(self, model, posterior=None):
+    def __init__(self, model, inferencedata=None):
         """Reference model builder for projection predictive model selection.
 
         This object initialises the reference model and handles the core
         projection and variable search methods of the model selection procedure.
 
         Args:
-            model (bambi.models.Model): The reference GLM model to project
-            posterior (arviz.InferenceData): The posterior ArviZ object of the
-                fitting Bambi model
+            model (bambi.models.Model): The referemce GLM model to project
+            inferencedata (arviz.InferenceData): The arViz InferenceData object
+                of the fitted reference model
         """
 
         # build posterior if unavailable
-        if posterior is None:
-            posterior = model.fit()
+        if inferencedata is None:
+            inferencedata = model.fit()
         # define key model attributes
         family = Family.create(model)
         link = model.family.link
         response_name = model.response.name
         predictions = model.predict(
-            idata=posterior, inplace=False, kind="pps"
+            idata=inferencedata, inplace=False, kind="pps"
         ).posterior_predictive[response_name]
         X = torch.from_numpy(model._design.common.design_matrix).float()
         y = torch.from_numpy(model._design.response.design_vector).float()
@@ -43,7 +43,7 @@ class Projector:
         cov_names = [cov for cov in model.term_names if cov in model.data.columns]
         response_name = model.response.name
         n, m = model._design.common.design_matrix.shape
-        s = posterior.posterior.dims["chain"] * posterior.posterior.dims["draw"]
+        s = inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
         has_intercept = model.intercept_term is not None
         if not has_intercept:
             raise NotImplementedError(
@@ -67,7 +67,7 @@ class Projector:
             s=s,
             has_intercept=has_intercept,
             dist_to_ref_model=dist_to_ref_model,
-            posterior=posterior,
+            inferencedata=inferencedata,
             predictions=predictions,
         )
 
@@ -119,13 +119,13 @@ class Projector:
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # build posterior with just the covariates
-            res_model.posterior = _build_posterior(theta_perp, self.ref_model)
+            res_model.inferencedata = _build_posterior(theta_perp, self.ref_model)
             # project dispersion parameters
             disp_perp = self.ref_model.family._project_disp_params(
                 self.ref_model, res_model
             )
         # build the complete restricted model posterior
-        res_model.posterior = _build_posterior(theta_perp, self.ref_model, disp_perp)
+        res_model.inferencedata = _build_posterior(theta_perp, self.ref_model, disp_perp)
 
         # todo: add Rhat convergence check for projected parameters
         # todo: compute and add ELPD to res_model object
