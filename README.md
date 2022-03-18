@@ -17,6 +17,8 @@ Kullback-Leibler projections for Bayesian model selection in Generalised Linear 
 
 🚧 **WIP** 🚧
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/notebooks/01-ym-prototype-workflow.ipynb)
+
 ```python
 import pandas as pd
 import numpy as np
@@ -39,14 +41,10 @@ model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 posterior = model.fit()
 # build reference model object
 proj = kpt.Projector(model, posterior)
-# perform forward search model selection
-model_search = proj.search(method="forward", max_terms=2)
-# visualise search path
-model_search.plot(stat="elpd")
 # project the reference model to some parameter subset and plot posterior
 cov_names = ["x1", "x2"]
 theta_perp = proj.project(cov_names=cov_names)
-az.plot_posterior(theta_perp)
+az.plot_posterior(theta_perp.posterior)
 plt.show()
 ```
 
@@ -60,17 +58,6 @@ $ pip install git+https://github.com/yannmclatchie/kulprit.git
 ## Development
 
 Read our development guide in [CONTRIBUTING.md](https://github.com/yannmclatchie/copenhagen/blob/master/CONTRIBUTING.md).
-
-### Next steps
-
-We are working on improving the package and workflow in the following ways:
-
-1. Projecting the dispersion parameters of distributions (if applicable)
-2. Adding a method to evaluate the ELPD of projected submodels
-3. Implementing a forward search method
-4. Checking the convergence of the projected parameter draws in terms of the rank-normalised R-hat of the projections
-5. More distribution families implemented (binomial, poisson, etc.)
-6. Some heuristic method to suggest the best submodel from a search procedure
 
 ---
 

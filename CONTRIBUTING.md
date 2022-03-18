@@ -81,5 +81,5 @@ $ pre-commit install -t pre-push
 Or if you want e.g. want to run all checks manually for all files:
 
 ```sh
-$ pre-commit run --all-files
+$ poetry run pre-commit run --all-files
 ```
