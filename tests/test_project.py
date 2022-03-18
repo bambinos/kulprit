@@ -19,7 +19,6 @@ data = pd.DataFrame(
 # define and fit model with MCMC
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 num_draws, num_chains = 100, 1
-num_draws * num_chains
 posterior = model.fit(draws=num_draws, chains=num_chains)
 # build reference model object
 proj = kpt.Projector(model, posterior)

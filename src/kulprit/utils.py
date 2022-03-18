@@ -70,8 +70,7 @@ def _build_posterior(theta_perp, model, disp_perp=None):
         "Intercept": theta_perp[:, 0],
     }
     cov_dict = {
-        f"{model.cov_names[i]}": theta_perp[:, i + 1]
-        for i in range(len(model.cov_names))
+        f"{model.cov_names[i]}": theta_perp[:, i] for i in range(len(model.cov_names))
     }
     data_dict.update(cov_dict)
     if disp_perp is not None:
