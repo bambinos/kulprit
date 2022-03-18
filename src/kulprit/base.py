@@ -42,8 +42,10 @@ class Projector:
         data = model.data
         cov_names = [cov for cov in model.term_names if cov in model.data.columns]
         response_name = model.response.name
-        n, m = model._design.common.design_matrix.shape
-        s = inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
+        num_obs, num_params = model._design.common.design_matrix.shape
+        num_draws = (
+            inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
+        )
         has_intercept = model.intercept_term is not None
         if not has_intercept:
             raise NotImplementedError(
@@ -62,9 +64,9 @@ class Projector:
             family=family,
             cov_names=cov_names,
             response_name=response_name,
-            n=n,
-            m=m,
-            s=s,
+            num_obs=num_obs,
+            num_params=num_params,
+            num_draws=num_draws,
             has_intercept=has_intercept,
             dist_to_ref_model=dist_to_ref_model,
             inferencedata=inferencedata,

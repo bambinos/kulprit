@@ -25,11 +25,11 @@ def _build_restricted_model(full_model, cov_names=None):
     if full_model.has_intercept:
         keep_vars = [True] + keep_vars
     X_res = full_model.X[:, keep_vars]
-    n, m = X_res.shape
+    num_obs, num_params = X_res.shape
     res_model = dataclasses.replace(
         full_model,
         X=X_res,
-        m=m,
+        num_params=num_params,
         cov_names=cov_names,
         inferencedata=None,
         predictions=None,

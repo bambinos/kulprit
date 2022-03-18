@@ -32,7 +32,7 @@ def test_posterior_is_none():
 def test_kl_opt_forward():
     solver = kpt.projection.optimise._KulOpt(proj.ref_model)
     y = solver.forward(proj.ref_model.X)
-    assert y.shape == (proj.ref_model.s, proj.ref_model.n)
+    assert y.shape == (proj.ref_model.num_draws, proj.ref_model.num_obs)
 
 
 def test_project_method():

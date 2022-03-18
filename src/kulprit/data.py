@@ -27,9 +27,9 @@ class ModelData:
         family (kulprit.families.Family): Model variate family object
         cov_names (list): List of model covariates in their order of appearance
         response_name (str): The name of the response given to the Bambi model
-        n (int): Number of data observations
-        m (int): Number of variables observed (including intercept)
-        s (int): Number of posterior draws in the model
+        num_obs (int): Number of data observations
+        num_params (int): Number of variables observed (including intercept)
+        num_draws (int): Number of posterior draws in the model
         has_intercept (bool): Flag whether intercept included in model
         dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
             between this model and the reference model
@@ -46,9 +46,9 @@ class ModelData:
     family: kulprit.families.family.Family
     cov_names: list
     response_name: str
-    n: int
-    m: int
-    s: int
+    num_obs: int
+    num_params: int
+    num_draws: int
     has_intercept: bool
     dist_to_ref_model: torch.tensor
     inferencedata: arviz.InferenceData = None

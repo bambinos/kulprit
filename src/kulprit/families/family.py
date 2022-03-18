@@ -70,7 +70,7 @@ class Gaussian(Family):
             f = X_ast @ theta_ast
             f_perp = X_perp @ theta_perp
             sigma_perp = torch.sqrt(
-                sigma_ast**2 + 1 / ref_model.n * (f - f_perp).T @ (f - f_perp)
+                sigma_ast**2 + 1 / ref_model.num_obs * (f - f_perp).T @ (f - f_perp)
             )
             return sigma_perp.numpy()
 
@@ -101,7 +101,7 @@ class Gaussian(Family):
             np.array(
                 [
                     _proj(theta_ast[i, :], theta_perp[i, :], sigma_ast[i])
-                    for i in range(ref_model.s)
+                    for i in range(ref_model.num_draws)
                 ]
             ).reshape(-1)
         ).float()

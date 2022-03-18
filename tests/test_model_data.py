@@ -35,7 +35,6 @@ def test_no_intercept_error():
     with pytest.raises(NotImplementedError):
         bad_model = bmb.Model("y ~ -1 + x1 + x2", data, family="gaussian")
         num_draws, num_chains = 100, 1
-        num_draws * num_chains
         bad_posterior = bad_model.fit(draws=num_draws, chains=num_chains)
         kpt.Projector(bad_model, bad_posterior)
 
@@ -43,13 +42,13 @@ def test_no_intercept_error():
 def test_copy_reference_model():
     cov_names = ["x1", "x2"]
     res_model = _build_restricted_model(proj.ref_model, cov_names)
-    assert res_model.X.shape == (proj.ref_model.n, len(cov_names) + 1)
+    assert res_model.X.shape == (proj.ref_model.num_obs, len(cov_names) + 1)
 
 
 def test_default_reference_model():
     res_model = _build_restricted_model(proj.ref_model)
     assert res_model.X.shape == (
-        proj.ref_model.n,
+        proj.ref_model.num_obs,
         len(proj.ref_model.cov_names) + 1,
     )
 
@@ -57,4 +56,4 @@ def test_default_reference_model():
 def test_build_restricted_model():
     cov_names = ["x1"]
     res_model = _build_restricted_model(proj.ref_model, cov_names)
-    assert res_model.X.shape == (proj.ref_model.n, len(cov_names) + 1)
+    assert res_model.X.shape == (proj.ref_model.num_obs, len(cov_names) + 1)

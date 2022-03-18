@@ -66,9 +66,9 @@ class _KulOpt(nn.Module):
 
     Attributes:
         inv_link (function): The inverse link function of the GLM
-        s (int): Number of MCMC posterior samples
-        n (int): Number of observations in the GLM
-        m (int): Number of parameters in the submodel
+        num_obs (int): Number of observations in the GLM
+        num_params (int): Number of parameters in the submodel
+        num_draws (int): Number of MCMC posterior samples
         lin (torch.nn module): The linear transformation module
     """
 
@@ -81,21 +81,22 @@ class _KulOpt(nn.Module):
 
         super().__init__()
         # assign data shapes and GLM inverse link function
-        self.s = res_model.s
-        self.n = res_model.n
-        self.m = res_model.m
+        self.num_obs = res_model.num_obs
+        self.num_params = res_model.num_params
+        self.num_draws = res_model.num_draws
         self.inv_link = res_model.link.linkinv
         # build linear component of GLM without intercept
-        self.lin = nn.Linear(self.m, self.s, bias=False)
+        self.lin = nn.Linear(self.num_params, self.num_draws, bias=False)
 
     def forward(self, X):
         """Forward method in learning loop.
 
         Args:
-            X (torch.tensor): Design matrix (including intercept) of shape (n, m)
+            X (torch.tensor): Design matrix (including intercept) of shape
+                (num_obs, num_params)
 
         Returns:
-            y (torch.tensor): Model outputs of shape (n, s)
+            y (torch.tensor): Model outputs of shape (num_obs, num_draws)
 
         Raises:
             AssertionError if unexpected input dimensions
