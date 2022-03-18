@@ -49,7 +49,7 @@ def _extract_insample_predictions(model):
 
 
 def _build_posterior(theta_perp, model, disp_perp=None):
-    """Convert some set of pytorch tensors into an arViz InferenceData object.
+    """Convert some set of pytorch tensors into an ArviZ InferenceData object.
 
     Args:
         theta_perp (torch.tensor): Restricted parameter posterior projections
