@@ -38,7 +38,7 @@ data = pd.DataFrame({
 })
 # define and fit model with MCMC
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-posterior = model.fit()
+idata = model.fit()
 # build reference model object
 proj = kpt.Projector(model, idata)
 # project the reference model to some parameter subset and plot posterior
