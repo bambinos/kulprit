@@ -40,7 +40,7 @@ data = pd.DataFrame({
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 posterior = model.fit()
 # build reference model object
-proj = kpt.Projector(model, posterior)
+proj = kpt.Projector(model, idata)
 # project the reference model to some parameter subset and plot posterior
 cov_names = ["x1", "x2"]
 theta_perp = proj.project(cov_names=cov_names)
