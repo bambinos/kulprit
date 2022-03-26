@@ -42,8 +42,7 @@ idata = model.fit()
 # build reference model object
 proj = kpt.Projector(model, idata)
 # project the reference model to some parameter subset and plot posterior
-cov_names = ["x1", "x2"]
-theta_perp = proj.project(cov_names=cov_names)
+theta_perp = proj.project(model_size=2)
 az.plot_posterior(theta_perp.posterior)
 plt.show()
 ```
