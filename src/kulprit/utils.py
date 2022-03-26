@@ -23,7 +23,6 @@ def _build_restricted_model(full_model, model_size=None):
         return dataclasses.replace(full_model, inferencedata=None, predictions=None)
 
     # get the variable names of the best model with `model_size` parameters
-    print(full_model.var_names, model_size, full_model.var_names[:model_size])
     var_names = full_model.var_names[:model_size]
     keep_vars = [(var in var_names) for var in full_model.var_names]
     X_res = full_model.X[:, keep_vars]
@@ -70,7 +69,6 @@ def _build_posterior(theta_perp, model, disp_perp=None):
         arviz.InferenceData: Restricted model posterior
     """
 
-    print(model.var_names, theta_perp.shape)
     var_dict = {
         f"{model.var_names[i]}": theta_perp[:, i] for i in range(len(model.var_names))
     }

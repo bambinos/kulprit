@@ -102,7 +102,7 @@ class Projector:
         elif model_size <= 0:
             raise UserWarning(
                 "`model_size` parameter must be positive, received value "
-                + "{model_size}."
+                + f"{model_size}."
             )
         elif model_size > self.ref_model.num_params:
             raise UserWarning(
@@ -132,7 +132,6 @@ class Projector:
 
         # extract projected parameters from the solver
         theta_perp = list(solver.parameters())[0].data
-        print(theta_perp.shape, X_perp.shape, res_model.var_names)
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # build posterior with just the covariates
