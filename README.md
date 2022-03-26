@@ -7,7 +7,7 @@ _(Pronounced: kuːl.prɪt)_
 [![PyPI - License](https://img.shields.io/pypi/l/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
 [![Backend - PyTorch](https://img.shields.io/badge/backend-PyTorch-red?style=flat-square)](https://pytorch.org/)
 
-[Getting Started](https://yannmclatchie.github.io/kulprit/examples) | [Documentation](https://yannmclatchie.github.io/kulprit) | [Contributing](https://github.com/yannmclatchie/kulprit/blob/main/CONTRIBUTING.md)
+[Getting Started](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/notebooks/01-ym-prototype-workflow.ipynb) | [Documentation](https://yannmclatchie.github.io/kulprit) | [Contributing](https://github.com/yannmclatchie/kulprit/blob/main/CONTRIBUTING.md)
 
 ---
 
