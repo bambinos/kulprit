@@ -57,6 +57,7 @@ class Gaussian(Family):
         """Analytic projection of the model dispersion parameters.
 
         Args:
+            ref_model (kulprit.ModelData): The reference model
             res_model (kulprit.ModelData): Restricted model on which to project
                 the reference dispersion parameters
 
@@ -75,12 +76,12 @@ class Gaussian(Family):
             return sigma_perp.numpy()
 
         # define covariate names
-        # todo: find a way of including `Intercept` in `cov_names` throughout
-        ref_covs = ["Intercept"] + ref_model.cov_names
-        res_covs = ["Intercept"] + res_model.cov_names
+        # todo: find a way of including `Intercept` in `var_names` throughout
+        ref_vars = ["Intercept"] + ref_model.var_names
+        res_vars = ["Intercept"] + res_model.var_names
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
-            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[ref_covs]
+            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[ref_vars]
             .to_array()
             .values.T
         ).float()
@@ -90,13 +91,13 @@ class Gaussian(Family):
             ].values.T
         ).float()
         theta_perp = torch.from_numpy(
-            res_model.inferencedata.posterior.stack(samples=("chain", "draw"))[res_covs]
+            res_model.inferencedata.posterior.stack(samples=("chain", "draw"))[res_vars]
             .to_array()
             .values.T
         ).float()
         X_ast = ref_model.X
         X_perp = res_model.X
-        # todo: vectorise the dispersion parameter projection method
+        # project the dispersion parameter
         _vec_proj = np.vectorize(
             _proj, signature="(n),(m),()->()", doc="Vectorised `_proj` method"
         )

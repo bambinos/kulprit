@@ -39,21 +39,15 @@ def test_no_intercept_error():
         kpt.Projector(bad_model, bad_posterior)
 
 
-def test_copy_reference_model():
-    cov_names = ["x1", "x2"]
-    res_model = _build_restricted_model(proj.ref_model, cov_names)
-    assert res_model.X.shape == (proj.ref_model.num_obs, len(cov_names) + 1)
-
-
 def test_default_reference_model():
     res_model = _build_restricted_model(proj.ref_model)
     assert res_model.X.shape == (
         proj.ref_model.num_obs,
-        len(proj.ref_model.cov_names) + 1,
+        len(proj.ref_model.var_names),
     )
 
 
 def test_build_restricted_model():
-    cov_names = ["x1"]
-    res_model = _build_restricted_model(proj.ref_model, cov_names)
-    assert res_model.X.shape == (proj.ref_model.num_obs, len(cov_names) + 1)
+    model_size = 2
+    res_model = _build_restricted_model(proj.ref_model, model_size)
+    assert res_model.X.shape == (proj.ref_model.num_obs, model_size)

@@ -36,8 +36,7 @@ def test_kl_opt_forward():
 
 def test_project_method():
     # project the reference model to some parameter subset
-    cov_names = ["x1", "x2"]
-    proj.project(cov_names=cov_names)
+    proj.project(model_size=2)
     # to do: add shape test
 
 
@@ -45,6 +44,18 @@ def test_default_projection_set():
     # project the reference model to the default parameter subset
     proj.project()
     # to do: add shape test
+
+
+def test_null_model_size_project():
+    with pytest.raises(UserWarning):
+        # project the reference model to the null parameter subset
+        proj.project(model_size=0)
+
+
+def test_too_large_model_size_project():
+    with pytest.raises(UserWarning):
+        # project the reference model to the null parameter subset
+        proj.project(model_size=proj.ref_model.num_params + 1)
 
 
 def test_elpd():

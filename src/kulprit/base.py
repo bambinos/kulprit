@@ -40,18 +40,18 @@ class Projector:
         X = torch.from_numpy(model._design.common.design_matrix).float()
         y = torch.from_numpy(model._design.response.design_vector).float()
         data = model.data
-        cov_names = [cov for cov in model.term_names if cov in model.data.columns]
-        response_name = model.response.name
-        num_obs, num_params = model._design.common.design_matrix.shape
-        num_draws = (
-            inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
-        )
         has_intercept = model.intercept_term is not None
         if not has_intercept:
             raise NotImplementedError(
                 "The procedure currently only supports reference models with "
                 + "an intercept term."
             )
+        var_names = list(model.term_names)
+        response_name = model.response.name
+        num_obs, num_params = model._design.common.design_matrix.shape
+        num_draws = (
+            inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
+        )
         dist_to_ref_model = torch.tensor(0.0)
         # to do: compute ELPD of model and add to ModelData class
 
@@ -62,7 +62,7 @@ class Projector:
             data=data,
             link=link,
             family=family,
-            cov_names=cov_names,
+            var_names=var_names,
             response_name=response_name,
             num_obs=num_obs,
             num_params=num_params,
@@ -75,7 +75,7 @@ class Projector:
 
     def project(
         self,
-        cov_names=None,
+        model_size=None,
         num_iters=200,
         learning_rate=0.01,
     ):
@@ -87,8 +87,8 @@ class Projector:
         neural network architecture for efficiency.
 
         Args:
-            cov_names (list): The names parameters to use in the restricted
-                model
+            model_size (int): The number parameters to use in the restricted
+                model, including the intercept term
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
 
@@ -96,8 +96,22 @@ class Projector:
             torch.tensor: Restricted projection of the reference parameters
         """
 
+        # test `model_size` input
+        if model_size is None:
+            model_size = self.ref_model.num_params
+        elif model_size <= 0:
+            raise UserWarning(
+                "`model_size` parameter must be positive, received value "
+                + "{model_size}."
+            )
+        elif model_size > self.ref_model.num_params:
+            raise UserWarning(
+                "`model_size` parameter cannot be greater than the size of the"
+                + f" reference model ({self.ref_model.num_params}), received"
+                + f" value {model_size}."
+            )
         # build restricted model object
-        res_model = _build_restricted_model(self.ref_model, cov_names)
+        res_model = _build_restricted_model(self.ref_model, model_size)
         # extract restricted design matrix
         X_perp = res_model.X
         # extract reference model posterior predictions
@@ -118,16 +132,17 @@ class Projector:
 
         # extract projected parameters from the solver
         theta_perp = list(solver.parameters())[0].data
+        print(theta_perp.shape, X_perp.shape, res_model.var_names)
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # build posterior with just the covariates
-            res_model.inferencedata = _build_posterior(theta_perp, self.ref_model)
+            res_model.inferencedata = _build_posterior(theta_perp, res_model)
             # project dispersion parameters
             disp_perp = self.ref_model.family._project_disp_params(
                 self.ref_model, res_model
             )
         # build the complete restricted model posterior
-        res_model.inferencedata = _build_posterior(theta_perp, self.ref_model, disp_perp)
+        res_model.inferencedata = _build_posterior(theta_perp, res_model, disp_perp)
 
         # todo: add Rhat convergence check for projected parameters
         # todo: compute and add ELPD to res_model object

@@ -46,9 +46,6 @@ class _DivLoss(nn.Module):
 
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
-
-        Raises:
-            AssertionError if unexpected input dimensions
         """
 
         divs = self.family.kl_div(y_ast, y_perp)
@@ -97,9 +94,6 @@ class _KulOpt(nn.Module):
 
         Returns:
             y (torch.tensor): Model outputs of shape (num_obs, num_draws)
-
-        Raises:
-            AssertionError if unexpected input dimensions
         """
 
         # perform forward prediction step

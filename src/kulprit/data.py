@@ -25,7 +25,7 @@ class ModelData:
         data (pandas.DataFrame): The dataframe used in the model
         link (bambi.families.Link): GLM link function object
         family (kulprit.families.Family): Model variate family object
-        cov_names (list): List of model covariates in their order of appearance
+        var_names (list): List of model covariates in their order of appearance
         response_name (str): The name of the response given to the Bambi model
         num_obs (int): Number of data observations
         num_params (int): Number of variables observed (including intercept)
@@ -44,7 +44,7 @@ class ModelData:
     data: pandas.DataFrame
     link: bambi.families.Link
     family: kulprit.families.family.Family
-    cov_names: list
+    var_names: list
     response_name: str
     num_obs: int
     num_params: int
