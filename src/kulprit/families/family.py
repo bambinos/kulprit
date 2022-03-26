@@ -14,6 +14,25 @@ class Family(abc.ABC):
     def __init__(self):
         super().__init__()
 
+        # set default `has_disp_params` value, as well as test attribute
+        self.__has_disp_params = None
+        self.__has_disp_params_is_set = False
+
+    @property
+    def has_disp_params(self):  # pragma: no cover
+        if not self.__has_disp_params_is_set:
+            # ensure that family classes have a value set for `has_disp_params`
+            raise NotImplementedError(
+                "Family classes must set `has_disp_params` attribute"
+            )
+        else:
+            return self.__has_disp_params
+
+    @has_disp_params.setter
+    def has_disp_params(self, value):  # pragma: no cover
+        self.__has_disp_params = value
+        self.__has_disp_params_is_set = True
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls.subclasses[cls._FAMILY_NAME] = cls

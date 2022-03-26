@@ -88,7 +88,9 @@ class Projector:
 
         Args:
             model_size (int): The number parameters to use in the restricted
-                model, including the intercept term
+                model, including the intercept term, must be greater than zero
+                and less than or equal to the number of parameters in the
+                reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
 
