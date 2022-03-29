@@ -1,3 +1,3 @@
 """Top-level package module."""
 
-from .projection import Projector
+from .base import Projector

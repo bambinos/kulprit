@@ -7,11 +7,12 @@ import torch
 import arviz
 
 import bambi
+import kulprit
 
 from .families import Family
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(order=True)
 class ModelData:
     """Data class for handling model data.
 
@@ -24,24 +25,36 @@ class ModelData:
         data (pandas.DataFrame): The dataframe used in the model
         link (bambi.families.Link): GLM link function object
         family (kulprit.families.Family): Model variate family object
-        cov_names (list): List of model covariates in their order of appearance
-        n (int): Number of data observations
-        m (int): Number of variables observed (including intercept)
-        s (int): Number of posterior draws in the model
+        var_names (list): List of model covariates in their order of appearance
+        response_name (str): The name of the response given to the Bambi model
+        num_obs (int): Number of data observations
+        num_params (int): Number of variables observed (including intercept)
+        num_draws (int): Number of posterior draws in the model
         has_intercept (bool): Flag whether intercept included in model
-        posterior (arviz.InferenceData): Posterior draws from the model
+        dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
+            between this model and the reference model
+        inferencedata (arviz.InferenceData): InferenceData object of the model
         predictions (arviz.InferenceData): In-sample model predictions
+        elpd (arviz.ELPDData): Model ELPD LOO estimates
+        sort_index (int): Sorting index attribute used in forward search method
     """
 
     X: torch.tensor
     y: torch.tensor
     data: pandas.DataFrame
     link: bambi.families.Link
-    family: Family
-    cov_names: list
-    n: int
-    m: int
-    s: int
+    family: kulprit.families.family.Family
+    var_names: list
+    response_name: str
+    num_obs: int
+    num_params: int
+    num_draws: int
     has_intercept: bool
-    posterior: arviz.InferenceData = None
+    dist_to_ref_model: torch.tensor
+    inferencedata: arviz.InferenceData = None
     predictions: arviz.InferenceData = None
+    elpd: arviz.ELPDData = None
+    sort_index: int = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        self.sort_index = self.dist_to_ref_model
