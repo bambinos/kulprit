@@ -132,8 +132,9 @@ class Projector:
             loss.backward()
             opt.step()
 
-        # extract projected parameters from the solver
+        # extract projected parameters and final KL divergence from the solver
         theta_perp = list(solver.parameters())[0].data
+        res_model.dist_to_ref_model = loss
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # build posterior with just the covariates
