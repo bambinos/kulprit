@@ -97,9 +97,6 @@ class Gaussian(Family):
         # define the term names of both models
         ref_common_terms = ref_model.term_names
         res_common_terms = res_model.term_names
-        print(
-            ref_common_terms, res_common_terms, res_model.num_terms, res_model.model_size
-        )
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
             ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
