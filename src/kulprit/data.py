@@ -6,6 +6,7 @@ import pandas
 import torch
 import arviz
 
+import formulae
 import bambi
 import kulprit
 
@@ -17,19 +18,29 @@ class ModelData:
     """Data class for handling model data.
 
     This class serves as the primary data container passed throughout the
-    procedure, allowing for more simple and legible code.
+    procedure, allowing for more simple and legible code. Note that this class
+    supports ordering, and we choose distance to reference model as our sorting
+    index. Naturally, this value is set to zero for the reference model,
+    providing a hard minimum value.
 
     Attributes:
         X (torch.tensor): Model design matrix
         y (torch.tensor): Model variate observations
-        data (pandas.DataFrame): The dataframe used in the model
+        design (formulae.matrices.DesignMatrices): The formulae design matrix
+            object underpinning the GLM
         link (bambi.families.Link): GLM link function object
         family (kulprit.families.Family): Model variate family object
-        var_names (list): List of model covariates in their order of appearance
+        term_names (list): List of model covariates in their order of appearance
+            **not** including the `Intercept` term
+        common_terms (list): List of all terms in the model in order of
+            appearance (includes the `Intercept` term)
         response_name (str): The name of the response given to the Bambi model
         num_obs (int): Number of data observations
-        num_params (int): Number of variables observed (including intercept)
+        num_terms (int): Number of variables observed, and equivalently the
+            number of common terms in the model (including intercept)
         num_draws (int): Number of posterior draws in the model
+        model_size (int): Number of common terms in the model (terms not
+            including the intercept)
         has_intercept (bool): Flag whether intercept included in model
         dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
             between this model and the reference model
@@ -41,14 +52,16 @@ class ModelData:
 
     X: torch.tensor
     y: torch.tensor
-    data: pandas.DataFrame
+    design: formulae.matrices.DesignMatrices
     link: bambi.families.Link
-    family: kulprit.families.family.Family
-    var_names: list
+    family: kulprit.families.Family
+    term_names: list
+    common_terms: list
     response_name: str
     num_obs: int
-    num_params: int
+    num_terms: int
     num_draws: int
+    model_size: int
     has_intercept: bool
     dist_to_ref_model: torch.tensor
     inferencedata: arviz.InferenceData = None

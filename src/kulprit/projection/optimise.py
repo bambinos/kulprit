@@ -41,8 +41,10 @@ class _DivLoss(nn.Module):
         ``Family`` class.
 
         Args:
-            mu_ast (torch.tensor): Tensor of learned reference model parameters
-            mu_perp (torch.tensor): Tensor of submodel parameters to learn
+            y_ast (torch.tensor): Tensor of the reference model posterior MCMC
+                draws
+            y_perp (torch.tensor): Tensor of the restricted model posterior MCMC
+                draws
 
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
@@ -64,7 +66,7 @@ class _KulOpt(nn.Module):
     Attributes:
         inv_link (function): The inverse link function of the GLM
         num_obs (int): Number of observations in the GLM
-        num_params (int): Number of parameters in the submodel
+        num_terms (int): Number of parameters in the submodel
         num_draws (int): Number of MCMC posterior samples
         lin (torch.nn module): The linear transformation module
     """
@@ -79,18 +81,18 @@ class _KulOpt(nn.Module):
         super().__init__()
         # assign data shapes and GLM inverse link function
         self.num_obs = res_model.num_obs
-        self.num_params = res_model.num_params
+        self.num_terms = res_model.num_terms
         self.num_draws = res_model.num_draws
         self.inv_link = res_model.link.linkinv
         # build linear component of GLM without intercept
-        self.lin = nn.Linear(self.num_params, self.num_draws, bias=False)
+        self.lin = nn.Linear(self.num_terms, self.num_draws, bias=False)
 
     def forward(self, X):
         """Forward method in learning loop.
 
         Args:
             X (torch.tensor): Design matrix (including intercept) of shape
-                (num_obs, num_params)
+                (num_obs, num_terms)
 
         Returns:
             y (torch.tensor): Model outputs of shape (num_obs, num_draws)

@@ -7,6 +7,8 @@ from .projection import _DivLoss, _KulOpt
 from .data import ModelData
 from .families import Family
 from .utils import (
+    spacify,
+    multilinify,
     _build_restricted_model,
     _extract_insample_predictions,
     _build_posterior,
@@ -30,28 +32,34 @@ class Projector:
         # build posterior if unavailable
         if inferencedata is None:
             inferencedata = model.fit()
-        # define key model attributes
+        # instantiate family object from model
         family = Family.create(model)
+        # define the link function object for the reference model
         link = model.family.link
+        # extract covariate and variate names
+        term_names = list(model.term_names)
+        common_terms = list(model.common_terms.keys())
         response_name = model.response.name
+        # extract data from the fitted bambi model
         predictions = model.predict(
             idata=inferencedata, inplace=False, kind="pps"
         ).posterior_predictive[response_name]
         X = torch.from_numpy(model._design.common.design_matrix).float()
         y = torch.from_numpy(model._design.response.design_vector).float()
-        data = model.data
+        design = model._design
         has_intercept = model.intercept_term is not None
         if not has_intercept:
             raise NotImplementedError(
                 "The procedure currently only supports reference models with "
                 + "an intercept term."
             )
-        var_names = list(model.term_names)
-        response_name = model.response.name
-        num_obs, num_params = model._design.common.design_matrix.shape
+        # extract some key dimensions needed for optimisation
+        num_obs, num_terms = model._design.common.design_matrix.shape
+        model_size = len(common_terms)  # note that model size ignores intercept
         num_draws = (
             inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
-        )
+        )  # to do: test this for edge cases
+        # set the reference model's distance to itself as zero
         dist_to_ref_model = torch.tensor(0.0)
         # to do: compute ELPD of model and add to ModelData class
 
@@ -59,19 +67,36 @@ class Projector:
         self.ref_model = ModelData(
             X=X,
             y=y,
-            data=data,
+            design=design,
             link=link,
             family=family,
-            var_names=var_names,
+            term_names=term_names,
+            common_terms=common_terms,
             response_name=response_name,
             num_obs=num_obs,
-            num_params=num_params,
+            num_terms=num_terms,
             num_draws=num_draws,
+            model_size=model_size,
             has_intercept=has_intercept,
             dist_to_ref_model=dist_to_ref_model,
             inferencedata=inferencedata,
             predictions=predictions,
         )
+
+    def __repr__(self):  # pragma: no cover
+        return self.__str__()
+
+    def __str__(self):  # pragma: no cover
+        msg = (
+            f"Projector with reference model of {self.ref_model.num_terms} terms.\n"
+            f"Terms:{spacify(multilinify(self.ref_model.term_names, ''))}\n\n"
+        )
+        return msg
+
+    def __getitem__(self, model_size):  # pragma: no cover
+        """Extract the submodel with given `model_size`."""
+
+        raise NotImplementedError
 
     def project(
         self,
@@ -83,14 +108,18 @@ class Projector:
 
         The projection is defined as the values of the submodel parameters
         minimising the Kullback-Leibler divergence between the submodel
-        and the reference model. This is perform numerically using a PyTorch
-        neural network architecture for efficiency.
+        and the reference model. This is perform numerically using PyTorch and
+        Adam for the optimisation.
+
+        Example:
+            When ``num_vars = 0``, the reference model is projected onto the
+            model with only the intercept term and no covariates.
 
         Args:
-            model_size (int): The number parameters to use in the restricted
-                model, including the intercept term, must be greater than zero
-                and less than or equal to the number of parameters in the
-                reference model
+            num_vars (int): The number parameters to use in the restricted
+                model, **not** including the intercept term, must be greater
+                than or equal to zero and less than or equal to the number of
+                parameters in the reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
 
@@ -100,16 +129,16 @@ class Projector:
 
         # test `model_size` input
         if model_size is None:
-            model_size = self.ref_model.num_params
-        elif model_size <= 0:
+            model_size = self.ref_model.model_size
+        elif model_size < 0:
             raise UserWarning(
-                "`model_size` parameter must be positive, received value "
+                "`model_size` parameter must be non-negative, received value "
                 + f"{model_size}."
             )
-        elif model_size > self.ref_model.num_params:
+        elif model_size > self.ref_model.model_size:
             raise UserWarning(
                 "`model_size` parameter cannot be greater than the size of the"
-                + f" reference model ({self.ref_model.num_params}), received"
+                + f" reference model ({self.ref_model.model_size}), received"
                 + f" value {model_size}."
             )
         # build restricted model object
