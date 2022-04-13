@@ -56,7 +56,7 @@ $ pip install git+https://github.com/yannmclatchie/kulprit.git
 
 ## Development
 
-Read our development guide in [CONTRIBUTING.md](https://github.com/yannmclatchie/copenhagen/blob/master/CONTRIBUTING.md).
+Read our development guide in [CONTRIBUTING.md](https://github.com/yannmclatchie/kulprit/blob/master/CONTRIBUTING.md).
 
 ---
 
