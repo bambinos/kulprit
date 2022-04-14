@@ -10,7 +10,7 @@ import formulae
 import bambi
 import kulprit
 
-from .families import Family
+from ..families import Family
 
 
 @dataclasses.dataclass(order=True)

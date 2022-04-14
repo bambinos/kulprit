@@ -3,17 +3,12 @@
 import arviz as az
 import torch
 
-from .projection import _DivLoss, _KulOpt
 from .data import ModelData
+from .data.building import _build_restricted_model, _build_idata
 from .families import Family
-from .utils import (
-    spacify,
-    multilinify,
-    _build_restricted_model,
-    _extract_insample_predictions,
-    _build_posterior,
-    _compute_elpd,
-)
+from .formatting import spacify, multilinify
+from .projection import _DivLoss, _KulOpt
+from .utils import _extract_insample_predictions, _compute_elpd
 
 
 class Projector:
@@ -167,13 +162,13 @@ class Projector:
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # build posterior with just the covariates
-            res_model.inferencedata = _build_posterior(theta_perp, res_model)
+            res_model.inferencedata = _build_idata(theta_perp, res_model)
             # project dispersion parameters
             disp_perp = self.ref_model.family._project_disp_params(
                 self.ref_model, res_model
             )
         # build the complete restricted model posterior
-        res_model.inferencedata = _build_posterior(theta_perp, res_model, disp_perp)
+        res_model.inferencedata = _build_idata(theta_perp, res_model, disp_perp)
 
         # todo: add Rhat convergence check for projected parameters
         # todo: compute and add ELPD to res_model object

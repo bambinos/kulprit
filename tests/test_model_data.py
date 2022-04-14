@@ -3,7 +3,7 @@ import numpy as np
 
 import bambi as bmb
 import kulprit as kpt
-from kulprit.utils import _build_restricted_model
+from kulprit.data.building import _build_restricted_model
 
 import pytest
 
