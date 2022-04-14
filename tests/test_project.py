@@ -25,7 +25,9 @@ proj = kpt.Projector(model, posterior)
 
 
 def test_posterior_is_none():
-    kpt.Projector(model)
+    # test that some inference data has been automatically produced
+    proj = kpt.Projector(model)
+    assert proj.ref_model.num_draws is not None
 
 
 def test_kl_opt_forward():
@@ -36,26 +38,38 @@ def test_kl_opt_forward():
 
 def test_project_method():
     # project the reference model to some parameter subset
-    proj.project(model_size=2)
-    # to do: add shape test
+    res_model = proj.project(model_size=2)
+    assert res_model.X.shape == (proj.ref_model.num_obs, 3)
+    assert res_model.num_terms == 3
+    assert res_model.model_size == 2
 
 
 def test_default_projection_set():
     # project the reference model to the default parameter subset
-    proj.project()
-    # to do: add shape test
+    res_model = proj.project()
+    assert res_model.X.shape == proj.ref_model.X.shape
+    assert res_model.num_terms == proj.ref_model.num_terms
+    assert res_model.model_size == proj.ref_model.model_size
 
 
-def test_null_model_size_project():
+def test_zero_model_size_project():
+    # project the reference model to zero term subset
+    res_model = proj.project(model_size=0)
+    assert res_model.X.shape == (proj.ref_model.num_obs, 1)
+    assert res_model.num_terms == 1
+    assert res_model.model_size == 0
+
+
+def test_negative_model_size_project():
     with pytest.raises(UserWarning):
         # project the reference model to the null parameter subset
-        proj.project(model_size=0)
+        proj.project(model_size=-1)
 
 
 def test_too_large_model_size_project():
     with pytest.raises(UserWarning):
         # project the reference model to the null parameter subset
-        proj.project(model_size=proj.ref_model.num_params + 1)
+        proj.project(model_size=proj.ref_model.num_terms + 1)
 
 
 def test_elpd():

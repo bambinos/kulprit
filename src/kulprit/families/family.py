@@ -94,13 +94,14 @@ class Gaussian(Family):
             )
             return sigma_perp.numpy()
 
-        # define covariate names
-        # todo: find a way of including `Intercept` in `var_names` throughout
-        ref_vars = ["Intercept"] + ref_model.var_names
-        res_vars = ["Intercept"] + res_model.var_names
+        # define the term names of both models
+        ref_common_terms = ref_model.term_names
+        res_common_terms = res_model.term_names
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
-            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[ref_vars]
+            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
+                ref_common_terms
+            ]
             .to_array()
             .values.T
         ).float()
@@ -110,7 +111,9 @@ class Gaussian(Family):
             ].values.T
         ).float()
         theta_perp = torch.from_numpy(
-            res_model.inferencedata.posterior.stack(samples=("chain", "draw"))[res_vars]
+            res_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
+                res_common_terms
+            ]
             .to_array()
             .values.T
         ).float()

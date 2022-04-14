@@ -43,11 +43,22 @@ def test_default_reference_model():
     res_model = _build_restricted_model(proj.ref_model)
     assert res_model.X.shape == (
         proj.ref_model.num_obs,
-        len(proj.ref_model.var_names),
+        proj.ref_model.num_terms,
     )
 
 
 def test_build_restricted_model():
     model_size = 2
     res_model = _build_restricted_model(proj.ref_model, model_size)
-    assert res_model.X.shape == (proj.ref_model.num_obs, model_size)
+    assert res_model.X.shape == (proj.ref_model.num_obs, model_size + 1)
+    assert res_model.model_size == model_size
+
+
+def test_build_negative_size_restricted_model():
+    with pytest.raises(UserWarning):
+        _build_restricted_model(proj.ref_model, model_size=-1)
+
+
+def test_build_too_large_restricted_model():
+    with pytest.raises(UserWarning):
+        _build_restricted_model(proj.ref_model, model_size=100)
