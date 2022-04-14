@@ -3,9 +3,11 @@
 import dataclasses
 
 import pandas
-import torch
-import arviz
 
+import torch
+
+import arviz
+import pymc3
 import formulae
 import bambi
 import kulprit
@@ -26,6 +28,7 @@ class ModelData:
     Attributes:
         X (torch.tensor): Model design matrix
         y (torch.tensor): Model variate observations
+        backend (pymc3.Model): The PyMC3 model backend
         design (formulae.matrices.DesignMatrices): The formulae design matrix
             object underpinning the GLM
         link (bambi.families.Link): GLM link function object
@@ -52,6 +55,7 @@ class ModelData:
 
     X: torch.tensor
     y: torch.tensor
+    backend: pymc3.Model
     design: formulae.matrices.DesignMatrices
     link: bambi.families.Link
     family: kulprit.families.Family
