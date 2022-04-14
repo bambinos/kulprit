@@ -78,9 +78,7 @@ def _build_idata(theta_perp, model, disp_perp=None):
         arviz.InferenceData: Restricted model posterior
     """
 
-    var_dict = {
-        f"{model.term_names[i]}": theta_perp[:, i] for i in range(len(model.term_names))
-    }
+    var_dict = {f"{term}": theta_perp[:, i] for i, term in enumerate(model.term_names)}
     if disp_perp is not None:
         disp_dict = {f"{model.response_name}_sigma": disp_perp}
         var_dict.update(disp_dict)
