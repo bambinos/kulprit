@@ -70,8 +70,3 @@ def test_too_large_model_size_project():
     with pytest.raises(UserWarning):
         # project the reference model to the null parameter subset
         proj.project(model_size=proj.ref_model.num_terms + 1)
-
-
-def test_elpd():
-    with pytest.raises(NotImplementedError):
-        kpt.utils._compute_elpd(proj.ref_model)

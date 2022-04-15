@@ -45,16 +45,3 @@ def _extract_insample_predictions(model):
         model.predictions.stack(samples=("chain", "draw")).values.T
     ).float()
     return y_pred
-
-
-def _compute_elpd(model):
-    """Compute the ELPD LOO estimates from a fitted model.
-
-    Args:
-        model (kulprit.ModelData): The model to diagnose
-
-    Returns:
-        arviz.ELPDData: The ELPD LOO estimates
-    """
-
-    return az.loo(model.inferencedata)

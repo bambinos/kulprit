@@ -11,7 +11,7 @@ from .data.utils import _posterior_to_points
 from .families import Family
 from .formatting import spacify, multilinify
 from .projection import _DivLoss, _KulOpt
-from .utils import _extract_insample_predictions, _compute_elpd, _compute_log_likelihood
+from .utils import _extract_insample_predictions, _compute_log_likelihood
 
 
 class Projector:
