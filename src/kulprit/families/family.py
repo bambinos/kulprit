@@ -99,21 +99,17 @@ class Gaussian(Family):
         res_common_terms = res_model.term_names
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
-            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
-                ref_common_terms
-            ]
+            ref_model.idata.posterior.stack(samples=("chain", "draw"))[ref_common_terms]
             .to_array()
             .values.T
         ).float()
         sigma_ast = torch.from_numpy(
-            ref_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
+            ref_model.idata.posterior.stack(samples=("chain", "draw"))[
                 ref_model.response_name + "_sigma"
             ].values.T
         ).float()
         theta_perp = torch.from_numpy(
-            res_model.inferencedata.posterior.stack(samples=("chain", "draw"))[
-                res_common_terms
-            ]
+            res_model.idata.posterior.stack(samples=("chain", "draw"))[res_common_terms]
             .to_array()
             .values.T
         ).float()

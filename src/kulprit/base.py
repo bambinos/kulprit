@@ -15,7 +15,7 @@ from .utils import _extract_insample_predictions, _compute_log_likelihood
 
 
 class Projector:
-    def __init__(self, model, inferencedata=None):
+    def __init__(self, model, idata=None):
         """Reference model builder for projection predictive model selection.
 
         This object initialises the reference model and handles the core
@@ -23,13 +23,13 @@ class Projector:
 
         Args:
             model (bambi.models.Model): The referemce GLM model to project
-            inferencedata (arviz.InferenceData): The arViz InferenceData object
+            idata (arviz.InferenceData): The arViz InferenceData object
                 of the fitted reference model
         """
 
         # build posterior if unavailable
-        if inferencedata is None:
-            inferencedata = model.fit()
+        if idata is None:
+            idata = model.fit()
         # log the underlying backend model
         backend = model.backend
         # instantiate family object from model
@@ -42,7 +42,7 @@ class Projector:
         response_name = model.response.name
         # extract data from the fitted bambi model
         predictions = model.predict(
-            idata=inferencedata, inplace=False, kind="pps"
+            idata=idata, inplace=False, kind="pps"
         ).posterior_predictive[response_name]
         X = torch.from_numpy(model._design.common.design_matrix).float()
         y = torch.from_numpy(model._design.response.design_vector).float()
@@ -57,11 +57,11 @@ class Projector:
         num_obs, num_terms = model._design.common.design_matrix.shape
         model_size = len(common_terms)  # note that model size ignores intercept
         num_draws = (
-            inferencedata.posterior.dims["chain"] * inferencedata.posterior.dims["draw"]
+            idata.posterior.dims["chain"] * idata.posterior.dims["draw"]
         )  # to do: test this for edge cases
         # set the reference model's distance to itself as zero and compute ELPD
         dist_to_ref_model = torch.tensor(0.0)
-        elpd = az.loo(inferencedata)
+        elpd = az.loo(idata)
 
         # build full model object
         self.ref_model = ModelData(
@@ -81,7 +81,7 @@ class Projector:
             has_intercept=has_intercept,
             dist_to_ref_model=dist_to_ref_model,
             elpd=elpd,
-            inferencedata=inferencedata,
+            idata=idata,
             predictions=predictions,
         )
 
@@ -112,9 +112,7 @@ class Projector:
 
         if model_size == self.ref_model.model_size or model_size is None:
             # if `model_size` is same as the reference model, simply copy the ref_model
-            return dataclasses.replace(
-                self.ref_model, inferencedata=None, predictions=None
-            )
+            return dataclasses.replace(self.ref_model, idata=None, predictions=None)
 
         # test model_size in case of misuse
         if model_size < 0 or model_size > self.ref_model.model_size:
@@ -151,7 +149,7 @@ class Projector:
             model_size=model_size,
             term_names=restricted_term_names,
             common_terms=restricted_common_terms,
-            inferencedata=None,
+            idata=None,
             predictions=None,
         )
         # ensure correct dimensions
@@ -159,7 +157,7 @@ class Projector:
         return res_model
 
     def _build_idata(self, theta_perp, model, disp_perp=None):
-        """Convert some set of pytorch tensors into an ArviZ InferenceData object.
+        """Convert some set of pytorch tensors into an ArviZ idata object.
 
         Args:
             theta_perp (torch.tensor): Restricted parameter posterior projections,
@@ -170,7 +168,7 @@ class Projector:
                 posterior projections
 
         Returns:
-            arviz.InferenceData: Restricted model posterior
+            arviz.inferencedata: Restricted model idata object
         """
 
         # build posterior dictionary from projected parameters
@@ -189,6 +187,7 @@ class Projector:
         # compute log-likelihood of projected model from this posterior
         log_likelihood = _compute_log_likelihood(model.backend, points)
 
+        # build idata object for the projected model
         idata = az.data.from_dict(posterior=posterior, log_likelihood=log_likelihood)
         return idata
 
@@ -261,15 +260,15 @@ class Projector:
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # build posterior with just the covariates
-            res_model.inferencedata = self._build_idata(theta_perp, res_model)
+            res_model.idata = self._build_idata(theta_perp, res_model)
             # project dispersion parameters
             disp_perp = self.ref_model.family._project_disp_params(
                 self.ref_model, res_model
             )
         # build the complete restricted model posterior
-        res_model.inferencedata = self._build_idata(theta_perp, res_model, disp_perp)
+        res_model.idata = self._build_idata(theta_perp, res_model, disp_perp)
         # ELPD of restricted model
-        res_model.elpd = az.loo(res_model.inferencedata)
+        res_model.elpd = az.loo(res_model.idata)
         return res_model
 
     def search(self, method="forward", max_terms=None):

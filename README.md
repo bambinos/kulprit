@@ -43,7 +43,7 @@ idata = model.fit()
 proj = kpt.Projector(model, idata)
 # project the reference model to some parameter subset and plot posterior
 theta_perp = proj.project(model_size=2)
-az.plot_posterior(theta_perp.inferencedata)
+az.plot_posterior(theta_perp.idata)
 plt.show()
 ```
 

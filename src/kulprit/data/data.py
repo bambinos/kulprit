@@ -47,7 +47,7 @@ class ModelData:
         has_intercept (bool): Flag whether intercept included in model
         dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
             between this model and the reference model
-        inferencedata (arviz.InferenceData): InferenceData object of the model
+        idata (arviz.InferenceData): InferenceData object of the model
         predictions (arviz.InferenceData): In-sample model predictions
         elpd (arviz.ELPDData): Model ELPD LOO estimates
         sort_index (int): Sorting index attribute used in forward search method
@@ -68,10 +68,15 @@ class ModelData:
     model_size: int
     has_intercept: bool
     dist_to_ref_model: torch.tensor
-    inferencedata: arviz.InferenceData = None
+    idata: arviz.InferenceData = None
     predictions: arviz.InferenceData = None
     elpd: arviz.ELPDData = None
     sort_index: int = dataclasses.field(init=False)
 
     def __post_init__(self):
         self.sort_index = self.dist_to_ref_model
+
+    def __str__(self):  # pragma: no cover
+        """Returns a string containing the ELPD of the projected model."""
+
+        return f"Projected model with ELPD:\n{self.elpd}"
