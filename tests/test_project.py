@@ -78,7 +78,6 @@ def test_projected_idata_dims():
     idata_perp = res_model.idata
     chain_n = len(idata_perp.posterior.coords.get("chain"))
     draw_n = len(idata_perp.posterior.coords.get("draw"))
-
     # ensure the restricted idata object has the same dimensions as that of the
     # reference model
     assert chain_n == len(idata.posterior.coords.get("chain"))
