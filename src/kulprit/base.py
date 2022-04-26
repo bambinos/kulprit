@@ -156,14 +156,14 @@ class Projector:
         assert res_model.X.shape == (self.ref_model.num_obs, model_size + 1)
         return res_model
 
-    def _build_idata(self, theta_perp, model, disp_perp=None):
+    def _build_idata(self, model, theta_perp, disp_perp=None):
         """Convert some set of pytorch tensors into an ArviZ idata object.
 
         Args:
-            theta_perp (torch.tensor): Restricted parameter posterior projections,
-                including the intercept term
             model (kulprit.ModelData): The restricted ModelData object whose
                 posterior to build
+            theta_perp (torch.tensor): Restricted parameter posterior projections,
+                including the intercept term
             disp_perp (torch.tensor): Restricted model dispersions parameter
                 posterior projections
 
@@ -171,22 +171,42 @@ class Projector:
             arviz.inferencedata: Restricted model idata object
         """
 
+        # reshape `theta_perp` so it has the same shape as the reference model
+        chain_n = len(self.ref_model.idata.posterior.coords.get("chain"))
+        draw_n = len(self.ref_model.idata.posterior.coords.get("draw"))
+        num_terms = model.num_terms
+        num_obs = self.ref_model.num_obs
+        idata_dims = (chain_n, draw_n, num_terms)
+        theta_perp = torch.reshape(theta_perp, idata_dims)
+
         # build posterior dictionary from projected parameters
         posterior = {
-            f"{term}": theta_perp[:, i] for i, term in enumerate(model.term_names)
+            term: theta_perp[:, :, i] for i, term in enumerate(model.term_names)
         }
         if disp_perp is not None:
+            # reshape `disp_perp` if present
+            disp_perp_dims = (chain_n, draw_n, 1)
+            disp_perp = torch.reshape(disp_perp, disp_perp_dims)
+            # update the posterior draws dictionary with dispersion parameter
             disp_dict = {
                 f"{model.response_name}_sigma": disp_perp,
                 f"{model.response_name}_sigma_log__": torch.log(disp_perp),
             }
+
+            # TODO: find a way to automatically perform the inverse PyMC
+            # transformation for transformed dispersion parameters
+
             posterior.update(disp_dict)
 
         # build points data from the posterior dictionaries
         points = _posterior_to_points(posterior, self.ref_model)
         # compute log-likelihood of projected model from this posterior
         log_likelihood = _compute_log_likelihood(model.backend, points)
-
+        # reshape the log-likelihood values to be inline with reference model
+        log_likelihood.update(
+            (key, value.reshape(chain_n, draw_n, num_obs))
+            for key, value in log_likelihood.items()
+        )
         # build idata object for the projected model
         idata = az.data.from_dict(posterior=posterior, log_likelihood=log_likelihood)
         return idata
@@ -257,16 +277,15 @@ class Projector:
         # extract projected parameters and final KL divergence from the solver
         theta_perp = list(solver.parameters())[0].data
         res_model.dist_to_ref_model = loss.item()
+        disp_perp = None
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
-            # build posterior with just the covariates
-            res_model.idata = self._build_idata(theta_perp, res_model)
             # project dispersion parameters
             disp_perp = self.ref_model.family._project_disp_params(
-                self.ref_model, res_model
+                self.ref_model, theta_perp, X_perp
             )
         # build the complete restricted model posterior
-        res_model.idata = self._build_idata(theta_perp, res_model, disp_perp)
+        res_model.idata = self._build_idata(res_model, theta_perp, disp_perp)
         # ELPD of restricted model
         res_model.elpd = az.loo(res_model.idata)
         return res_model

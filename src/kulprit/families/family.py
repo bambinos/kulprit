@@ -72,13 +72,16 @@ class Gaussian(Family):
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
         return div
 
-    def _project_disp_params(self, ref_model, res_model):
+    def _project_disp_params(self, ref_model, theta_perp, X_perp):
         """Analytic projection of the model dispersion parameters.
 
         Args:
-            ref_model (kulprit.ModelData): The reference model
-            res_model (kulprit.ModelData): Restricted model on which to project
-                the reference dispersion parameters
+            ref_model (kulprit.ModelData): The reference model whose dispersion
+                parameters to project
+            theta_perp (torch.tensor): A PyTorch tensor of the restricted
+                parameter draws
+            X_perp (np.ndarray): The design matrix of the restricted model we
+                are projecting onto
 
         Returns:
             torch.tensor: The restricted projections of the dispersion parameters
@@ -92,11 +95,11 @@ class Gaussian(Family):
             sigma_perp = torch.sqrt(
                 sigma_ast**2 + 1 / ref_model.num_obs * (f - f_perp).T @ (f - f_perp)
             )
-            return sigma_perp.numpy()
+            sigma_perp = sigma_perp.numpy()
+            return sigma_perp
 
         # define the term names of both models
         ref_common_terms = ref_model.term_names
-        res_common_terms = res_model.term_names
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
             ref_model.idata.posterior.stack(samples=("chain", "draw"))[ref_common_terms]
@@ -108,13 +111,8 @@ class Gaussian(Family):
                 ref_model.response_name + "_sigma"
             ].values.T
         ).float()
-        theta_perp = torch.from_numpy(
-            res_model.idata.posterior.stack(samples=("chain", "draw"))[res_common_terms]
-            .to_array()
-            .values.T
-        ).float()
+        theta_perp = theta_perp
         X_ast = ref_model.X
-        X_perp = res_model.X
         # project the dispersion parameter
         _vec_proj = np.vectorize(
             _proj, signature="(n),(m),()->()", doc="Vectorised `_proj` method"
