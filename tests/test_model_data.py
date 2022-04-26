@@ -21,9 +21,9 @@ model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 # define MCMC parameters
 num_draws, num_chains = 100, 1
 # fit the two models
-posterior = model.fit(draws=num_draws, chains=num_chains)
+idata = model.fit(draws=num_draws, chains=num_chains)
 # build two reference models
-proj = kpt.Projector(model, posterior)
+proj = kpt.Projector(model, idata)
 
 
 def test_has_intercept():
@@ -34,8 +34,8 @@ def test_no_intercept_error():
     with pytest.raises(NotImplementedError):
         bad_model = bmb.Model("y ~ -1 + x1 + x2", data, family="gaussian")
         num_draws, num_chains = 100, 1
-        bad_posterior = bad_model.fit(draws=num_draws, chains=num_chains)
-        kpt.Projector(bad_model, bad_posterior)
+        bad_idata = bad_model.fit(draws=num_draws, chains=num_chains)
+        kpt.Projector(bad_model, bad_idata)
 
 
 def test_default_reference_model():

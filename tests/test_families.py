@@ -43,11 +43,31 @@ def test_gaussian_kl():
 
 
 def test_gaussian_disp_proj():
-    # todo: extract theta_ast and theta_perp
-    pass
     # build restricted model
     res_model = dataclasses.replace(proj.ref_model)
-    proj.ref_model.family._project_disp_params(proj.ref_model, res_model)
+
+    # extract reference parameter draws and design matrix
+    theta_perp = torch.from_numpy(
+        res_model.idata.posterior.stack(samples=("chain", "draw"))[
+            proj.ref_model.term_names
+        ]
+        .to_array()
+        .values.T
+    ).float()
+    X_perp = res_model.X
+    # perform projection of dispersion parameter
+    sigma_perp = proj.ref_model.family._project_disp_params(
+        proj.ref_model, theta_perp, X_perp
+    )
+
+    # extract reference dispersion parameter
+    sigma_ast = torch.from_numpy(
+        proj.ref_model.idata.posterior.stack(samples=("chain", "draw"))[
+            proj.ref_model.response_name + "_sigma"
+        ].values.T
+    ).float()
+    # test equivalent shapes
+    assert sigma_perp.shape == sigma_ast.shape
 
 
 def test_gaussian_disp_attribute():

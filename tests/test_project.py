@@ -19,12 +19,12 @@ data = pd.DataFrame(
 # define and fit model with MCMC
 model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 num_draws, num_chains = 100, 1
-posterior = model.fit(draws=num_draws, chains=num_chains)
+idata = model.fit(draws=num_draws, chains=num_chains)
 # build reference model object
-proj = kpt.Projector(model, posterior)
+proj = kpt.Projector(model, idata)
 
 
-def test_posterior_is_none():
+def test_idata_is_none():
     # test that some inference data has been automatically produced
     proj = kpt.Projector(model)
     assert proj.ref_model.num_draws is not None
@@ -62,11 +62,24 @@ def test_zero_model_size_project():
 
 def test_negative_model_size_project():
     with pytest.raises(UserWarning):
-        # project the reference model to the null parameter subset
+        # project the reference model to a negative model size
         proj.project(model_size=-1)
 
 
 def test_too_large_model_size_project():
     with pytest.raises(UserWarning):
-        # project the reference model to the null parameter subset
+        # project the reference model to a parameter superset
         proj.project(model_size=proj.ref_model.num_terms + 1)
+
+
+def test_projected_idata_dims():
+    # extract dimensions of projected idata
+    res_model = proj.project(model_size=0)
+    idata_perp = res_model.idata
+    chain_n = len(idata_perp.posterior.coords.get("chain"))
+    draw_n = len(idata_perp.posterior.coords.get("draw"))
+
+    # ensure the restricted idata object has the same dimensions as that of the
+    # reference model
+    assert chain_n == len(idata.posterior.coords.get("chain"))
+    assert draw_n == len(idata.posterior.coords.get("draw"))
