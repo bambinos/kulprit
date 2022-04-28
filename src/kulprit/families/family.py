@@ -56,19 +56,19 @@ class Gaussian(Family):
         super().__init__()
         self.has_disp_params = True
 
-    def kl_div(self, y_ast, y_perp):
+    def kl_div(self, P, Q):
         """Kullback-Leibler divergence between two Gaussians.
 
         Args:
-            y_ast (torch.tensor): Tensor of reference model posterior draws
-            y_perp (torch.tensor): Tensor of restricted model posterior draws
+            P (torch.tensor): Tensor of reference model posterior draws
+            Q (torch.tensor): Tensor of restricted model posterior draws
 
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
         # compute Wasserstein distance as a KL divergence surrogate
-        div = torch.mean((y_ast - y_perp) ** 2)
+        div = torch.mean((P - Q) ** 2)
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
         return div
 

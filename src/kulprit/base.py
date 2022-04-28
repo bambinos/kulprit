@@ -21,6 +21,11 @@ class Projector:
         This object initialises the reference model and handles the core
         projection and variable search methods of the model selection procedure.
 
+        Note that throughout the procedure, variables with names of the form
+        ``*_ast`` belong to the reference model while variables with names like
+        ``*_perp`` belong to the restricted model. This is to preserve notation
+        choices from previous papers on the topic.
+
         Args:
             model (bambi.models.Model): The referemce GLM model to project
             idata (arviz.InferenceData): The arViz InferenceData object
@@ -172,12 +177,12 @@ class Projector:
         """
 
         # reshape `theta_perp` so it has the same shape as the reference model
-        chain_n = len(self.ref_model.idata.posterior.coords.get("chain"))
-        draw_n = len(self.ref_model.idata.posterior.coords.get("draw"))
+        num_chain = len(self.ref_model.idata.posterior.coords.get("chain"))
+        num_draw = len(self.ref_model.idata.posterior.coords.get("draw"))
         num_terms = model.num_terms
         num_obs = self.ref_model.num_obs
-        idata_dims = (chain_n, draw_n, num_terms)
-        theta_perp = torch.reshape(theta_perp, idata_dims)
+
+        theta_perp = torch.reshape(theta_perp, (num_chain, num_draw, num_terms))
 
         # build posterior dictionary from projected parameters
         posterior = {
@@ -185,8 +190,7 @@ class Projector:
         }
         if disp_perp is not None:
             # reshape `disp_perp` if present
-            disp_perp_dims = (chain_n, draw_n, 1)
-            disp_perp = torch.reshape(disp_perp, disp_perp_dims)
+            disp_perp = torch.reshape(disp_perp, (num_chain, num_draw))
             # update the posterior draws dictionary with dispersion parameter
             disp_dict = {
                 f"{model.response_name}_sigma": disp_perp,
@@ -204,11 +208,23 @@ class Projector:
         log_likelihood = _compute_log_likelihood(model.backend, points)
         # reshape the log-likelihood values to be inline with reference model
         log_likelihood.update(
-            (key, value.reshape(chain_n, draw_n, num_obs))
+            (key, value.reshape(num_chain, num_draw, num_obs))
             for key, value in log_likelihood.items()
         )
+
+        # add observed data component of projected idata
+        observed_data = {
+            self.ref_model.response_name: self.ref_model.idata.observed_data.get("y")
+            .to_dict()
+            .get("data")
+        }
+
         # build idata object for the projected model
-        idata = az.data.from_dict(posterior=posterior, log_likelihood=log_likelihood)
+        idata = az.data.from_dict(
+            posterior=posterior,
+            log_likelihood=log_likelihood,
+            observed_data=observed_data,
+        )
         return idata
 
     def project(

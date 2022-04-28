@@ -27,18 +27,21 @@ proj = kpt.Projector(model, idata)
 def test_idata_is_none():
     # test that some inference data has been automatically produced
     proj = kpt.Projector(model)
+
     assert proj.ref_model.num_draws is not None
 
 
 def test_kl_opt_forward():
     solver = kpt.projection.optimise._KulOpt(proj.ref_model)
     y = solver.forward(proj.ref_model.X)
+
     assert y.shape == (proj.ref_model.num_draws, proj.ref_model.num_obs)
 
 
 def test_project_method():
     # project the reference model to some parameter subset
     res_model = proj.project(model_size=2)
+
     assert res_model.X.shape == (proj.ref_model.num_obs, 3)
     assert res_model.num_terms == 3
     assert res_model.model_size == 2
@@ -47,6 +50,7 @@ def test_project_method():
 def test_default_projection_set():
     # project the reference model to the default parameter subset
     res_model = proj.project()
+
     assert res_model.X.shape == proj.ref_model.X.shape
     assert res_model.num_terms == proj.ref_model.num_terms
     assert res_model.model_size == proj.ref_model.model_size
@@ -55,6 +59,7 @@ def test_default_projection_set():
 def test_zero_model_size_project():
     # project the reference model to zero term subset
     res_model = proj.project(model_size=0)
+
     assert res_model.X.shape == (proj.ref_model.num_obs, 1)
     assert res_model.num_terms == 1
     assert res_model.model_size == 0
@@ -76,9 +81,14 @@ def test_projected_idata_dims():
     # extract dimensions of projected idata
     res_model = proj.project(model_size=0)
     idata_perp = res_model.idata
-    chain_n = len(idata_perp.posterior.coords.get("chain"))
-    draw_n = len(idata_perp.posterior.coords.get("draw"))
+    num_chain = len(idata_perp.posterior.coords.get("chain"))
+    num_draw = len(idata_perp.posterior.coords.get("draw"))
+    num_obs = len(idata_perp.observed_data.coords.get("y_dim_0"))
+    disp_shape = idata_perp.posterior.get("y_sigma").shape
+
     # ensure the restricted idata object has the same dimensions as that of the
     # reference model
-    assert chain_n == len(idata.posterior.coords.get("chain"))
-    assert draw_n == len(idata.posterior.coords.get("draw"))
+    assert num_chain == len(idata.posterior.coords.get("chain"))
+    assert num_draw == len(idata.posterior.coords.get("draw"))
+    assert num_obs == len(idata.observed_data.coords.get("y_dim_0"))
+    assert disp_shape == idata.posterior.data_vars.get("y_sigma").shape
