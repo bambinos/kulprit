@@ -120,7 +120,6 @@ class Gaussian(Family):
             .values
         ).float()
         X_ast = ref_model.X
-        print(theta_ast.shape, sigma_ast.shape, X_ast.shape)
         # project the dispersion parameter
         _vec_proj = np.vectorize(
             _proj, signature="(n),(m),()->()", doc="Vectorised `_proj` method"
