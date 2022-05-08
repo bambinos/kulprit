@@ -2,6 +2,7 @@
 
 import abc
 
+import bambi
 import torch
 import numpy as np
 
@@ -42,7 +43,7 @@ class Family(abc.ABC):
         pass
 
     @classmethod
-    def create(cls, model):
+    def create(cls, model: bambi.Model):
         if model.family.name not in cls.subclasses:
             raise NotImplementedError("Unsupported family.")
 
@@ -56,7 +57,7 @@ class Gaussian(Family):
         super().__init__()
         self.has_disp_params = True
 
-    def kl_div(self, P, Q):
+    def kl_div(self, P: torch.tensor, Q: torch.tensor):
         """Kullback-Leibler divergence between two Gaussians.
 
         Args:
@@ -72,7 +73,9 @@ class Gaussian(Family):
         assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
         return div
 
-    def _project_disp_params(self, ref_model, theta_perp, X_perp):
+    def _project_disp_params(
+        self, ref_model, theta_perp: torch.tensor, X_perp: torch.tensor
+    ):
         """Analytic projection of the model dispersion parameters.
 
         Args:
@@ -87,7 +90,7 @@ class Gaussian(Family):
             torch.tensor: The restricted projections of the dispersion parameters
         """
 
-        def _proj(theta_ast, theta_perp, sigma_ast):
+        def _proj(theta_ast: np.ndarray, theta_perp: np.ndarray, sigma_ast: np.ndarray):
             """Projection method to aid with vectorisation."""
 
             f = X_ast @ theta_ast
@@ -99,27 +102,32 @@ class Gaussian(Family):
             return sigma_perp
 
         # define the term names of both models
-        ref_common_terms = ref_model.term_names
+        ref_model.term_names
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
-            ref_model.idata.posterior.stack(samples=("chain", "draw"))[ref_common_terms]
+            ref_model.idata.posterior.stack(samples=("chain", "draw"))[
+                ref_model.term_names
+            ]
             .to_array()
-            .values.T
+            .transpose(*("samples", "variable"))
+            .values
         ).float()
         sigma_ast = torch.from_numpy(
             ref_model.idata.posterior.stack(samples=("chain", "draw"))[
                 ref_model.response_name + "_sigma"
-            ].values.T
+            ]
+            .transpose()
+            .values
         ).float()
-        theta_perp = theta_perp
         X_ast = ref_model.X
+        print(theta_ast.shape, sigma_ast.shape, X_ast.shape)
         # project the dispersion parameter
         _vec_proj = np.vectorize(
             _proj, signature="(n),(m),()->()", doc="Vectorised `_proj` method"
         )
         sigma_perp = (
             torch.from_numpy(_vec_proj(theta_ast, theta_perp, sigma_ast))
-            .reshape(-1)
+            .flatten()
             .float()
         )
         # assure correct shape

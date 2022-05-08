@@ -1,3 +1,5 @@
+import torch
+
 import pandas as pd
 import numpy as np
 
@@ -92,3 +94,37 @@ def test_projected_idata_dims():
     assert num_draw == len(idata.posterior.coords.get("draw"))
     assert num_obs == len(idata.observed_data.coords.get("y_dim_0"))
     assert disp_shape == idata.posterior.data_vars.get("y_sigma").shape
+
+
+def test_reshaping():
+    """
+    Ensure that torch reshaping is performing the true inverse of arviz stacking
+    """
+
+    # extract the parameters from the reference model
+    ref_model = proj.ref_model
+    theta = torch.from_numpy(
+        ref_model.idata.posterior.stack(samples=("chain", "draw"))[ref_model.term_names]
+        .to_array()
+        .transpose(*("samples", "variable"))
+        .values
+    ).float()
+
+    # extract dimensions of the reference model idata object
+    num_chain = len(ref_model.idata.posterior.coords.get("chain"))
+    num_draw = len(ref_model.idata.posterior.coords.get("draw"))
+    num_terms = ref_model.num_terms
+
+    # reshape torch tensor back to desired dimensions
+    reshaped = torch.reshape(theta, (num_chain, num_draw, num_terms))
+
+    # achieve similarly shaped tensor using xarray transposition
+    transposed = torch.from_numpy(
+        ref_model.idata.posterior[ref_model.term_names]
+        .to_array()
+        .transpose(*("chain", "draw", "variable"))
+        .values
+    ).float()
+
+    # ensure that these two methods both behave well
+    assert (reshaped == transposed).all()

@@ -2,7 +2,10 @@
 
 import dataclasses
 
+from typing import Optional
+
 import arviz as az
+from arviz import InferenceData
 import numpy as np
 import torch
 
@@ -15,7 +18,7 @@ from .utils import _extract_insample_predictions, _compute_log_likelihood
 
 
 class Projector:
-    def __init__(self, model, idata=None):
+    def __init__(self, model: ModelData, idata: Optional[InferenceData] = None) -> None:
         """Reference model builder for projection predictive model selection.
 
         This object initialises the reference model and handles the core
@@ -35,16 +38,21 @@ class Projector:
         # build posterior if unavailable
         if idata is None:
             idata = model.fit()
+
         # log the underlying backend model
         backend = model.backend
+
         # instantiate family object from model
         family = Family.create(model)
+
         # define the link function object for the reference model
         link = model.family.link
+
         # extract covariate and variate names
         term_names = list(model.term_names)
         common_terms = list(model.common_terms.keys())
         response_name = model.response.name
+
         # extract data from the fitted bambi model
         predictions = model.predict(
             idata=idata, inplace=False, kind="pps"
@@ -58,12 +66,12 @@ class Projector:
                 "The procedure currently only supports reference models with "
                 + "an intercept term."
             )
+
         # extract some key dimensions needed for optimisation
         num_obs, num_terms = model._design.common.design_matrix.shape
         model_size = len(common_terms)  # note that model size ignores intercept
-        num_draws = (
-            idata.posterior.dims["chain"] * idata.posterior.dims["draw"]
-        )  # to do: test this for edge cases
+        num_draws = idata.posterior.dims["chain"] * idata.posterior.dims["draw"]
+
         # set the reference model's distance to itself as zero and compute ELPD
         dist_to_ref_model = torch.tensor(0.0)
         elpd = az.loo(idata)
@@ -100,12 +108,7 @@ class Projector:
         )
         return msg
 
-    def __getitem__(self, model_size):  # pragma: no cover
-        """Extract the submodel with given `model_size`."""
-
-        raise NotImplementedError
-
-    def _build_restricted_model(self, model_size=None):
+    def _build_restricted_model(self, model_size: Optional[int] = None) -> ModelData:
         """Build a restricted model from a reference model given some model size
 
         Args:
@@ -157,11 +160,14 @@ class Projector:
             idata=None,
             predictions=None,
         )
+
         # ensure correct dimensions
         assert res_model.X.shape == (self.ref_model.num_obs, model_size + 1)
         return res_model
 
-    def _build_idata(self, model, theta_perp, disp_perp=None):
+    def _build_idata(
+        self, model: ModelData, theta_perp: torch.tensor, disp_perp: torch.tensor = None
+    ) -> InferenceData:
         """Convert some set of pytorch tensors into an ArviZ idata object.
 
         Args:
@@ -204,8 +210,10 @@ class Projector:
 
         # build points data from the posterior dictionaries
         points = _posterior_to_points(posterior, self.ref_model)
+
         # compute log-likelihood of projected model from this posterior
         log_likelihood = _compute_log_likelihood(model.backend, points)
+
         # reshape the log-likelihood values to be inline with reference model
         log_likelihood.update(
             (key, value.reshape(num_chain, num_draw, num_obs))
@@ -229,10 +237,10 @@ class Projector:
 
     def project(
         self,
-        model_size=None,
-        num_iters=200,
-        learning_rate=0.01,
-    ):
+        model_size: Optional[int] = None,
+        num_iters: Optional[int] = 200,
+        learning_rate: Optional[float] = 0.01,
+    ) -> ModelData:
         """Primary projection method for GLM reference model.
 
         The projection is defined as the values of the submodel parameters
@@ -270,10 +278,13 @@ class Projector:
                 + f" reference model ({self.ref_model.model_size}), received"
                 + f" value {model_size}."
             )
+
         # build restricted model object
         res_model = self._build_restricted_model(model_size)
+
         # extract restricted design matrix
         X_perp = res_model.X
+
         # extract reference model posterior predictions
         y_ast = _extract_insample_predictions(self.ref_model)
 
@@ -282,6 +293,7 @@ class Projector:
         solver.zero_grad()
         opt = torch.optim.Adam(solver.parameters(), lr=learning_rate)
         criterion = _DivLoss(res_model.family)
+
         # run optimisation loop
         for _ in range(num_iters):
             opt.zero_grad()
@@ -294,19 +306,24 @@ class Projector:
         theta_perp = list(solver.parameters())[0].data
         res_model.dist_to_ref_model = loss.item()
         disp_perp = None
+
         # if the reference family has dispersion parameters, project them
         if self.ref_model.family.has_disp_params:
             # project dispersion parameters
             disp_perp = self.ref_model.family._project_disp_params(
                 self.ref_model, theta_perp, X_perp
             )
+
         # build the complete restricted model posterior
         res_model.idata = self._build_idata(res_model, theta_perp, disp_perp)
+
         # ELPD of restricted model
         res_model.elpd = az.loo(res_model.idata)
         return res_model
 
-    def search(self, method="forward", max_terms=None):
+    def search(
+        self, method: Optional[str] = "forward", max_terms: Optional[int] = None
+    ) -> None:
         """Call search method through parameter space.
 
         Args:

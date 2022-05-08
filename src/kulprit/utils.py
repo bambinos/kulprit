@@ -2,6 +2,7 @@
 
 import arviz as az
 from arviz.utils import one_de
+
 import numpy as np
 import torch
 
