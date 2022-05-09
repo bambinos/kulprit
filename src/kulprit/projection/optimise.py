@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from ..families import Family
+from ..data import ModelData
 
 
 class _DivLoss(nn.Module):
@@ -16,7 +17,7 @@ class _DivLoss(nn.Module):
         family (kulprit.families.Family): The reference model family object
     """
 
-    def __init__(self, family):
+    def __init__(self, family: Family) -> None:
         """Loss module constructor.
 
         We instantiate a `kulprit.Family` object based on the model variate's
@@ -31,7 +32,7 @@ class _DivLoss(nn.Module):
         super().__init__()
         self.family = family
 
-    def forward(self, y_ast, y_perp):
+    def forward(self, y_ast: torch.tensor, y_perp: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.
 
         This method computes the Kullback-Leibler divergence between the
@@ -71,7 +72,7 @@ class _KulOpt(nn.Module):
         lin (torch.nn module): The linear transformation module
     """
 
-    def __init__(self, res_model):
+    def __init__(self, res_model: ModelData) -> None:
         """SubModel class constructor method.
 
         Args:
@@ -87,7 +88,7 @@ class _KulOpt(nn.Module):
         # build linear component of GLM without intercept
         self.lin = nn.Linear(self.num_terms, self.num_draws, bias=False)
 
-    def forward(self, X):
+    def forward(self, X: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.
 
         Args:

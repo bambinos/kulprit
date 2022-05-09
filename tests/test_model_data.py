@@ -3,7 +3,6 @@ import numpy as np
 
 import bambi as bmb
 import kulprit as kpt
-from kulprit.data.building import _build_restricted_model
 
 import pytest
 
@@ -22,9 +21,9 @@ model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
 # define MCMC parameters
 num_draws, num_chains = 100, 1
 # fit the two models
-posterior = model.fit(draws=num_draws, chains=num_chains)
+idata = model.fit(draws=num_draws, chains=num_chains)
 # build two reference models
-proj = kpt.Projector(model, posterior)
+proj = kpt.Projector(model, idata)
 
 
 def test_has_intercept():
@@ -35,12 +34,12 @@ def test_no_intercept_error():
     with pytest.raises(NotImplementedError):
         bad_model = bmb.Model("y ~ -1 + x1 + x2", data, family="gaussian")
         num_draws, num_chains = 100, 1
-        bad_posterior = bad_model.fit(draws=num_draws, chains=num_chains)
-        kpt.Projector(bad_model, bad_posterior)
+        bad_idata = bad_model.fit(draws=num_draws, chains=num_chains)
+        kpt.Projector(bad_model, bad_idata)
 
 
 def test_default_reference_model():
-    res_model = _build_restricted_model(proj.ref_model)
+    res_model = proj._build_restricted_model()
     assert res_model.X.shape == (
         proj.ref_model.num_obs,
         proj.ref_model.num_terms,
@@ -49,16 +48,16 @@ def test_default_reference_model():
 
 def test_build_restricted_model():
     model_size = 2
-    res_model = _build_restricted_model(proj.ref_model, model_size)
+    res_model = proj._build_restricted_model(model_size=model_size)
     assert res_model.X.shape == (proj.ref_model.num_obs, model_size + 1)
     assert res_model.model_size == model_size
 
 
 def test_build_negative_size_restricted_model():
     with pytest.raises(UserWarning):
-        _build_restricted_model(proj.ref_model, model_size=-1)
+        proj._build_restricted_model(model_size=-1)
 
 
 def test_build_too_large_restricted_model():
     with pytest.raises(UserWarning):
-        _build_restricted_model(proj.ref_model, model_size=100)
+        proj._build_restricted_model(model_size=100)
