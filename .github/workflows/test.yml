@@ -22,6 +22,7 @@ jobs:
   lint-cruft:
     name: Check if automatic project update was successful
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v2
       - name: Fail if .rej files exist as structure update was not successful
@@ -29,6 +30,7 @@ jobs:
 
   pre-commit:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/python-poetry-env
@@ -36,6 +38,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     strategy:
       fail-fast: false
       matrix:
