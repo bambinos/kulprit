@@ -43,6 +43,9 @@ idata = model.fit(draws=num_draws, chains=num_chains)
 # build reference model object
 ref_model = kpt.ReferenceModel(model, idata)
 
+# project the reference model to some parameter subset
+sub_model = ref_model.project(["x1"])
+
 # visualise projected parameters
 az.plot_posterior(sub_model.idata)
 plt.show()
