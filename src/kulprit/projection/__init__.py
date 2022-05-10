@@ -1,3 +1,6 @@
 """Top-level projection module."""
 
-from .optimise import _DivLoss, _KulOpt
+from .projector import Projector
+from .loss import KullbackLeiblerLoss
+from .architecture import GLMArchitecture
+from .dispersion import DispersionProjectorFactory
