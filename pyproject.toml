@@ -42,6 +42,7 @@ statsmodels = "0.10.2"
 Theano-PyMC = "1.1.2"
 torch = "^1.11.0"
 formulae = "0.2.0"
+fastcore = "^1.4.2"
 
 [tool.poetry.dev-dependencies]
 autoflake = "*"

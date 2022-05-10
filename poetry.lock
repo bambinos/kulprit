@@ -330,6 +330,20 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "fastcore"
+version = "1.4.2"
+description = "Python supercharged for fastai development"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+packaging = "*"
+
+[package.extras]
+dev = ["numpy", "nbdev (>=0.2.39)", "matplotlib", "pillow", "torch", "pandas"]
+
+[[package]]
 name = "fastprogress"
 version = "1.0.2"
 description = "A nested progress with plotting options for fastai"
@@ -1940,7 +1954,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.2, <3.10"
-content-hash = "fe87fcbd67caea99ea13784e1958ace993416433f7c99f6a0fd5b4adb9236b11"
+content-hash = "d87903b5d483552953ee9c4735b599bad9463f9761fcff40f1c0e4082b5ecbc7"
 
 [metadata.files]
 appnope = [
@@ -2231,6 +2245,10 @@ entrypoints = [
 ]
 eradicate = [
     {file = "eradicate-2.0.0.tar.gz", hash = "sha256:27434596f2c5314cc9b31410c93d8f7e8885747399773cd088d3adea647a60c8"},
+]
+fastcore = [
+    {file = "fastcore-1.4.2-py3-none-any.whl", hash = "sha256:86c31395a87ea429c35f9291e826098f525684a3a6555238448a371274224ddb"},
+    {file = "fastcore-1.4.2.tar.gz", hash = "sha256:43bb895507788168317f28cf82031c5ce1796d95a229fc515c10bd90f2355a37"},
 ]
 fastprogress = [
     {file = "fastprogress-1.0.2-py3-none-any.whl", hash = "sha256:d00ca857e2e651b08cb4c28f5800e5330d47d2cc50dcc8e0251fa01763c59049"},
