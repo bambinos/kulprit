@@ -76,8 +76,22 @@ class ReferenceModel:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
-        # Todo:
-        # 1. add tests on `terms`
+        # test `terms` input
+        if isinstance(terms, list) and (
+            not all([term in self.ref_model.structure.term_names for term in terms])
+        ):
+            raise UserWarning(
+                "Please ensure that all terms selected for projection exist in"
+                + " the reference model."
+            )
+
+        if isinstance(terms, int) and (
+            terms < 0 or terms > self.ref_model.structure.model_size
+        ):
+            raise UserWarning(
+                "Please ensure that the number of terms selected for projection"
+                + " is between 1 and the number of terms in the reference model."
+            )
 
         # project the reference model onto a subset of covariates
         sub_model = self.projector.project(terms)
@@ -105,8 +119,13 @@ class ReferenceModel:
             kulprit.search.SearchPath: The model selection procedure search path
         """
 
-        # Todo:
-        # 1. add tests on `max_terms`
+        # test `max_terms` input
+        if max_terms > self.ref_model.structure.model_size:
+            raise UserWarning(
+                "Please ensure that the maximum number to consider in the "
+                + "submodel search is between 1 and the number of terms in the "
+                + "reference model."
+            )
 
         if max_terms is None:
             max_terms = self.ModelData.num_terms - 1

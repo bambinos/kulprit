@@ -78,8 +78,8 @@ class Projector:
         # in the future we will select the "best" `args` variables according to a
         # previously run search
         raise NotImplementedError(
-            "The project method currently only accepts the names of the ",
-            "parameters to project as inputs",
+            "The project method currently only accepts the names of the "
+            + "parameters to project as inputs",
         )
 
     @typedispatch
