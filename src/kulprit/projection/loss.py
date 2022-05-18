@@ -24,11 +24,11 @@ class KullbackLeiblerLoss(Loss):
     motivated loss function by Goutis and Robert (1998).
     """
 
-    def __init__(self, ref_model: ModelData) -> None:
+    def __init__(self, data: ModelData) -> None:
         """Loss module constructor.
 
         Args:
-            ref_model (kulprit.data.ModelData): Reference model dataclass object
+            data (kulprit.data.ModelData): Reference model dataclass object
         """
 
         super().__init__()
@@ -39,7 +39,7 @@ class KullbackLeiblerLoss(Loss):
         }
 
         # log family name
-        self.family = ref_model.structure.family
+        self.family = data.structure.family
 
         if self.family not in self.family_dict:
             raise NotImplementedError(

@@ -20,7 +20,7 @@ from ..data.submodel import SubModelStructure, SubModelInferenceData
 class Projector:
     def __init__(
         self,
-        ref_model: ModelData,
+        data: ModelData,
         num_iters: Optional[int] = 200,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
@@ -33,19 +33,19 @@ class Projector:
         choices from previous papers on the topic.
 
         Args:
-            ref_model (kulprit.data.ModelData): Reference model dataclass object
+            data (kulprit.data.ModelData): Reference model dataclass object
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
         """
 
         # log reference model data object
-        self.ref_model = ref_model
+        self.data = data
 
         # build loss function from reference model
-        self.loss = KullbackLeiblerLoss(self.ref_model)
+        self.loss = KullbackLeiblerLoss(self.data)
 
         # build dispersion parameter projector class from factory methods
-        self.disp_projector = DispersionProjectorFactory(self.ref_model)
+        self.disp_projector = DispersionProjectorFactory(self.data)
 
         # set optimiser parameters
         self.num_iters = num_iters
@@ -68,10 +68,10 @@ class Projector:
                 "`model_size` parameter must be non-negative, received value "
                 + f"{terms}."
             )
-        if terms > self.ref_model.structure.model_size:
+        if terms > self.data.structure.model_size:
             raise UserWarning(
                 "`model_size` parameter cannot be greater than the size of the"
-                + f" reference model ({self.ref_model.structure.model_size}), received"
+                + f" reference model ({self.data.structure.model_size}), received"
                 + f" value {terms}."
             )
 
@@ -122,7 +122,7 @@ class Projector:
         """
 
         # build restricted model object
-        structure_factory = SubModelStructure(self.ref_model)
+        structure_factory = SubModelStructure(self.data)
         sub_model_structure = structure_factory.create(term_names)
 
         # extract restricted design matrix
@@ -130,8 +130,8 @@ class Projector:
 
         # extract reference model posterior predictions
         y_ast = torch.from_numpy(
-            self.ref_model.structure.predictions.stack(samples=("chain", "draw"))
-            .transpose(*("samples", "y_dim_0"))
+            self.data.structure.predictions.stack(samples=("chain", "draw"))
+            .transpose(*("samples", f"{self.data.structure.response_name}_dim_0"))
             .values
         ).float()
 
@@ -146,7 +146,7 @@ class Projector:
         disp_perp = self.disp_projector.forward(theta_perp, X_perp)
 
         # build the complete restricted model posterior
-        idata_factory = SubModelInferenceData(self.ref_model)
+        idata_factory = SubModelInferenceData(self.data)
         sub_model_idata = idata_factory.create(
             sub_model_structure, theta_perp, disp_perp
         )

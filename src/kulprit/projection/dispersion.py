@@ -19,8 +19,8 @@ class DispersionProjector(ABC):
 class GaussianDispersionProjector(DispersionProjector):
     """Gaussian model dispersion parameter projector."""
 
-    def __init__(self, ref_model: ModelData) -> None:
-        self.ref_model = ref_model
+    def __init__(self, data: ModelData) -> None:
+        self.data = data
 
     def solve(
         self, theta_ast: torch.tensor, theta_perp: torch.tensor, sigma_ast: torch.tensor
@@ -44,7 +44,7 @@ class GaussianDispersionProjector(DispersionProjector):
         f_perp = self.X_perp @ theta_perp
         sigma_perp = torch.sqrt(
             sigma_ast**2
-            + 1 / self.ref_model.structure.num_obs * (f - f_perp).T @ (f - f_perp)
+            + 1 / self.data.structure.num_obs * (f - f_perp).T @ (f - f_perp)
         )
         sigma_perp = sigma_perp.numpy()
         return sigma_perp
@@ -67,21 +67,21 @@ class GaussianDispersionProjector(DispersionProjector):
 
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
-            self.ref_model.idata.posterior.stack(samples=("chain", "draw"))[
-                self.ref_model.structure.term_names
+            self.data.idata.posterior.stack(samples=("chain", "draw"))[
+                self.data.structure.term_names
             ]
             .to_array()
             .transpose(*("samples", "variable"))
             .values
         ).float()
         sigma_ast = torch.from_numpy(
-            self.ref_model.idata.posterior.stack(samples=("chain", "draw"))[
-                self.ref_model.structure.response_name + "_sigma"
+            self.data.idata.posterior.stack(samples=("chain", "draw"))[
+                self.data.structure.response_name + "_sigma"
             ]
             .transpose()
             .values
         ).float()
-        self.X_ast = self.ref_model.structure.X
+        self.X_ast = self.data.structure.X
 
         # project the dispersion parameter
         vec_solve = np.vectorize(
@@ -101,17 +101,17 @@ class GaussianDispersionProjector(DispersionProjector):
 class DispersionProjectorFactory:
     """Factory class for the dispersion parameter projectors."""
 
-    def __init__(self, ref_model: ModelData) -> None:
+    def __init__(self, data: ModelData) -> None:
         """Dispersion parameter projection module constructor.
 
         Args:
-            ref_model (ModelData): The reference model object whose dispersion
+            data (ModelData): The reference model object whose dispersion
                 parameters we wish to project
         """
 
         # log family name and reference model
-        self.family = ref_model.structure.family
-        self.ref_model = ref_model
+        self.family = data.structure.family
+        self.data = data
 
         # define all available KL divergence loss classes
         self.family_dict = {
@@ -128,7 +128,7 @@ class DispersionProjectorFactory:
 
         # fetch appropriate divergence class given model variate family
         disp_projector = self.family_dict[self.family]
-        return disp_projector(self.ref_model)
+        return disp_projector(self.data)
 
     def forward(self, theta_perp: torch.tensor, X_perp: torch.tensor) -> torch.tensor:
         """Project dispersion parameters of the submodel.

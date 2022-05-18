@@ -25,16 +25,16 @@ class SubModel(ABC):
 
 
 class SubModelStructure(SubModel):
-    def __init__(self, ref_model: ModelData) -> None:
+    def __init__(self, data: ModelData) -> None:
         """Submodel object used to create submodels from a reference model.
 
         Args:
-            ref_model (kulprit.data.ModelData): The reference model from which
+            data (kulprit.data.ModelData): The reference model from which
                 to build the submodel
         """
 
         # log reference model ModelData
-        self.ref_model = ref_model
+        self.data = data
 
     def generate(self, var_names: List[str]) -> ModelStructure:
         """Generate new ModelStructure class attributes for a submodel.
@@ -51,16 +51,14 @@ class SubModelStructure(SubModel):
             # extract the submatrix from the reference model's design matrix
             X_res = torch.from_numpy(
                 np.column_stack(
-                    [self.ref_model.structure.design.common[term] for term in var_names]
+                    [self.data.structure.design.common[term] for term in var_names]
                 )
             ).float()
             # manually add intercept to new design matrix
-            X_res = torch.hstack(
-                (torch.ones(self.ref_model.structure.num_obs, 1), X_res)
-            )
+            X_res = torch.hstack((torch.ones(self.data.structure.num_obs, 1), X_res))
         else:
             # intercept-only model
-            X_res = torch.ones(self.ref_model.structure.num_obs, 1).float()
+            X_res = torch.ones(self.data.structure.num_obs, 1).float()
 
         # update common term names and dimensions and build new ModelData object
         _, num_terms = X_res.shape
@@ -81,7 +79,7 @@ class SubModelStructure(SubModel):
         """
 
         # copy and instantiate new ModelStructure object
-        sub_model_structure = copy(self.ref_model.structure)
+        sub_model_structure = copy(self.data.structure)
         (
             sub_model_structure.X,
             sub_model_structure.num_terms,
@@ -92,23 +90,23 @@ class SubModelStructure(SubModel):
 
         # ensure correct dimensions
         assert sub_model_structure.X.shape == (
-            self.ref_model.structure.num_obs,
+            self.data.structure.num_obs,
             sub_model_structure.model_size + 1,
         )
         return sub_model_structure
 
 
 class SubModelInferenceData(SubModel):
-    def __init__(self, ref_model: ModelData) -> None:
+    def __init__(self, data: ModelData) -> None:
         """Submodel object used to create submodels from a reference model.
 
         Args:
-            ref_model (kulprit.data.ModelData): The reference model from which
-                to build the submodel
+            data (kulprit.data.ModelData): The reference model ModelData object
+                from which to build the submodel
         """
 
         # log reference model ModelData
-        self.ref_model = ref_model
+        self.data = data
 
     def create(
         self,
@@ -131,10 +129,10 @@ class SubModelInferenceData(SubModel):
         """
 
         # reshape `theta_perp` so it has the same shape as the reference model
-        num_chain = len(self.ref_model.idata.posterior.coords.get("chain"))
-        num_draw = len(self.ref_model.idata.posterior.coords.get("draw"))
+        num_chain = len(self.data.idata.posterior.coords.get("chain"))
+        num_draw = len(self.data.idata.posterior.coords.get("draw"))
         num_terms = sub_model_structure.num_terms
-        num_obs = self.ref_model.structure.num_obs
+        num_obs = self.data.structure.num_obs
 
         theta_perp = torch.reshape(theta_perp, (num_chain, num_draw, num_terms))
 
@@ -148,10 +146,8 @@ class SubModelInferenceData(SubModel):
             disp_perp = torch.reshape(disp_perp, (num_chain, num_draw))
             # update the posterior draws dictionary with dispersion parameter
             disp_dict = {
-                f"{self.ref_model.structure.response_name}_sigma": disp_perp,
-                f"{self.ref_model.structure.response_name}_sigma_log__": torch.log(
-                    disp_perp
-                ),
+                f"{self.data.structure.response_name}_sigma": disp_perp,
+                f"{self.data.structure.response_name}_sigma_log__": torch.log(disp_perp),
             }
 
             # TODO: find a way to automatically perform the inverse PyMC
@@ -163,9 +159,7 @@ class SubModelInferenceData(SubModel):
         points = self.posterior_to_points(posterior)
 
         # compute log-likelihood of projected model from this posterior
-        log_likelihood = self.compute_log_likelihood(
-            self.ref_model.structure.backend, points
-        )
+        log_likelihood = self.compute_log_likelihood(self.data.structure.backend, points)
 
         # reshape the log-likelihood values to be inline with reference model
         log_likelihood.update(
@@ -173,10 +167,11 @@ class SubModelInferenceData(SubModel):
             for key, value in log_likelihood.items()
         )
 
+        print(self.data.idata.observed_data)
         # add observed data component of projected idata
         observed_data = {
-            self.ref_model.structure.response_name: self.ref_model.idata.observed_data.get(
-                "y"
+            self.data.structure.response_name: self.data.idata.observed_data.get(
+                self.data.structure.response_name
             )
             .to_dict()
             .get("data")
@@ -204,14 +199,19 @@ class SubModelInferenceData(SubModel):
             list: The list of dictionaries of point samples
         """
 
+        print(self.data)
+        print(self.data.structure)
+        print(self.data.structure.backend)
+        print(self.data.structure.backend.model)
+
         # build samples dictionary from posterior of idata
         samples = {
             key: (
                 posterior[key].flatten()
                 if key in posterior.keys()
-                else np.zeros((self.ref_model.structure.num_draws,))
+                else np.zeros((self.data.structure.num_draws,))
             )
-            for key in self.ref_model.structure.backend.model.test_point.keys()
+            for key in self.data.structure.backend.model.test_point.keys()
         }
         # extract observed and unobserved RV names and sample matrix
         var_names = list(samples.keys())
@@ -221,8 +221,7 @@ class SubModelInferenceData(SubModel):
             {
                 var_names[j]: (
                     np.array([obs_matrix[j, i]])
-                    if var_names[j]
-                    != f"{self.ref_model.structure.response_name}_sigma_log__"
+                    if var_names[j] != f"{self.data.structure.response_name}_sigma_log__"
                     else np.array(obs_matrix[j, i])
                 )
                 for j in range(obs_matrix.shape[0])

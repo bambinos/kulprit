@@ -50,15 +50,15 @@ class ReferenceModel:
 
         # build model data class
         structure = ModelStructure(model)
-        self.ref_model = ModelData(
+        self.data = ModelData(
             structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0)
         )
 
         # instantiate projector and search class
         self.projector = Projector(
-            self.ref_model, num_iters=num_iters, learning_rate=learning_rate
+            self.data, num_iters=num_iters, learning_rate=learning_rate
         )
-        self.searcher = Searcher(self.ref_model)
+        self.searcher = Searcher(self.data)
 
     def project(
         self,
@@ -78,7 +78,7 @@ class ReferenceModel:
 
         # test `terms` input
         if isinstance(terms, list) and (
-            not all([term in self.ref_model.structure.term_names for term in terms])
+            not all([term in self.data.structure.term_names for term in terms])
         ):
             raise UserWarning(
                 "Please ensure that all terms selected for projection exist in"
@@ -86,7 +86,7 @@ class ReferenceModel:
             )
 
         if isinstance(terms, int) and (
-            terms < 0 or terms > self.ref_model.structure.model_size
+            terms < 0 or terms > self.data.structure.model_size
         ):
             raise UserWarning(
                 "Please ensure that the number of terms selected for projection"
@@ -107,7 +107,7 @@ class ReferenceModel:
 
         If ``max_terms`` is not provided, then the search path runs from the
         intercept-only model up to but not including the full model, in other
-        words we set ``max_terms = ref_model.num_terms - 1``.
+        words we set ``max_terms = data.num_terms - 1``.
 
         Args:
             max_terms (int): The number of parameters of the largest submodel in
@@ -120,7 +120,7 @@ class ReferenceModel:
         """
 
         # test `max_terms` input
-        if max_terms > self.ref_model.structure.model_size:
+        if max_terms > self.data.structure.model_size:
             raise UserWarning(
                 "Please ensure that the maximum number to consider in the "
                 + "submodel search is between 1 and the number of terms in the "
