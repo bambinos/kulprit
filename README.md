@@ -48,10 +48,9 @@ sub_model = ref_model.project(["x1"])
 
 # visualise projected parameters
 az.plot_posterior(sub_model.idata)
-plt.show()
 
-# compute the ELPD of the restricted model
-az.loo(sub_model.idata)
+# compare full and submodel predictive performance
+az.compare(dict(full=idata, sub=sub_model.idata))
 ```
 
 ## Installation
