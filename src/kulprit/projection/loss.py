@@ -12,7 +12,7 @@ class Loss(nn.Module, ABC):
     """Base loss class."""
 
     @abstractmethod
-    def forward(self):
+    def forward(self):  # pragma: no cover
         pass
 
 

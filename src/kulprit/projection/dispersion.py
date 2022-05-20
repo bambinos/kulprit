@@ -12,7 +12,7 @@ class DispersionProjector(ABC):
     """Base dispersion parameter projector class."""
 
     @abstractmethod
-    def forward(self):
+    def forward(self):  # pragma: no cover
         pass
 
 
@@ -117,11 +117,6 @@ class DispersionProjectorFactory:
         self.family_dict = {
             "gaussian": GaussianDispersionProjector,
         }
-
-        if self.family not in self.family_dict:
-            raise NotImplementedError(
-                f"The {self.family} class has not yet been implemented."
-            )
 
     def factory_method(self) -> DispersionProjector:
         """Choose the appropriate divergence class given the model."""

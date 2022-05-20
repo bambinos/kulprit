@@ -16,7 +16,7 @@ class Architecture(ABC, nn.Module):
         super().__init__()
 
     @abstractmethod
-    def forward(self):
+    def forward(self):  # pragma: no cover
         pass
 
 

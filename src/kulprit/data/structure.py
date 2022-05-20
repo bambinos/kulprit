@@ -67,5 +67,5 @@ class ModelStructure:
         self.predictions = None
 
         # extract some key dimensions needed for optimisation
-        self.num_obs, num_terms = model._design.common.design_matrix.shape
+        self.num_obs, self.num_terms = model._design.common.design_matrix.shape
         self.model_size = len(self.common_terms)  # does not include intercept

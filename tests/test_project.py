@@ -1,130 +1,124 @@
 import torch
 
-import pandas as pd
-import numpy as np
-
-import bambi as bmb
-import kulprit as kpt
+from kulprit import ReferenceModel
+from kulprit.projection.loss import KullbackLeiblerLoss
+from kulprit.projection.architecture import GLMArchitecture
 
 import pytest
 
-
-# define model data
-data = pd.DataFrame(
-    {
-        "y": np.random.normal(size=50),
-        "g": np.random.choice(["Yes", "No"], size=50),
-        "x1": np.random.normal(size=50),
-        "x2": np.random.normal(size=50),
-    }
-)
-# define and fit model with MCMC
-model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-num_draws, num_chains = 100, 1
-idata = model.fit(draws=num_draws, chains=num_chains)
-# build reference model object
-proj = kpt.Projector(model, idata)
+from . import KulpritTest
 
 
-def test_idata_is_none():
-    # test that some inference data has been automatically produced
-    proj = kpt.Projector(model)
+class TestProjector:
+    """Test projection methods in the procedure."""
 
-    assert proj.ref_model.num_draws is not None
+    def test_idata_is_none(self, bambi_model):
+        """Test that some inference data is automatically produced when None."""
 
+        no_idata_ref_model = ReferenceModel(bambi_model)
+        assert no_idata_ref_model.data.structure.num_draws is not None
 
-def test_kl_opt_forward():
-    solver = kpt.projection.optimise._KulOpt(proj.ref_model)
-    y = solver.forward(proj.ref_model.X)
+    def test_architecture_forward(self, ref_model):
+        architecture = GLMArchitecture(ref_model.data.structure)
+        y = architecture.forward(ref_model.data.structure.X)
 
-    assert y.shape == (proj.ref_model.num_draws, proj.ref_model.num_obs)
+        assert y.shape == (
+            ref_model.data.structure.num_draws,
+            ref_model.data.structure.num_obs,
+        )
 
+    def test_project_method(self, ref_model):
+        # project the reference model to some parameter subset
+        sub_model = ref_model.project(terms=["x"])
 
-def test_project_method():
-    # project the reference model to some parameter subset
-    res_model = proj.project(model_size=2)
+        assert sub_model.structure.X.shape == (ref_model.data.structure.num_obs, 2)
+        assert sub_model.structure.num_terms == 2
+        assert sub_model.structure.model_size == 1
 
-    assert res_model.X.shape == (proj.ref_model.num_obs, 3)
-    assert res_model.num_terms == 3
-    assert res_model.model_size == 2
+    def test_projected_idata_dims(self, ref_model, bambi_model_idata):
+        # extract dimensions of projected idata
+        sub_model = ref_model.project(terms=ref_model.data.structure.term_names)
+        sub_model_idata = sub_model.idata
+        print(sub_model_idata)
+        print(sub_model_idata.observed_data)
 
+        num_chain = len(sub_model_idata.posterior.coords.get("chain"))
+        num_draw = len(sub_model_idata.posterior.coords.get("draw"))
+        num_obs = len(
+            sub_model_idata.observed_data.coords.get(
+                f"{ref_model.data.structure.response_name}_dim_0"
+            )
+        )
+        disp_shape = sub_model_idata.posterior.get(
+            f"{ref_model.data.structure.response_name}_sigma"
+        ).shape
 
-def test_default_projection_set():
-    # project the reference model to the default parameter subset
-    res_model = proj.project()
+        # ensure the restricted idata object has the same dimensions as that of the
+        # reference model
+        assert num_chain == len(bambi_model_idata.posterior.coords.get("chain"))
+        assert num_draw == len(bambi_model_idata.posterior.coords.get("draw"))
+        assert num_obs == len(
+            bambi_model_idata.observed_data.coords.get(
+                f"{ref_model.data.structure.response_name}_dim_0"
+            )
+        )
+        assert (
+            disp_shape
+            == bambi_model_idata.posterior.data_vars.get(
+                f"{ref_model.data.structure.response_name}_sigma"
+            ).shape
+        )
 
-    assert res_model.X.shape == proj.ref_model.X.shape
-    assert res_model.num_terms == proj.ref_model.num_terms
-    assert res_model.model_size == proj.ref_model.model_size
+    def test_reshaping(self, ref_model):
+        """
+        Ensure that torch reshaping is performing the true inverse of arviz stacking
+        """
 
+        # extract the parameters from the reference model
+        theta = torch.from_numpy(
+            ref_model.data.idata.posterior.stack(samples=("chain", "draw"))[
+                ref_model.data.structure.term_names
+            ]
+            .to_array()
+            .transpose(*("samples", "variable"))
+            .values
+        ).float()
 
-def test_zero_model_size_project():
-    # project the reference model to zero term subset
-    res_model = proj.project(model_size=0)
+        # extract dimensions of the reference model idata object
+        num_chain = len(ref_model.data.idata.posterior.coords.get("chain"))
+        num_draw = len(ref_model.data.idata.posterior.coords.get("draw"))
+        num_terms = ref_model.data.structure.num_terms
 
-    assert res_model.X.shape == (proj.ref_model.num_obs, 1)
-    assert res_model.num_terms == 1
-    assert res_model.model_size == 0
+        # reshape torch tensor back to desired dimensions
+        reshaped = torch.reshape(theta, (num_chain, num_draw, num_terms))
 
+        # achieve similarly shaped tensor using xarray transposition
+        transposed = torch.from_numpy(
+            ref_model.data.idata.posterior[ref_model.data.structure.term_names]
+            .to_array()
+            .transpose(*("chain", "draw", "variable"))
+            .values
+        ).float()
 
-def test_negative_model_size_project():
-    with pytest.raises(UserWarning):
-        # project the reference model to a negative model size
-        proj.project(model_size=-1)
+        # ensure that these two methods both behave well
+        assert (reshaped == transposed).all()
 
+    def test_project_num_terms(self, ref_model):
+        with pytest.raises(NotImplementedError):
+            # project the reference model to some parameter subset
+            ref_model.project(terms=1)
 
-def test_too_large_model_size_project():
-    with pytest.raises(UserWarning):
-        # project the reference model to a parameter superset
-        proj.project(model_size=proj.ref_model.num_terms + 1)
+    def test_project_too_many_terms(self, ref_model):
+        with pytest.raises(UserWarning):
+            # project the reference model to some parameter subset
+            ref_model.project(terms=10)
 
+    def test_project_negative_terms(self, ref_model):
+        with pytest.raises(UserWarning):
+            # project the reference model to some parameter subset
+            ref_model.project(terms=-1)
 
-def test_projected_idata_dims():
-    # extract dimensions of projected idata
-    res_model = proj.project(model_size=0)
-    idata_perp = res_model.idata
-    num_chain = len(idata_perp.posterior.coords.get("chain"))
-    num_draw = len(idata_perp.posterior.coords.get("draw"))
-    num_obs = len(idata_perp.observed_data.coords.get("y_dim_0"))
-    disp_shape = idata_perp.posterior.get("y_sigma").shape
-
-    # ensure the restricted idata object has the same dimensions as that of the
-    # reference model
-    assert num_chain == len(idata.posterior.coords.get("chain"))
-    assert num_draw == len(idata.posterior.coords.get("draw"))
-    assert num_obs == len(idata.observed_data.coords.get("y_dim_0"))
-    assert disp_shape == idata.posterior.data_vars.get("y_sigma").shape
-
-
-def test_reshaping():
-    """
-    Ensure that torch reshaping is performing the true inverse of arviz stacking
-    """
-
-    # extract the parameters from the reference model
-    ref_model = proj.ref_model
-    theta = torch.from_numpy(
-        ref_model.idata.posterior.stack(samples=("chain", "draw"))[ref_model.term_names]
-        .to_array()
-        .transpose(*("samples", "variable"))
-        .values
-    ).float()
-
-    # extract dimensions of the reference model idata object
-    num_chain = len(ref_model.idata.posterior.coords.get("chain"))
-    num_draw = len(ref_model.idata.posterior.coords.get("draw"))
-    num_terms = ref_model.num_terms
-
-    # reshape torch tensor back to desired dimensions
-    reshaped = torch.reshape(theta, (num_chain, num_draw, num_terms))
-
-    # achieve similarly shaped tensor using xarray transposition
-    transposed = torch.from_numpy(
-        ref_model.idata.posterior[ref_model.term_names]
-        .to_array()
-        .transpose(*("chain", "draw", "variable"))
-        .values
-    ).float()
-
-    # ensure that these two methods both behave well
-    assert (reshaped == transposed).all()
+    def test_project_wrong_term_names(self, ref_model):
+        with pytest.raises(UserWarning):
+            # project the reference model to some parameter subset
+            ref_model.project(terms=["spam", "ham"])

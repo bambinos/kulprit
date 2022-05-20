@@ -1,3 +1,2 @@
 class SearchPath:
-    def __init__(self):
-        pass
+    """Search path object for model selection procedure."""

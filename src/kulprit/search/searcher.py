@@ -1,9 +1,5 @@
-from ..data import ModelData
-
-
 class Searcher:
-    def __init__(self, ref_model: ModelData) -> None:
-        pass
+    """Primary search method object."""
 
-    def search(self):
-        raise NotImplementedError
+    def __init__(self, data) -> None:
+        self.data = data

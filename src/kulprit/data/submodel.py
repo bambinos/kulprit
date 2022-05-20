@@ -20,7 +20,7 @@ class SubModel(ABC):
     """Abstract base class for submodel data classes."""
 
     @abstractmethod
-    def create(self):
+    def create(self):  # pragma: no cover
         pass
 
 
