@@ -167,7 +167,6 @@ class SubModelInferenceData(SubModel):
             for key, value in log_likelihood.items()
         )
 
-        print(self.data.idata.observed_data)
         # add observed data component of projected idata
         observed_data = {
             self.data.structure.response_name: self.data.idata.observed_data.get(
@@ -198,11 +197,6 @@ class SubModelInferenceData(SubModel):
         Returns:
             list: The list of dictionaries of point samples
         """
-
-        print(self.data)
-        print(self.data.structure)
-        print(self.data.structure.backend)
-        print(self.data.structure.backend.model)
 
         # build samples dictionary from posterior of idata
         samples = {
