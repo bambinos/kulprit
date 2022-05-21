@@ -15,12 +15,14 @@ from .architecture import GLMArchitecture
 from .dispersion import DispersionProjectorFactory
 from ..data import ModelData
 from ..data.submodel import SubModelStructure, SubModelInferenceData
+from ..search.path import SearchPath
 
 
 class Projector:
     def __init__(
         self,
         data: ModelData,
+        path: Optional[SearchPath] = None,
         num_iters: Optional[int] = 200,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
@@ -63,24 +65,14 @@ class Projector:
         """
 
         # test `model_size` input
-        if terms < 0:
+        if terms not in list(self.path.k_submodel.keys()):
             raise UserWarning(
-                "`model_size` parameter must be non-negative, received value "
-                + f"{terms}."
-            )
-        if terms > self.data.structure.model_size:
-            raise UserWarning(
-                "`model_size` parameter cannot be greater than the size of the"
-                + f" reference model ({self.data.structure.model_size}), received"
-                + f" value {terms}."
+                "In order to project onto an integer number of terms, please "
+                + "first complete a parameter search."
             )
 
-        # in the future we will select the "best" `args` variables according to a
-        # previously run search
-        raise NotImplementedError(
-            "The project method currently only accepts the names of the "
-            + "parameters to project as inputs",
-        )
+        # project onto the search path submodel with `terms` number of terms
+        return self.path.k_submodel[terms]
 
     @typedispatch
     def project(self, terms: list) -> ModelData:
