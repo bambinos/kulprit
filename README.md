@@ -30,21 +30,17 @@ import arviz as az
 import matplotlib.pyplot as plt
 
 # define model data
-data = pd.DataFrame({
-    "y": np.random.normal(size=50),
-    "x1": np.random.normal(size=50),
-    "x2": np.random.normal(size=50)
-})
+data = data = bmb.load_data("my_data")
+
 # define and fit model with MCMC
-model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-num_draws, num_chains = 1_000, 2
+model = bmb.Model("y ~ x + z", data, family="gaussian")
+num_draws, num_chains = 2_000, 2
 idata = model.fit(draws=num_draws, chains=num_chains)
 
 # build reference model object
 ref_model = kpt.ReferenceModel(model, idata)
-
-# project the reference model to some parameter subset
-sub_model = ref_model.project(["x1"])
+# project the reference model to some parameter subset and plot posterior
+sub_model = ref_model.project(terms=["x"])
 
 # visualise projected parameters
 az.plot_posterior(sub_model.idata)
