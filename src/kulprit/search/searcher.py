@@ -1,6 +1,5 @@
 """Core search module."""
 
-
 from typing import Optional
 from typing_extensions import Literal
 
@@ -8,12 +7,14 @@ import pandas as pd
 import arviz as az
 
 from ..data import ModelData
-from ..projection import Projector
+from ..projection.projector import Projector
 from .path import SearchPath
 
 
 class Searcher:
     def __init__(self, data: ModelData, projector: Projector) -> None:
+        """Initialise forward search class."""
+
         # initialise reference model and set of reference model term names
         self.data = data
         self.term_names = data.structure.common_terms
@@ -28,6 +29,8 @@ class Searcher:
         self.search_completed = False
 
     def __repr__(self) -> str:
+        """String representation of the search path."""
+
         return self.path.__repr__()
 
     def search(self, max_terms: int) -> SearchPath:

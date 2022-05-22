@@ -11,7 +11,7 @@ import torch
 
 from .data import ModelData
 from .data.structure import ModelStructure
-from .projection.projector import Projector
+from .projection import Projector
 from .search.searcher import Searcher
 from .search.path import SearchPath
 from .formatting import spacify, multilinify

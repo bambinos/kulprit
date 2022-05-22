@@ -1,11 +1,18 @@
-from ..data import ModelData
+"""Search path module."""
+
 from typing import List
+
+import pandas as pd
+
+from ..data import ModelData
 
 
 class SearchPath:
     """Search path object for model selection procedure."""
 
     def __init__(self, ref_terms: list) -> None:
+        """Initialise search path class."""
+
         # set limit to number of terms in search path
         self.ref_terms = ref_terms
 
@@ -21,11 +28,17 @@ class SearchPath:
         return self.k_submodel[k]
 
     def __repr__(self) -> str:
-        string = "Search path\n----------\n"
+        """String representation of the search path."""
 
-        for k, submodel in self.k_submodel.items():
-            string += f"Model of size {k} with terms: {submodel.structure.term_names}. "
-            string += f"Distance to reference model: {submodel.dist_to_ref_model:.2f}.\n"
+        path_dict = {
+            k: [submodel.structure.term_names, submodel.dist_to_ref_model]
+            for k, submodel in self.k_submodel.items()
+        }
+        df = pd.DataFrame.from_dict(
+            path_dict, orient="index", columns=["Terms", "Distance from reference model"]
+        )
+        df.index.name = "Model size"
+        string = df.to_string()
         return string
 
     def add_submodel(

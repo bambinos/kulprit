@@ -1,6 +1,5 @@
 """Base projection class."""
 
-
 from fastcore.dispatch import typedispatch
 from typing import Optional, List
 
