@@ -45,10 +45,29 @@ class GaussianFamily(BaseFamily):
             theta_perp = np.linalg.inv(X_perp.T @ X_perp) @ X_perp.T @ f
             return theta_perp
 
-        # extract submodel design matrix
-        X_perp = submodel_structure.X.numpy()
+        def _kld(theta_ast: np.float32, theta_perp: np.float32) -> np.float32:
+            """Compute the analytic KL divergence between two posterior samples.
 
-        # retrieve reference model design matrix
+            We separate this solution from the primary method to allow for
+            vectorisation of the projection across samples.
+
+            Args:
+                theta_ast (np.float32): The reference model posterior
+                    parameter samples
+                theta_per (np.float32): The submodel posterior parameter samples
+
+            Returns:
+                np.float32: Analytic Kullback-Leibler divergence between the two
+                    samples
+            """
+
+            f = X_ast @ theta_ast
+            f_perp = X_ast @ theta_ast
+            kld = (f - f_perp).T @ (f - f_perp)
+            return kld
+
+        # extract submodel and reference model design matrices
+        X_perp = submodel_structure.X.numpy()
         X_ast = self.data.structure.X.numpy()
 
         # extract reference model posterior parameter samples
@@ -69,12 +88,19 @@ class GaussianFamily(BaseFamily):
         )
 
         # project the reference model posterior parameter samples
-        theta_perp = torch.from_numpy(vec_analytic_proj(theta_ast)).float()
-        theta_ast = torch.from_numpy(theta_ast).float()
+        theta_perp = vec_analytic_proj(theta_ast)
 
         # compute the Kullback-Leibler divergence between projection and truth
-        loss = None
+        vec_kld = np.vectorize(
+            _kld,
+            signature="(n),(m)->()",
+            doc="Vectorised `_kld` method",
+        )
+        total_kld = torch.from_numpy(vec_kld(theta_ast, theta_perp)).float()
+        loss = torch.mean(total_kld).item()
 
+        # convert the projected parameters to a tensor and return
+        theta_perp = torch.from_numpy(theta_perp).float()
         return theta_perp, loss
 
     def solve_dispersion(self, theta_perp: torch.tensor, X_perp: torch.tensor):
@@ -101,26 +127,25 @@ class GaussianFamily(BaseFamily):
             vectorisation of the projection across samples.
 
             Args:
-                theta_ast (torch.tensor):
-                theta_perp (torch.tensor):
-                sigma_ast (torch.tensor):
+                theta_ast (torch.tensor): Reference model posterior parameter
+                    sample
+                theta_perp (torch.tensor): Submodel projected parameter sample
+                sigma_ast (torch.tensor): Reference model posterior dispersion
+                    parameter sample
 
             Returns:
                 np.ndarray: The sample projection of the dispersion parameter in
                     a Gaussian model according to the analytic solution
             """
 
-            f = self.X_ast @ theta_ast
-            f_perp = self.X_perp @ theta_perp
+            f = X_ast @ theta_ast
+            f_perp = X_perp @ theta_perp
             sigma_perp = torch.sqrt(
                 sigma_ast**2
                 + 1 / self.data.structure.num_obs * (f - f_perp).T @ (f - f_perp)
             )
             sigma_perp = sigma_perp.numpy()
             return sigma_perp
-
-        # log the submodel design matrix
-        self.X_perp = X_perp
 
         # extract parameter draws from both models
         theta_ast = torch.from_numpy(
@@ -138,7 +163,7 @@ class GaussianFamily(BaseFamily):
             .transpose()
             .values
         ).float()
-        self.X_ast = self.data.structure.X
+        X_ast = self.data.structure.X
 
         # project the dispersion parameter
         vec_dispersion_proj = np.vectorize(
