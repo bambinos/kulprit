@@ -1,20 +1,13 @@
 """Base projection class."""
 
-
 from fastcore.dispatch import typedispatch
-from typing import Optional, List
+from typing import Optional, List, Union
+from typing_extensions import Literal
 
-import arviz as az
-from arviz import InferenceData
-from bambi.models import Model
-import numpy as np
-import torch
-
-from .loss import KullbackLeiblerLoss
-from .architecture import GLMArchitecture
-from .dispersion import DispersionProjectorFactory
-from ..data import ModelData
-from ..data.submodel import SubModelStructure, SubModelInferenceData
+from kulprit.data.data import ModelData
+from kulprit.data.submodel import SubModelStructure, SubModelInferenceData
+from kulprit.families.family import Family
+from kulprit.projection.solvers.solver import Solver
 
 
 class Projector:
@@ -27,10 +20,10 @@ class Projector:
         """Reference model builder for projection predictive model selection.
 
         This class handles the core projection methods of the model selection
-        procedure. Note that throughout the procedure, variables with names of the form
-        ``*_ast`` belong to the reference model while variables with names like
-        ``*_perp`` belong to the restricted model. This is to preserve notation
-        choices from previous papers on the topic.
+        procedure. Note that throughout the procedure, variables with names of
+        the form ``*_ast`` belong to the reference model while variables with
+        names like ``*_perp`` belong to the restricted model. This is to
+        preserve notation choices from previous papers on the topic.
 
         Args:
             data (kulprit.data.ModelData): Reference model dataclass object
@@ -41,70 +34,64 @@ class Projector:
         # log reference model data object
         self.data = data
 
-        # build loss function from reference model
-        self.loss = KullbackLeiblerLoss(self.data)
-
-        # build dispersion parameter projector class from factory methods
-        self.disp_projector = DispersionProjectorFactory(self.data)
+        # build model family
+        self.family = Family(self.data)
 
         # set optimiser parameters
         self.num_iters = num_iters
         self.learning_rate = learning_rate
 
-    @typedispatch
-    def project(self, terms: int) -> ModelData:
-        """Wrapper function for projection method when number of terms passed.
+    def project(
+        self,
+        terms: Union[List[str], int],
+        method: Literal["analytic", "gradient"],
+    ) -> ModelData:
+        """Wrapper function for projection method.
 
         Args:
-            terms (int): The number of parameters to project onto the submodel
+            terms (Union[List[str], int]): Either a list of strings containing
+                the names of the parameters to include the submodel, or the
+                number of parameters to include in the submodel, **not**
+                including the intercept term
+            method (str): The projection method to employ, either "analytic" to
+                use the hard-coded solutions the optimisation problem, or
+                "gradient" to employ gradient descent methods
 
-        Return:
-            kulprit.data.ModelData: Projected submodel
+        Returns:
+            kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
-        # test `model_size` input
-        if terms < 0:
-            raise UserWarning(
-                "`model_size` parameter must be non-negative, received value "
-                + f"{terms}."
+        # project terms by name
+        if isinstance(terms, list):
+            # test `terms` input
+            if not all([term in self.data.structure.term_names for term in terms]):
+                raise UserWarning(
+                    "Please ensure that all terms selected for projection exist in"
+                    + " the reference model."
+                )
+
+            # perform projection
+            return self.project_names(term_names=terms, method=method)
+
+        # project a number of terms
+        elif isinstance(terms, int):
+            # in the future we will select the "best" `args` variables according to a
+            # previously run search
+            raise NotImplementedError(
+                "The project method currently only accepts the names of the "
+                + "parameters to project as inputs",
             )
-        if terms > self.data.structure.model_size:
+
+        else:
             raise UserWarning(
-                "`model_size` parameter cannot be greater than the size of the"
-                + f" reference model ({self.data.structure.model_size}), received"
-                + f" value {terms}."
+                "Please provide either the number of parameters to project "
+                + "onto the submodel, or their names as a list of strings."
             )
-
-        # in the future we will select the "best" `args` variables according to a
-        # previously run search
-        raise NotImplementedError(
-            "The project method currently only accepts the names of the "
-            + "parameters to project as inputs",
-        )
-
-    @typedispatch
-    def project(self, terms: list) -> ModelData:
-        """Wrapper function for projection method when a list is passed.
-
-        Args:
-            terms (List[int]): The names of the parameters to project onto the
-                submodel
-
-        Return:
-            kulprit.data.ModelData: Projected submodel
-        """
-
-        # test args type for bad lists
-        assert all(
-            isinstance(s, str) for s in terms
-        ), "List must include variable names as strings."
-
-        # perform projection
-        return self.project_names(term_names=terms)
 
     def project_names(
         self,
-        term_names: List[str],
+        term_names: List[List[str]],
+        method: Literal["analytic", "gradient"],
     ) -> ModelData:
         """Primary projection method for GLM reference model.
 
@@ -116,6 +103,7 @@ class Projector:
         Args:
             term_names (List[str]): The names of parameters to project onto the
                 submodel, **not** including the intercept term
+            method (str): The method to use in projection
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
@@ -123,70 +111,34 @@ class Projector:
 
         # build restricted model object
         structure_factory = SubModelStructure(self.data)
-        sub_model_structure = structure_factory.create(term_names)
+        submodel_structure = structure_factory.create(term_names)
+
+        # build solver
+        self.solver = Solver(
+            data=self.data,
+            family=self.family,
+            method=method,
+            num_iters=self.num_iters,
+            learning_rate=self.learning_rate,
+        )
+
+        # solve the parameter projections depending on method
+        theta_perp, final_loss = self.solver.solve(submodel_structure)
 
         # extract restricted design matrix
-        X_perp = sub_model_structure.X
-
-        # extract reference model posterior predictions
-        y_ast = torch.from_numpy(
-            self.data.structure.predictions.stack(samples=("chain", "draw"))
-            .transpose(*("samples", f"{self.data.structure.response_name}_dim_0"))
-            .values
-        ).float()
-
-        # define the submodel's architecture
-        # note that currently, only GLMs are supported by the procedure
-        self.architecture = GLMArchitecture(sub_model_structure)
-
-        # project parameter samples and compute distance from reference model
-        theta_perp, final_loss = self.optimise(X_perp, y_ast)
+        X_perp = submodel_structure.X
 
         # project dispersion parameters in the model, if present
-        disp_perp = self.disp_projector.forward(theta_perp, X_perp)
+        disp_perp = self.family.solve_dispersion(theta_perp, X_perp)
 
         # build the complete restricted model posterior
         idata_factory = SubModelInferenceData(self.data)
-        sub_model_idata = idata_factory.create(
-            sub_model_structure, theta_perp, disp_perp
-        )
+        sub_model_idata = idata_factory.create(submodel_structure, theta_perp, disp_perp)
 
         # finally, combine these projected structure and idata into `ModelData`
         sub_model = ModelData(
-            structure=sub_model_structure,
+            structure=submodel_structure,
             idata=sub_model_idata,
             dist_to_ref_model=final_loss,
         )
         return sub_model
-
-    def optimise(self, X_perp, y_ast):
-        """Optimisation loop in projection.
-
-        Args:
-            X_perp (torch.tensor):
-            y_ast (torch.tensor):
-
-        Returns:
-            Tuple[torch.tensor, torch.tensor]: A tuple of the projected
-                parameter draws as well as the final loss value (distance from
-                reference model)
-        """
-
-        # build optimisation framework
-        solver = self.architecture
-        solver.zero_grad()
-        opt = torch.optim.Adam(solver.parameters(), lr=self.learning_rate)
-
-        # run optimisation loop
-        for _ in range(self.num_iters):
-            opt.zero_grad()
-            y_perp = solver(X_perp)
-            loss = self.loss.forward(y_ast, y_perp)
-            loss.backward()
-            opt.step()
-
-        # extract projected parameters and final loss function value
-        theta_perp = list(solver.parameters())[0].data
-        dist_to_ref_model = loss.item()
-
-        return theta_perp, dist_to_ref_model

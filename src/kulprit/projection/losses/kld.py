@@ -1,22 +1,12 @@
-"""Losses module."""
-
-from abc import ABC, abstractmethod
+"""Kullback-Leibler divergence losses module."""
 
 import torch
-import torch.nn as nn
 
-from ..data import ModelData
-
-
-class Loss(nn.Module, ABC):
-    """Base loss class."""
-
-    @abstractmethod
-    def forward(self):  # pragma: no cover
-        pass
+from kulprit.families.family import Family
+from kulprit.projection.losses import Loss
 
 
-class KullbackLeiblerLoss(Loss):
+class KullbackLeiblerLoss:
     """Kullback-Leibler (KL) divergence loss module.
 
     This class computes some KL divergence loss for observations seen from the
@@ -24,34 +14,33 @@ class KullbackLeiblerLoss(Loss):
     motivated loss function by Goutis and Robert (1998).
     """
 
-    def __init__(self, data: ModelData) -> None:
+    def __init__(self, family: Family) -> None:
         """Loss module constructor.
 
         Args:
-            data (kulprit.data.ModelData): Reference model dataclass object
+            family (Family): Reference model family object
         """
 
-        super().__init__()
+        # log family and retrieve family name
+        self.family = family
+        self.family_name = family.family.name
 
         # define all available KL divergence loss classes
-        self.family_dict = {
+        self.loss_dict = {
             "gaussian": GaussianKullbackLeiblerLoss,
         }
 
-        # log family name
-        self.family = data.structure.family
-
-        if self.family not in self.family_dict:
+        if self.family_name not in self.loss_dict:
             raise NotImplementedError(
-                f"The {self.family} class has not yet been implemented."
+                f"The {self.family_name} class has not yet been implemented."
             )
 
     def factory_method(self) -> Loss:
         """Choose the appropriate divergence class given the model."""
 
         # return appropriate divergence class given model variate family
-        div_class = self.family_dict[self.family]
-        return div_class()
+        loss_class = self.loss_dict[self.family_name]
+        return loss_class()
 
     def forward(self, P: torch.tensor, Q: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.
@@ -72,9 +61,9 @@ class KullbackLeiblerLoss(Loss):
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
-        div_class = self.factory_method()
-        divs = div_class.forward(P, Q)
-        return divs
+        loss_class = self.factory_method()
+        loss = loss_class.forward(P, Q)
+        return loss
 
 
 class GaussianKullbackLeiblerLoss(Loss):
@@ -84,15 +73,16 @@ class GaussianKullbackLeiblerLoss(Loss):
         """Kullback-Leibler divergence between two Gaussians.
 
         Args:
-            P (torch.tensor): Tensor of reference model posterior draws
-            Q (torch.tensor): Tensor of restricted model posterior draws
+            P (torch.tensor): Tensor of reference model posterior parameter
+                draws
+            Q (torch.tensor): Tensor of submodel posterior parameter draws
 
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
-        # compute Wasserstein distance as a KL divergence surrogate
-        div = torch.mean((P - Q) ** 2)
+        # compute KL divergence loss
+        loss = torch.mean(torch.abs(P - Q) ** 2) ** (1 / 2)
 
-        assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
-        return div
+        assert loss.shape == (), f"Expected data dimensions {()}, received {loss.shape}."
+        return loss

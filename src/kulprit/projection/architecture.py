@@ -1,26 +1,55 @@
-"""Restricted model projection optimiser module."""
-
-from abc import ABC, abstractmethod
+"""Model architecture module."""
 
 import torch
 import torch.nn as nn
 
-from ..data import ModelData
-from ..data.structure import ModelStructure
+from kulprit.data.submodel import SubModelStructure
 
 
-class Architecture(ABC, nn.Module):
+class BaseArchitecture(nn.Module):
     """Base optimiser class."""
 
     def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def forward(self):  # pragma: no cover
-        pass
+        super(BaseArchitecture, self).__init__()
 
 
-class GLMArchitecture(Architecture):
+class Architecture:
+    """Architecture factory class."""
+
+    def __init__(self, submodel_structure: SubModelStructure) -> None:
+        """Architecture factory constructor.
+
+        Args:
+            submodel_structure (SubModelStructure): The submodel stucture data
+                object
+        """
+
+        # log model data
+        self.submodel_structure = submodel_structure
+
+        # define all available KL divergence loss classes
+        self.architecture_dict = {
+            "glm": GLMArchitecture,
+        }
+
+        if self.submodel_structure.architecture not in self.architecture_dict:
+            raise NotImplementedError(
+                f"The {self.submodel_structure.architecture} architecture has "
+                + "not yet been implemented."
+            )
+
+        # build architecture class
+        self.architecture = self.factory_method()
+
+    def factory_method(self) -> BaseArchitecture:
+        """Choose the appropriate architecture class given the model."""
+
+        # return appropriate divergence class given model variate family
+        architecture_class = self.architecture_dict[self.submodel_structure.architecture]
+        return architecture_class(self.submodel_structure)
+
+
+class GLMArchitecture(BaseArchitecture):
     """Core optimisation solver class.
 
     This class solves the general problem of Kullback-Leibler divergence
@@ -37,23 +66,25 @@ class GLMArchitecture(Architecture):
         lin (torch.nn module): The linear transformation module
     """
 
-    def __init__(self, structure: ModelStructure) -> None:
+    def __init__(self, submodel_structure: SubModelStructure) -> None:
         """GLM architecture class for forward propagation in optimisation.
 
         Args:
-            structure (kulprit.data.ModelStructure): The structure object of the
-                submodel
+            submodel_structure (kulprit.data.SubModelStructure): The structure object of
+                the submodel
         """
 
-        super().__init__()
+        super(GLMArchitecture, self).__init__()
 
         # assign data shapes and GLM inverse link function
-        self.num_obs = structure.num_obs
-        self.num_terms = structure.num_terms
-        self.num_draws = structure.num_draws
-        self.inv_link = structure.link.linkinv
+        self.num_obs = submodel_structure.num_obs
+        self.num_terms = submodel_structure.num_terms
+        self.num_draws = submodel_structure.num_draws
+        self.inv_link = submodel_structure.link.linkinv
         # build linear component of GLM without intercept
-        self.lin = nn.Linear(structure.num_terms, structure.num_draws, bias=False)
+        self.lin = nn.Linear(
+            submodel_structure.num_terms, submodel_structure.num_draws, bias=False
+        )
 
     def forward(self, X: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.
@@ -63,9 +94,9 @@ class GLMArchitecture(Architecture):
                 (num_obs, num_terms)
 
         Returns:
-            y (torch.tensor): Model outputs of shape (num_obs, num_draws)
+            torch.tensor: Model outputs of shape (num_obs, num_draws)
         """
 
         # perform forward prediction step
-        y = self.inv_link(self.lin.forward(X).T)
-        return y
+        out = self.inv_link(self.lin.forward(X).T)
+        return out
