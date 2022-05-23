@@ -41,7 +41,7 @@ class GradientDescentSolver(BaseSolver):
 
         # build architecture and loss methods for gradient descent
         self.architecture = Architecture(submodel_structure)
-        self.loss = KullbackLeiblerLoss(self.family).loss
+        self.loss = KullbackLeiblerLoss(self.family)
 
         # extract submodel design matrix
         X_perp = submodel_structure.X
@@ -73,13 +73,14 @@ class GradientDescentSolver(BaseSolver):
         # build optimisation framework
         solver = self.architecture.architecture
         solver.zero_grad()
+        loss_fun = self.loss.loss
         optim = torch.optim.Adam(solver.parameters(), lr=self.learning_rate)
 
         # run optimisation loop
         for _ in range(self.num_iters):
             optim.zero_grad()
             y_perp = solver(X_perp)
-            loss = self.loss.forward(y_ast, y_perp)
+            loss = loss_fun.forward(y_ast, y_perp)
             loss.backward()
             optim.step()
 
