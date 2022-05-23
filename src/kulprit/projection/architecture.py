@@ -32,7 +32,9 @@ class Architecture:
             "glm": GLMArchitecture,
         }
 
-        if self.submodel_structure.architecture not in self.architecture_dict:
+        if (
+            self.submodel_structure.architecture not in self.architecture_dict
+        ):  # pragma: no cover
             raise NotImplementedError(
                 f"The {self.submodel_structure.architecture} architecture has "
                 + "not yet been implemented."

@@ -28,7 +28,7 @@ class Family:
         # test family name
         if self.family_name not in self.family_dict:
             raise NotImplementedError(
-                f"The {self.family} family has not yet been implemented."
+                f"The {self.family_name} family has not yet been implemented."
             )
 
         # build BaseFamily object
@@ -53,8 +53,8 @@ class Family:
         """
 
         # test whether or not the family has an analytic solution
-        if not self.family.has_analytic_solution:
-            return None
+        if not self.family.has_analytic_solution:  # pragma: no cover
+            raise UserWarning(f"Cannot project {self.family.name} analytically.")
 
         # compute the solution and return
         solution = self.family.solve_analytic(submodel_structure=submodel_structure)
@@ -74,7 +74,7 @@ class Family:
         """
 
         # test whether or not the family has dispersion parameters
-        if not self.family.has_dispersion_parameters:
+        if not self.family.has_dispersion_parameters:  # pragma: no cover
             return None
 
         # compute the solution and return

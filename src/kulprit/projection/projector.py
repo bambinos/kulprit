@@ -129,7 +129,7 @@ class Projector:
         X_perp = submodel_structure.X
 
         # project dispersion parameters in the model, if present
-        disp_perp = self.family.solve_dispersion(theta_perp, X_perp)
+        disp_perp = self.solver.solve_dispersion(theta_perp, X_perp)
 
         # build the complete restricted model posterior
         idata_factory = SubModelInferenceData(self.data)

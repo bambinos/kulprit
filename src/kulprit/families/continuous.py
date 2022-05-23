@@ -42,7 +42,8 @@ class GaussianFamily(BaseFamily):
             """
 
             f = X_ast @ theta_ast
-            theta_perp = np.linalg.inv(X_perp.T @ X_perp) @ X_perp.T @ f
+            jitter = np.identity(submodel_structure.num_terms) * 1e-5
+            theta_perp = np.linalg.inv(X_perp.T @ X_perp + jitter) @ X_perp.T @ f
             return theta_perp
 
         def _kld(theta_ast: np.float32, theta_perp: np.float32) -> np.float32:

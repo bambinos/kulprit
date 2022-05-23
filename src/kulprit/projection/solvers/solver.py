@@ -18,17 +18,18 @@ class Solver:
         self,
         data: ModelData,
         family: Family,
-        method: Literal["analytic", "gradient"] = "analytic",
+        method: Literal["analytic", "gradient"],
         num_iters: Optional[int] = 200,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
         """Solver factory class.
 
         Args:
-            data (ModelData):
-            method (str):
-            num_iters (int):
-            learning_rate (float):
+            data (ModelData): The reference model ModelData object
+            method (str): The method of projection to use in the procedure
+            num_iters (int): The number of iterations to run gradient descent
+            learning_rate (float): The learning rate of the gradient descent
+                optimiser
         """
 
         # log method, data, and family of the problem
@@ -51,12 +52,6 @@ class Solver:
             raise UserWarning(
                 "Please either solve the projection analytically or with "
                 + "gradient descent."
-            )
-
-        # test that the problem is analytically tractable
-        if self.method == "analytic" and not self.family.family.has_analytic_solution:
-            raise UserWarning(
-                f"The {self.family} family does not admita an analytic solution."
             )
 
     def factory_method(self) -> BaseSolver:
@@ -104,10 +99,6 @@ class Solver:
         Returns:
             torch.tensor: The restricted projections of the dispersion parameters
         """
-
-        # test whether or not the family has dispersion parameters
-        if not self.family.family.has_dispersion_parameters:
-            return None
 
         # compute the solution and return
         solution = self.family.solve_dispersion(theta_perp=theta_perp, X_perp=X_perp)
