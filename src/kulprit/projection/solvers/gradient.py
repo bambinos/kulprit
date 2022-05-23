@@ -41,7 +41,7 @@ class GradientDescentSolver(BaseSolver):
 
         # build architecture and loss methods for gradient descent
         self.architecture = Architecture(submodel_structure)
-        self.loss = KullbackLeiblerLoss(self.family)
+        self.loss = KullbackLeiblerLoss(self.family).loss
 
         # extract submodel design matrix
         X_perp = submodel_structure.X

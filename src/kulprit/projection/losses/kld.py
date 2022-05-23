@@ -30,10 +30,13 @@ class KullbackLeiblerLoss:
             "gaussian": GaussianKullbackLeiblerLoss,
         }
 
+        # test that family has been implemented
         if self.family_name not in self.loss_dict:
             raise NotImplementedError(
                 f"The {self.family_name} class has not yet been implemented."
             )
+
+        self.loss = self.factory_method()
 
     def factory_method(self) -> Loss:
         """Choose the appropriate divergence class given the model."""
@@ -61,13 +64,15 @@ class KullbackLeiblerLoss:
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
-        loss_class = self.factory_method()
-        loss = loss_class.forward(P, Q)
-        return loss
+        kld = self.loss.forward(P, Q)
+        return kld
 
 
 class GaussianKullbackLeiblerLoss(Loss):
     """Gaussian empirical KL divergence class."""
+
+    def __init__(self) -> None:
+        super(GaussianKullbackLeiblerLoss, self).__init__()
 
     def forward(self, P: torch.tensor, Q: torch.tensor) -> torch.tensor:
         """Kullback-Leibler divergence between two Gaussians.

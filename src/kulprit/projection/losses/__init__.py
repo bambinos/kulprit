@@ -1,13 +1,10 @@
 """Losses module."""
 
-from abc import ABC, abstractmethod
-
 import torch.nn as nn
 
 
-class Loss(nn.Module, ABC):
+class Loss(nn.Module):
     """Base loss class."""
 
-    @abstractmethod
-    def forward(self):  # pragma: no cover
-        pass
+    def __init__(self):
+        super(Loss, self).__init__()
