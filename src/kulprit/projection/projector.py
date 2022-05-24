@@ -1,6 +1,5 @@
 """Base projection class."""
 
-from fastcore.dispatch import typedispatch
 from typing import Optional, List, Union
 from typing_extensions import Literal
 
@@ -81,7 +80,7 @@ class Projector:
         # project a number of terms
         else:
             # test `model_size` input
-            if terms not in list(self.path.k_submodel.keys()):
+            if self.path is None or terms not in list(self.path.k_submodel.keys()):
                 raise UserWarning(
                     "In order to project onto an integer number of terms, please "
                     + "first complete a parameter search."

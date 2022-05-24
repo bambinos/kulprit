@@ -97,6 +97,7 @@ class ReferenceModel:
     def search(
         self,
         max_terms: Optional[int] = None,
+        method: Literal["analytic", "gradient"] = "analytic",
     ) -> SearchPath:
         """Model search method through parameter space.
 
@@ -107,6 +108,9 @@ class ReferenceModel:
         Args:
             max_terms (int): The number of parameters of the largest submodel in
                 the search path, **not** including the intercept term
+            method (str): The projection method to employ, either "analytic" to
+                use the hard-coded solutions the optimisation problem, or
+                "gradient" to employ gradient descent methods
 
         Returns:
             kulprit.search.SearchPath: The model selection procedure search path
@@ -124,7 +128,7 @@ class ReferenceModel:
                 + "reference model."
             )
 
-        self.path = self.searcher.search(max_terms=max_terms)
+        self.path = self.searcher.search(max_terms=max_terms, method=method)
         self.projector.path = self.path  # feed path result through to the projector
         return self.path
 

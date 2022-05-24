@@ -33,7 +33,9 @@ class Searcher:
 
         return self.path.__repr__()
 
-    def search(self, max_terms: int) -> SearchPath:
+    def search(
+        self, max_terms: int, method: Literal["analytic", "gradient"]
+    ) -> SearchPath:
         """Primary search method of the procedure.
 
         Performs forward search through the parameter space.
@@ -41,12 +43,15 @@ class Searcher:
         Args:
             max_terms (int): Number of terms to perform the forward search
                 up to.
+            method (str): The projection method to employ, either "analytic" to
+                use the hard-coded solutions the optimisation problem, or
+                "gradient" to employ gradient descent methods
         """
 
         # initial intercept-only subset
         k = 0
         k_term_names = []
-        k_submodel = self.projector.project(k_term_names)
+        k_submodel = self.projector.project(terms=k_term_names, method=method)
         k_dist = k_submodel.dist_to_ref_model
 
         # add submodel to search path
@@ -63,7 +68,8 @@ class Searcher:
             # their distances
             k_candidates = self.path.get_candidates(k=k)
             k_projections = [
-                self.projector.project(candidate) for candidate in k_candidates
+                self.projector.project(terms=candidate, method=method)
+                for candidate in k_candidates
             ]
 
             # identify the best candidate by distance from reference model
