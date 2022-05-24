@@ -15,10 +15,7 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        assert [
-            submodel.structure.term_names
-            for submodel in ref_model_copy.path.k_submodel.values()
-        ] == [["Intercept"], ["Intercept", "x"], ["Intercept", "x", "y"]]
+        assert list(ref_model_copy.path.k_submodel.keys()) == [0, 1, 2]
 
     def test_search_too_many_terms(self, ref_model):
         with pytest.raises(UserWarning):

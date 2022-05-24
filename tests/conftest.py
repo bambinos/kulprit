@@ -4,25 +4,19 @@ import kulprit as kpt
 import bambi as bmb
 
 import numpy as np
-import pandas as pd
 
 import torch
 
 import pytest
 
 # define model fitting options
-NUM_DRAWS, NUM_CHAINS = 2000, 2
-N = 10
+NUM_DRAWS, NUM_CHAINS = 50, 2
 
 
 @pytest.fixture(scope="session")
 def bambi_model():
     # define model data
-    x = np.random.rand(N)
-    y = np.random.rand(N)
-    noise = np.random.normal(loc=0.0, scale=1.0, size=N)
-    z = 2 * x + noise
-    data = pd.DataFrame({"x": x, "y": y, "z": z})
+    data = bmb.load_data("my_data")
     # define model
     model = bmb.Model("z ~ x + y", data, family="gaussian")
     return model

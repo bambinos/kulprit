@@ -129,28 +129,8 @@ class TestProjector(KulpritTest):
         # project the reference model to some parameter subset
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        submodel_int = ref_model_copy.project(terms=1)
-        submodel_name = ref_model_copy.project(terms=["x"])
-
-        assert submodel_int.structure.term_names == submodel_name.structure.term_names
-        assert (
-            (
-                submodel_int.idata.posterior.stack(samples=("chain", "draw"))[
-                    submodel_int.structure.term_names
-                ]
-                .to_array()
-                .transpose(*("samples", "variable"))
-                .values
-            )
-            == (
-                submodel_name.idata.posterior.stack(samples=("chain", "draw"))[
-                    submodel_name.structure.term_names
-                ]
-                .to_array()
-                .transpose(*("samples", "variable"))
-                .values
-            )
-        ).all()
+        submodel = ref_model_copy.project(terms=1)
+        assert submodel.structure.num_terms == 2
 
     def test_project_too_many_terms(self, ref_model):
         with pytest.raises(UserWarning):
