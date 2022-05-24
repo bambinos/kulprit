@@ -2,17 +2,10 @@
 
 import dataclasses
 
-import pandas
-
 import torch
+from arviz import InferenceData
 
-import arviz
-import pymc3
-import formulae
-import bambi
-import kulprit
-
-from ..families import Family
+from kulprit.data.structure import ModelStructure
 
 
 @dataclasses.dataclass(order=True)
@@ -23,60 +16,35 @@ class ModelData:
     procedure, allowing for more simple and legible code. Note that this class
     supports ordering, and we choose distance to reference model as our sorting
     index. Naturally, this value is set to zero for the reference model,
-    providing a hard minimum value.
+    providing a known global minimum.
 
     Attributes:
-        X (torch.tensor): Model design matrix
-        y (torch.tensor): Model variate observations
-        backend (pymc3.Model): The PyMC3 model backend
-        design (formulae.matrices.DesignMatrices): The formulae design matrix
-            object underpinning the GLM
-        link (bambi.families.Link): GLM link function object
-        family (kulprit.families.Family): Model variate family object
-        term_names (list): List of model covariates in their order of appearance
-            **not** including the `Intercept` term
-        common_terms (list): List of all terms in the model in order of
-            appearance (includes the `Intercept` term)
-        response_name (str): The name of the response given to the Bambi model
-        num_obs (int): Number of data observations
-        num_terms (int): Number of variables observed, and equivalently the
-            number of common terms in the model (including intercept)
-        num_draws (int): Number of posterior draws in the model
-        model_size (int): Number of common terms in the model (terms not
-            including the intercept)
-        has_intercept (bool): Flag whether intercept included in model
-        dist_to_ref_model (torch.tensor): The Kullback-Leibler divergence
-            between this model and the reference model
-        idata (arviz.InferenceData): InferenceData object of the model
-        predictions (arviz.InferenceData): In-sample model predictions
-        elpd (arviz.ELPDData): Model ELPD LOO estimates
+        structure (kulprit.data.ModelStructureData): ModelStructureData object
+            built from a Bambi model
+        idata (arviz.InferenceData): InferenceData object of the fitted Bambi
+            model
+        dist_to_ref_model (torch.tensor): The distance from this model to the
+            reference model being used in the procedure as defined by the loss
+            function
         sort_index (int): Sorting index attribute used in forward search method
     """
 
-    X: torch.tensor
-    y: torch.tensor
-    backend: pymc3.Model
-    design: formulae.matrices.DesignMatrices
-    link: bambi.families.Link
-    family: kulprit.families.Family
-    term_names: list
-    common_terms: list
-    response_name: str
-    num_obs: int
-    num_terms: int
-    num_draws: int
-    model_size: int
-    has_intercept: bool
+    structure: ModelStructure
+    idata: InferenceData
     dist_to_ref_model: torch.tensor
-    idata: arviz.InferenceData = None
-    predictions: arviz.InferenceData = None
-    elpd: arviz.ELPDData = None
     sort_index: int = dataclasses.field(init=False)
 
     def __post_init__(self):
+        # use the distance from the reference model as the ordering index
         self.sort_index = self.dist_to_ref_model
 
-    def __str__(self):  # pragma: no cover
-        """Returns a string containing the ELPD of the projected model."""
+        # add MCMC draws dimension to the structure object
+        self.structure.num_draws = (
+            self.idata.posterior.dims["chain"] * self.idata.posterior.dims["draw"]
+        )
 
-        return f"Projected model with ELPD:\n{self.elpd}"
+        if self.structure.predictions is None:
+            # make insample predictions for the model and append to structure
+            self.structure.predictions = self.structure.predict(
+                idata=self.idata, inplace=False, kind="pps"
+            ).posterior_predictive[self.structure.response_name]

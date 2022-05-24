@@ -30,26 +30,23 @@ import arviz as az
 import matplotlib.pyplot as plt
 
 # define model data
-data = pd.DataFrame({
-    "y": np.random.normal(size=50),
-    "g": np.random.choice(["Yes", "No"], size=50),
-    "x1": np.random.normal(size=50),
-    "x2": np.random.normal(size=50)
-})
+data = data = bmb.load_data("my_data")
+
 # define and fit model with MCMC
-model = bmb.Model("y ~ x1 + x2", data, family="gaussian")
-idata = model.fit()
+model = bmb.Model("y ~ x + z", data, family="gaussian")
+num_draws, num_chains = 2_000, 2
+idata = model.fit(draws=num_draws, chains=num_chains)
 
 # build reference model object
-proj = kpt.Projector(model, idata)
-
+ref_model = kpt.ReferenceModel(model, idata)
 # project the reference model to some parameter subset and plot posterior
-theta_perp = proj.project(model_size=2)
-az.plot_posterior(theta_perp.idata)
-plt.show()
+sub_model = ref_model.project(terms=["x"])
 
-# compute the ELPD of the restricted model
-az.loo(theta_perp.idata)
+# visualise projected parameters
+az.plot_posterior(sub_model.idata)
+
+# compare full and submodel predictive performance
+az.compare(dict(full=idata, sub=sub_model.idata))
 ```
 
 ## Installation

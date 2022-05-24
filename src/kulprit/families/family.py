@@ -1,86 +1,69 @@
-"""Kullback-Leibler divergence module."""
+"""Core family class to be accessed"""
 
-import abc
-
-import bambi
 import torch
-import numpy as np
+
+from kulprit.data.data import ModelData
+from kulprit.data.submodel import SubModelStructure
+from kulprit.families import BaseFamily
+from kulprit.families.continuous import GaussianFamily
 
 
-class Family(abc.ABC):
-    """Kullback-Leibler divergence functions switch class."""
-
-    subclasses = {}
-
-    def __init__(self):
-        super().__init__()
-
-        # set default `has_disp_params` value, as well as test attribute
-        self.__has_disp_params = None
-        self.__has_disp_params_is_set = False
-
-    @property
-    def has_disp_params(self):  # pragma: no cover
-        if not self.__has_disp_params_is_set:
-            # ensure that family classes have a value set for `has_disp_params`
-            raise NotImplementedError(
-                "Family classes must set `has_disp_params` attribute"
-            )
-        else:
-            return self.__has_disp_params
-
-    @has_disp_params.setter
-    def has_disp_params(self, value):  # pragma: no cover
-        self.__has_disp_params = value
-        self.__has_disp_params_is_set = True
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls.subclasses[cls._FAMILY_NAME] = cls
-
-    @abc.abstractmethod
-    def kl_div(self):  # pragma: no cover
-        pass
-
-    @classmethod
-    def create(cls, model: bambi.Model):
-        if model.family.name not in cls.subclasses:
-            raise NotImplementedError("Unsupported family.")
-
-        return cls.subclasses[model.family.name]()
-
-
-class Gaussian(Family):
-    _FAMILY_NAME = "gaussian"
-
-    def __init__(self):
-        super().__init__()
-        self.has_disp_params = True
-
-    def kl_div(self, P: torch.tensor, Q: torch.tensor):
-        """Kullback-Leibler divergence between two Gaussians.
+class Family:
+    def __init__(self, data: ModelData) -> None:
+        """Family factory constructor.
 
         Args:
-            P (torch.tensor): Tensor of reference model posterior draws
-            Q (torch.tensor): Tensor of restricted model posterior draws
-
-        Returns:
-            torch.tensor: Tensor of shape () containing sample KL divergence
+            data (kulprit.data.ModelData): Reference model dataclass object
         """
 
-        # compute Wasserstein distance as a KL divergence surrogate
-        div = torch.mean((P - Q) ** 2)
-        assert div.shape == (), f"Expected data dimensions {()}, received {div.shape}."
-        return div
+        # log model data and family name
+        self.data = data
+        self.family_name = data.structure.family
 
-    def _project_disp_params(
-        self, ref_model, theta_perp: torch.tensor, X_perp: torch.tensor
-    ):
+        # define all available family classes
+        self.family_dict = {
+            "gaussian": GaussianFamily,
+        }
+
+        # test family name
+        if self.family_name not in self.family_dict:
+            raise NotImplementedError(
+                f"The {self.family_name} family has not yet been implemented."
+            )
+
+        # build BaseFamily object
+        self.family = self.factory_method()
+
+    def factory_method(self) -> BaseFamily:
+        """Choose the appropriate family class given the model."""
+
+        # return appropriate family class given model variate family
+        family_class = self.family_dict[self.family_name]
+        return family_class(self.data)
+
+    def solve_analytic(self, submodel_structure: SubModelStructure) -> torch.tensor:
+        """Analytic solution to the reference model parameter projection.
+
+        Args:
+            submodel_structure (SubModelStructure): The submodel structure object
+
+        Returns
+            tuple: A tuple of the projection solution along with the final loss
+                value of the gradient descent
+        """
+
+        # test whether or not the family has an analytic solution
+        if not self.family.has_analytic_solution:  # pragma: no cover
+            raise UserWarning(f"Cannot project {self.family.name} analytically.")
+
+        # compute the solution and return
+        solution = self.family.solve_analytic(submodel_structure=submodel_structure)
+        return solution
+
+    def solve_dispersion(self, theta_perp: torch.tensor, X_perp: torch.tensor):
         """Analytic projection of the model dispersion parameters.
 
         Args:
-            ref_model (kulprit.ModelData): The reference model whose dispersion
-                parameters to project
             theta_perp (torch.tensor): A PyTorch tensor of the restricted
                 parameter draws
             X_perp (np.ndarray): The design matrix of the restricted model we
@@ -90,45 +73,10 @@ class Gaussian(Family):
             torch.tensor: The restricted projections of the dispersion parameters
         """
 
-        def _proj(theta_ast: np.ndarray, theta_perp: np.ndarray, sigma_ast: np.ndarray):
-            """Projection method to aid with vectorisation."""
+        # test whether or not the family has dispersion parameters
+        if not self.family.has_dispersion_parameters:  # pragma: no cover
+            return None
 
-            f = X_ast @ theta_ast
-            f_perp = X_perp @ theta_perp
-            sigma_perp = torch.sqrt(
-                sigma_ast**2 + 1 / ref_model.num_obs * (f - f_perp).T @ (f - f_perp)
-            )
-            sigma_perp = sigma_perp.numpy()
-            return sigma_perp
-
-        # define the term names of both models
-        ref_model.term_names
-        # extract parameter draws from both models
-        theta_ast = torch.from_numpy(
-            ref_model.idata.posterior.stack(samples=("chain", "draw"))[
-                ref_model.term_names
-            ]
-            .to_array()
-            .transpose(*("samples", "variable"))
-            .values
-        ).float()
-        sigma_ast = torch.from_numpy(
-            ref_model.idata.posterior.stack(samples=("chain", "draw"))[
-                ref_model.response_name + "_sigma"
-            ]
-            .transpose()
-            .values
-        ).float()
-        X_ast = ref_model.X
-        # project the dispersion parameter
-        _vec_proj = np.vectorize(
-            _proj, signature="(n),(m),()->()", doc="Vectorised `_proj` method"
-        )
-        sigma_perp = (
-            torch.from_numpy(_vec_proj(theta_ast, theta_perp, sigma_ast))
-            .flatten()
-            .float()
-        )
-        # assure correct shape
-        assert sigma_perp.shape == sigma_ast.shape
-        return sigma_perp
+        # compute the solution and return
+        solution = self.family.solve_dispersion(theta_perp=theta_perp, X_perp=X_perp)
+        return solution
