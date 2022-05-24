@@ -4,7 +4,7 @@ from typing import List
 
 import pandas as pd
 
-from ..data import ModelData
+from kulprit.data.data import ModelData
 
 
 class SearchPath:

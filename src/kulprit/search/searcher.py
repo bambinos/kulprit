@@ -6,9 +6,9 @@ from typing_extensions import Literal
 import pandas as pd
 import arviz as az
 
-from ..data import ModelData
-from ..projection.projector import Projector
-from .path import SearchPath
+from kulprit.data.data import ModelData
+from kulprit.projection.projector import Projector
+from kulprit.search.path import SearchPath
 
 
 class Searcher:
@@ -86,9 +86,8 @@ class Searcher:
                 k_dist=best_dist,
             )
 
-        # toggle indicator variable
+        # toggle indicator variable and return search path
         self.search_completed = True
-
         return self.path
 
     def loo_compare(

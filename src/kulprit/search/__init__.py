@@ -1,2 +1,1 @@
-from .searcher import Searcher
-from .path import SearchPath
+"""Base search module."""

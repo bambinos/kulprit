@@ -9,8 +9,9 @@ import pandas as pd
 import torch
 
 from kulprit.data import ModelData, ModelStructure
-from kulprit.projection import Projector
-from kulprit.search import Searcher, SearchPath
+from kulprit.projection.projector import Projector
+from kulprit.search.path import SearchPath
+from kulprit.search.searcher import Searcher
 
 
 class ReferenceModel:
@@ -124,7 +125,7 @@ class ReferenceModel:
             )
 
         self.path = self.searcher.search(max_terms=max_terms)
-        self.projector.path = self.path
+        self.projector.path = self.path  # feed path result through to the projector
         return self.path
 
     def loo_compare(

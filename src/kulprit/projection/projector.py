@@ -43,6 +43,9 @@ class Projector:
         self.num_iters = num_iters
         self.learning_rate = learning_rate
 
+        # initialise search path
+        self.path = path
+
     def project(
         self,
         terms: Union[List[str], int],
