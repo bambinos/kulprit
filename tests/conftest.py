@@ -1,11 +1,9 @@
 """Module for storing fixtures used in kulprit tests."""
 
-import arviz as az
 import kulprit as kpt
 import bambi as bmb
 
 import numpy as np
-import pandas as pd
 
 import torch
 

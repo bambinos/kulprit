@@ -1,15 +1,14 @@
 import torch
 
 from kulprit import ReferenceModel
-from kulprit.projection.loss import KullbackLeiblerLoss
 from kulprit.projection.architecture import GLMArchitecture
 
 import pytest
 
-from . import KulpritTest
+from tests import KulpritTest
 
 
-class TestProjector:
+class TestProjector(KulpritTest):
     """Test projection methods in the procedure."""
 
     def test_idata_is_none(self, bambi_model):
@@ -27,9 +26,17 @@ class TestProjector:
             ref_model.data.structure.num_obs,
         )
 
-    def test_project_method(self, ref_model):
+    def test_analytic_project(self, ref_model):
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"])
+
+        assert sub_model.structure.X.shape == (ref_model.data.structure.num_obs, 2)
+        assert sub_model.structure.num_terms == 2
+        assert sub_model.structure.model_size == 1
+
+    def test_gradient_project(self, ref_model):
+        # project the reference model to some parameter subset
+        sub_model = ref_model.project(terms=["x"], method="gradient")
 
         assert sub_model.structure.X.shape == (ref_model.data.structure.num_obs, 2)
         assert sub_model.structure.num_terms == 2
@@ -109,12 +116,12 @@ class TestProjector:
             ref_model.project(terms=1)
 
     def test_project_too_many_terms(self, ref_model):
-        with pytest.raises(UserWarning):
+        with pytest.raises(NotImplementedError):
             # project the reference model to some parameter subset
             ref_model.project(terms=10)
 
     def test_project_negative_terms(self, ref_model):
-        with pytest.raises(UserWarning):
+        with pytest.raises(NotImplementedError):
             # project the reference model to some parameter subset
             ref_model.project(terms=-1)
 
@@ -122,3 +129,8 @@ class TestProjector:
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model.project(terms=["spam", "ham"])
+
+    def test_project_string(self, ref_model):
+        with pytest.raises(UserWarning):
+            # project the reference model to some parameter subset
+            ref_model.project(terms="spam")

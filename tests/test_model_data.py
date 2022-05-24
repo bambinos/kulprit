@@ -2,7 +2,7 @@ from kulprit.data.submodel import SubModelStructure
 
 import pytest
 
-from . import KulpritTest
+from tests import KulpritTest
 
 
 class TestData(KulpritTest):
@@ -29,10 +29,8 @@ class TestData(KulpritTest):
         assert sub_model_structure.X.shape == (ref_model.data.structure.num_obs, 2)
         assert sub_model_structure.model_size == 1
 
-    def test_build_negative_size_submodel(self, ref_model):
-        with pytest.raises(UserWarning):
-            ref_model.project(terms=-1)
-
     def test_build_too_large_submodel(self, ref_model):
         with pytest.raises(UserWarning):
-            ref_model.project(terms=-1)
+            # build restricted model object
+            structure_factory = SubModelStructure(ref_model.data)
+            structure_factory.create(["x", "a", "b", "c"])

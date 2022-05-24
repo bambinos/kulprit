@@ -19,8 +19,8 @@ class ModelStructure:
             design (formulae.matrices.DesignMatrices): The formulae design matrix
                 object underpinning the GLM
             link (bambi.families.Link): GLM link function object
-            term_names (list): List of model covariates in their order of appearance
-                **not** including the `Intercept` term
+            term_names (list): List of model covariates in their order of
+                appearance **not** including the `Intercept` term
             common_terms (list): List of all terms in the model in order of
                 appearance (includes the `Intercept` term)
             response_name (str): The name of the response given to the Bambi model
@@ -49,6 +49,9 @@ class ModelStructure:
 
         # log the underlying backend model
         self.backend = model.backend
+
+        # define model architecture
+        self.architecture = "glm" if len(model.group_specific_terms) == 0 else "glmm"
 
         # define the link function and family of the reference model
         self.link = model.family.link

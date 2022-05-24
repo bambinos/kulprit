@@ -5,16 +5,12 @@ from typing_extensions import Literal
 
 from arviz import InferenceData
 from bambi.models import Model
-
 import pandas as pd
 import torch
 
-from .data import ModelData
-from .data.structure import ModelStructure
-from .projection import Projector
-from .search.searcher import Searcher
-from .search.path import SearchPath
-from .formatting import spacify, multilinify
+from kulprit.data import ModelData, ModelStructure
+from kulprit.projection import Projector
+from kulprit.search import Searcher, SearchPath
 
 
 class ReferenceModel:
@@ -66,7 +62,9 @@ class ReferenceModel:
 
         # instantiate projector, search, and search path classes
         self.projector = Projector(
-            self.data, num_iters=num_iters, learning_rate=learning_rate
+            data=self.data,
+            num_iters=num_iters,
+            learning_rate=learning_rate,
         )
         self.searcher = Searcher(self.data, self.projector)
         self.path = None
@@ -74,6 +72,7 @@ class ReferenceModel:
     def project(
         self,
         terms: Union[List[str], int],
+        method: Literal["analytic", "gradient"] = "analytic",
     ) -> ModelData:
         """Projection the reference model onto a variable subset.
 
@@ -82,22 +81,16 @@ class ReferenceModel:
                 the names of the parameters to include the submodel, or the
                 number of parameters to include in the submodel, **not**
                 including the intercept term
+            method (str): The projection method to employ, either "analytic" to
+                use the hard-coded solutions the optimisation problem, or
+                "gradient" to employ gradient descent methods
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
-        # test `terms` input
-        if isinstance(terms, list) and (
-            not all([term in self.data.structure.term_names for term in terms])
-        ):
-            raise UserWarning(
-                "Please ensure that all terms selected for projection exist in"
-                + " the reference model."
-            )
-
         # project the reference model onto a subset of covariates
-        sub_model = self.projector.project(terms)
+        sub_model = self.projector.project(terms=terms, method=method)
         return sub_model
 
     def search(

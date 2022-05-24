@@ -13,7 +13,8 @@ from arviz.utils import one_de
 import numpy as np
 import torch
 
-from . import ModelData, ModelStructure
+from kulprit.data.data import ModelData
+from kulprit.data.structure import ModelStructure
 
 
 class SubModel(ABC):
@@ -78,22 +79,31 @@ class SubModelStructure(SubModel):
             ModelData: The resulting submodel `ModelData` object
         """
 
+        # test that the submodel is indeed a submodel
+        full_set = set(self.data.structure.term_names)
+        projection_set = set(var_names)
+        if not projection_set.issubset(full_set):
+            raise UserWarning(
+                "Please ensure that the submodel you wish to build contains "
+                + "only terms from the larger model."
+            )
+
         # copy and instantiate new ModelStructure object
-        sub_model_structure = copy(self.data.structure)
+        submodel_structure = copy(self.data.structure)
         (
-            sub_model_structure.X,
-            sub_model_structure.num_terms,
-            sub_model_structure.model_size,
-            sub_model_structure.term_names,
-            sub_model_structure.common_terms,
+            submodel_structure.X,
+            submodel_structure.num_terms,
+            submodel_structure.model_size,
+            submodel_structure.term_names,
+            submodel_structure.common_terms,
         ) = self.generate(var_names)
 
         # ensure correct dimensions
-        assert sub_model_structure.X.shape == (
+        assert submodel_structure.X.shape == (
             self.data.structure.num_obs,
-            sub_model_structure.model_size + 1,
+            submodel_structure.model_size + 1,
         )
-        return sub_model_structure
+        return submodel_structure
 
 
 class SubModelInferenceData(SubModel):
@@ -110,7 +120,7 @@ class SubModelInferenceData(SubModel):
 
     def create(
         self,
-        sub_model_structure: SubModelStructure,
+        submodel_structure: SubModelStructure,
         theta_perp: torch.tensor,
         disp_perp: Optional[torch.tensor] = None,
     ) -> InferenceData:
@@ -131,7 +141,7 @@ class SubModelInferenceData(SubModel):
         # reshape `theta_perp` so it has the same shape as the reference model
         num_chain = len(self.data.idata.posterior.coords.get("chain"))
         num_draw = len(self.data.idata.posterior.coords.get("draw"))
-        num_terms = sub_model_structure.num_terms
+        num_terms = submodel_structure.num_terms
         num_obs = self.data.structure.num_obs
 
         theta_perp = torch.reshape(theta_perp, (num_chain, num_draw, num_terms))
@@ -139,7 +149,7 @@ class SubModelInferenceData(SubModel):
         # build posterior dictionary from projected parameters
         posterior = {
             term: theta_perp[:, :, i]
-            for i, term in enumerate(sub_model_structure.term_names)
+            for i, term in enumerate(submodel_structure.term_names)
         }
         if disp_perp is not None:
             # reshape `disp_perp` if present

@@ -4,7 +4,8 @@ import dataclasses
 
 import torch
 from arviz import InferenceData
-from .structure import ModelStructure
+
+from kulprit.data.structure import ModelStructure
 
 
 @dataclasses.dataclass(order=True)
