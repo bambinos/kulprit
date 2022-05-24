@@ -13,7 +13,8 @@ from arviz.utils import one_de
 import numpy as np
 import torch
 
-from . import ModelData, ModelStructure
+from kulprit.data.data import ModelData
+from kulprit.data.structure import ModelStructure
 
 
 class SubModel(ABC):
