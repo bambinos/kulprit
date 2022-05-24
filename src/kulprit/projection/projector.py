@@ -1,6 +1,5 @@
 """Base projection class."""
 
-from fastcore.dispatch import typedispatch
 from typing import Optional, List, Union
 from typing_extensions import Literal
 
@@ -8,12 +7,14 @@ from kulprit.data.data import ModelData
 from kulprit.data.submodel import SubModelStructure, SubModelInferenceData
 from kulprit.families.family import Family
 from kulprit.projection.solvers.solver import Solver
+from kulprit.search.path import SearchPath
 
 
 class Projector:
     def __init__(
         self,
         data: ModelData,
+        path: Optional[SearchPath] = None,
         num_iters: Optional[int] = 200,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
@@ -40,6 +41,9 @@ class Projector:
         # set optimiser parameters
         self.num_iters = num_iters
         self.learning_rate = learning_rate
+
+        # initialise search path
+        self.path = path
 
     def project(
         self,
@@ -74,19 +78,16 @@ class Projector:
             return self.project_names(term_names=terms, method=method)
 
         # project a number of terms
-        elif isinstance(terms, int):
-            # in the future we will select the "best" `args` variables according to a
-            # previously run search
-            raise NotImplementedError(
-                "The project method currently only accepts the names of the "
-                + "parameters to project as inputs",
-            )
-
         else:
-            raise UserWarning(
-                "Please provide either the number of parameters to project "
-                + "onto the submodel, or their names as a list of strings."
-            )
+            # test `model_size` input
+            if self.path is None or terms not in list(self.path.k_submodel.keys()):
+                raise UserWarning(
+                    "In order to project onto an integer number of terms, please "
+                    + "first complete a parameter search."
+                )
+
+            # project onto the search path submodel with `terms` number of terms
+            return self.path[terms]
 
     def project_names(
         self,

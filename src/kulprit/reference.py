@@ -3,13 +3,15 @@
 from typing import Union, Optional, List
 from typing_extensions import Literal
 
-import torch
 from arviz import InferenceData
 from bambi.models import Model
+import pandas as pd
+import torch
 
 from kulprit.data import ModelData, ModelStructure
-from kulprit.projection import Projector
-from kulprit.search import Searcher, SearchPath
+from kulprit.projection.projector import Projector
+from kulprit.search.path import SearchPath
+from kulprit.search.searcher import Searcher
 
 
 class ReferenceModel:
@@ -42,6 +44,13 @@ class ReferenceModel:
             learning_rate (float): The backprop optimiser's learning rate
         """
 
+        # test that the reference model has an intercept term
+        if model.intercept_term is None:
+            raise UserWarning(
+                "The procedure currently requires reference models to have an, "
+                + " intercept term."
+            )
+
         # build posterior if not provided
         if idata is None:
             idata = model.fit()
@@ -52,13 +61,14 @@ class ReferenceModel:
             structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0)
         )
 
-        # instantiate projector and search class
+        # instantiate projector, search, and search path classes
         self.projector = Projector(
             data=self.data,
             num_iters=num_iters,
             learning_rate=learning_rate,
         )
-        self.searcher = Searcher(self.data)
+        self.searcher = Searcher(self.data, self.projector)
+        self.path = None
 
     def project(
         self,
@@ -87,8 +97,7 @@ class ReferenceModel:
     def search(
         self,
         max_terms: Optional[int] = None,
-        num_iters: Optional[int] = 200,
-        learning_rate: Optional[float] = 0.01,
+        method: Literal["analytic", "gradient"] = "analytic",
     ) -> SearchPath:
         """Model search method through parameter space.
 
@@ -99,8 +108,9 @@ class ReferenceModel:
         Args:
             max_terms (int): The number of parameters of the largest submodel in
                 the search path, **not** including the intercept term
-            num_iters (int): Number of iterations over which to run backprop
-            learning_rate (float): The backprop optimiser's learning rate
+            method (str): The projection method to employ, either "analytic" to
+                use the hard-coded solutions the optimisation problem, or
+                "gradient" to employ gradient descent methods
 
         Returns:
             kulprit.search.SearchPath: The model selection procedure search path
@@ -118,6 +128,29 @@ class ReferenceModel:
                 + "reference model."
             )
 
-        raise NotImplementedError(
-            "This method is still in development, sorry about that!"
+        self.path = self.searcher.search(max_terms=max_terms, method=method)
+        self.projector.path = self.path  # feed path result through to the projector
+        return self.path
+
+    def loo_compare(
+        self,
+        ic: Optional[Literal["loo", "waic"]] = None,
+        method: Literal["stacking", "BB-pseudo-BMA", "pseudo-MA"] = "stacking",
+        b_samples: int = 1000,
+        alpha: float = 1,
+        seed=None,
+        scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
+        var_name: Optional[str] = None,
+    ) -> pd.DataFrame:
+
+        # perform pair-wise predictive performance comparison with LOO
+        comparison = self.searcher.loo_compare(
+            ic=ic,
+            method=method,
+            b_samples=b_samples,
+            alpha=alpha,
+            seed=seed,
+            scale=scale,
+            var_name=var_name,
         )
+        return comparison

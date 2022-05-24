@@ -37,16 +37,18 @@ model = bmb.Model("y ~ x + z", data, family="gaussian")
 num_draws, num_chains = 2_000, 2
 idata = model.fit(draws=num_draws, chains=num_chains)
 
-# build reference model object
+# build reference model object and perform the search procedure
 ref_model = kpt.ReferenceModel(model, idata)
-# project the reference model to some parameter subset and plot posterior
-sub_model = ref_model.project(terms=["x"])
+ref_model.search()
+
+# compare submodels found in the search
+ref_model.loo_compare()
+
+# project the reference model onto a chosen submodel size
+submodel = ref_model.project(1)
 
 # visualise projected parameters
-az.plot_posterior(sub_model.idata)
-
-# compare full and submodel predictive performance
-az.compare(dict(full=idata, sub=sub_model.idata))
+az.plot_posterior(submodel.idata)
 ```
 
 ## Installation

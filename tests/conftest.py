@@ -16,15 +16,15 @@ NUM_DRAWS, NUM_CHAINS = 50, 2
 @pytest.fixture(scope="session")
 def bambi_model():
     # define model data
-    data = data = bmb.load_data("my_data")
-    # define and fit model with MCMC
+    data = bmb.load_data("my_data")
+    # define model
     model = bmb.Model("z ~ x + y", data, family="gaussian")
     return model
 
 
 @pytest.fixture(scope="session")
 def bambi_model_idata(bambi_model):
-
+    # fit model with MCMC
     idata = bambi_model.fit(draws=NUM_DRAWS, chains=NUM_CHAINS)
     return idata
 
