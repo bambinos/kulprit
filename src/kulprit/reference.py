@@ -143,10 +143,6 @@ class ReferenceModel:
         var_name: Optional[str] = None,
     ) -> pd.DataFrame:
 
-        # test that search has been previously run
-        if self.searcher.search_completed is False:
-            raise UserWarning("Please run search before comparing submodels.")
-
         # perform pair-wise predictive performance comparison with LOO
         comparison = self.searcher.loo_compare(
             ic=ic,

@@ -87,7 +87,7 @@ class Projector:
                 )
 
             # project onto the search path submodel with `terms` number of terms
-            return self.path.k_submodel[terms]
+            return self.path[terms]
 
     def project_names(
         self,

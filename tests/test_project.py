@@ -1,9 +1,13 @@
 import torch
+import bambi as bmb
+import arviz as az
 
+import kulprit as kpt
 from kulprit import ReferenceModel
 from kulprit.projection.architecture import GLMArchitecture
 
 import pytest
+import copy
 
 from tests import KulpritTest
 
@@ -16,6 +20,17 @@ class TestProjector(KulpritTest):
 
         no_idata_ref_model = ReferenceModel(bambi_model)
         assert no_idata_ref_model.data.structure.num_draws is not None
+
+    def test_no_intercept_error(self):
+        # load baseball data
+        df = bmb.load_data("batting").head(10)
+        # build model without an intercept
+        bad_model = bmb.Model("p(H, AB) ~ 0 + playerID", df, family="binomial")
+        bad_idata = az.from_json("tests/data/binomial.json")
+
+        with pytest.raises(UserWarning):
+            # build a bad reference model object
+            kpt.ReferenceModel(bad_model, bad_idata)
 
     def test_architecture_forward(self, ref_model):
         architecture = GLMArchitecture(ref_model.data.structure)
@@ -110,27 +125,48 @@ class TestProjector(KulpritTest):
         # ensure that these two methods both behave well
         assert (reshaped == transposed).all()
 
-    def test_project_num_terms(self, ref_model):
-        with pytest.raises(NotImplementedError):
-            # project the reference model to some parameter subset
-            ref_model.project(terms=1)
+    def test_project_one_term(self, ref_model):
+        # project the reference model to some parameter subset
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.search()
+        submodel_int = ref_model_copy.project(terms=1)
+        submodel_name = ref_model_copy.project(terms=["x"])
+
+        assert submodel_int.structure.term_names == submodel_name.structure.term_names
+        assert (
+            (
+                submodel_int.idata.posterior.stack(samples=("chain", "draw"))[
+                    submodel_int.structure.term_names
+                ]
+                .to_array()
+                .transpose(*("samples", "variable"))
+                .values
+            )
+            == (
+                submodel_name.idata.posterior.stack(samples=("chain", "draw"))[
+                    submodel_name.structure.term_names
+                ]
+                .to_array()
+                .transpose(*("samples", "variable"))
+                .values
+            )
+        ).all()
 
     def test_project_too_many_terms(self, ref_model):
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
-            ref_model.project(terms=10)
+            ref_model_copy = copy.copy(ref_model)
+            ref_model_copy.search()
+            ref_model_copy.project(terms=10)
 
     def test_project_negative_terms(self, ref_model):
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
-            ref_model.project(terms=-1)
+            ref_model_copy = copy.copy(ref_model)
+            ref_model_copy.search()
+            ref_model_copy.project(terms=-1)
 
     def test_project_wrong_term_names(self, ref_model):
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model.project(terms=["spam", "ham"])
-
-    def test_project_string(self, ref_model):
-        with pytest.raises(UserWarning):
-            # project the reference model to some parameter subset
-            ref_model.project(terms="spam")

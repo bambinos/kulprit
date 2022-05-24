@@ -108,6 +108,10 @@ class Searcher:
     ) -> pd.DataFrame:
         """Compare the ELPD of the projected models along the search path."""
 
+        # test that search has been previously run
+        if self.search_completed is False:
+            raise UserWarning("Please run search before comparing submodels.")
+
         # make dictionary of inferencedata objects for each projection
         self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
 
