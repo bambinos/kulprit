@@ -3,6 +3,8 @@
 from typing import Union, Optional, List
 from typing_extensions import Literal
 
+from sympy import plot_backends
+
 from arviz import InferenceData
 from bambi.models import Model
 import pandas as pd
@@ -57,9 +59,7 @@ class ReferenceModel:
 
         # build model data class
         structure = ModelStructure(model)
-        self.data = ModelData(
-            structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0)
-        )
+        self.data = ModelData(structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0))
 
         # instantiate projector, search, and search path classes
         self.projector = Projector(
@@ -142,10 +142,11 @@ class ReferenceModel:
         seed=None,
         scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
         var_name: Optional[str] = None,
+        plot_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
 
         # perform pair-wise predictive performance comparison with LOO
-        comparison = self.searcher.loo_compare(
+        comparison, axes = self.searcher.loo_compare(
             ic=ic,
             plot=plot,
             method=method,
@@ -154,5 +155,6 @@ class ReferenceModel:
             seed=seed,
             scale=scale,
             var_name=var_name,
+            plot_kwargs=plot_kwargs,
         )
-        return comparison
+        return comparison, axes

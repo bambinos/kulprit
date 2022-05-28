@@ -33,9 +33,7 @@ class Searcher:
 
         return self.path.__repr__()
 
-    def search(
-        self, max_terms: int, method: Literal["analytic", "gradient"]
-    ) -> SearchPath:
+    def search(self, max_terms: int, method: Literal["analytic", "gradient"]) -> SearchPath:
         """Primary search method of the procedure.
 
         Performs forward search through the parameter space.
@@ -68,14 +66,11 @@ class Searcher:
             # their distances
             k_candidates = self.path.get_candidates(k=k)
             k_projections = [
-                self.projector.project(terms=candidate, method=method)
-                for candidate in k_candidates
+                self.projector.project(terms=candidate, method=method) for candidate in k_candidates
             ]
 
             # identify the best candidate by distance from reference model
-            best_submodel = min(
-                k_projections, key=lambda projection: projection.sort_index
-            )
+            best_submodel = min(k_projections, key=lambda projection: projection.sort_index)
             best_dist = best_submodel.sort_index
 
             # retrieve the best candidate's term names and indices
@@ -106,13 +101,16 @@ class Searcher:
         seed=None,
         scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
         var_name: Optional[str] = None,
+        plot_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
         """Compare the ELPD of the projected models along the search path."""
-
+        print("hola")
         # test that search has been previously run
         if self.search_completed is False:
             raise UserWarning("Please run search before comparing submodels.")
 
+        if plot_kwargs is None:
+            plot_kwargs = {}
         # make dictionary of inferencedata objects for each projection
         self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
 
@@ -128,8 +126,9 @@ class Searcher:
             var_name=var_name,
         )
 
+        axes = None
         # plot the comparison if requested
         if plot:
-            az.plot_compare(comparison)
+            axes = az.plot_compare(comparison, **plot_kwargs)
 
-        return comparison
+        return comparison, axes
