@@ -33,7 +33,9 @@ class Searcher:
 
         return self.path.__repr__()
 
-    def search(self, max_terms: int, method: Literal["analytic", "gradient"]) -> SearchPath:
+    def search(
+        self, max_terms: int, method: Literal["analytic", "gradient"]
+    ) -> SearchPath:
         """Primary search method of the procedure.
 
         Performs forward search through the parameter space.
@@ -66,11 +68,14 @@ class Searcher:
             # their distances
             k_candidates = self.path.get_candidates(k=k)
             k_projections = [
-                self.projector.project(terms=candidate, method=method) for candidate in k_candidates
+                self.projector.project(terms=candidate, method=method)
+                for candidate in k_candidates
             ]
 
             # identify the best candidate by distance from reference model
-            best_submodel = min(k_projections, key=lambda projection: projection.sort_index)
+            best_submodel = min(
+                k_projections, key=lambda projection: projection.sort_index
+            )
             best_dist = best_submodel.sort_index
 
             # retrieve the best candidate's term names and indices

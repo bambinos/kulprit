@@ -57,7 +57,9 @@ class ReferenceModel:
 
         # build model data class
         structure = ModelStructure(model)
-        self.data = ModelData(structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0))
+        self.data = ModelData(
+            structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0)
+        )
 
         # instantiate projector, search, and search path classes
         self.projector = Projector(
