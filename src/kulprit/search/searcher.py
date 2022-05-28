@@ -99,6 +99,7 @@ class Searcher:
     def loo_compare(
         self,
         ic: Optional[Literal["loo", "waic"]] = None,
+        plot: Optional[bool] = False,
         method: Literal["stacking", "BB-pseudo-BMA", "pseudo-MA"] = "stacking",
         b_samples: int = 1000,
         alpha: float = 1,
@@ -126,4 +127,9 @@ class Searcher:
             scale=scale,
             var_name=var_name,
         )
+
+        # plot the comparison if requested
+        if plot:
+            az.plot_compare(comparison)
+
         return comparison

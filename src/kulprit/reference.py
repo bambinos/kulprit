@@ -135,6 +135,7 @@ class ReferenceModel:
     def loo_compare(
         self,
         ic: Optional[Literal["loo", "waic"]] = None,
+        plot: Optional[bool] = False,
         method: Literal["stacking", "BB-pseudo-BMA", "pseudo-MA"] = "stacking",
         b_samples: int = 1000,
         alpha: float = 1,
@@ -146,6 +147,7 @@ class ReferenceModel:
         # perform pair-wise predictive performance comparison with LOO
         comparison = self.searcher.loo_compare(
             ic=ic,
+            plot=plot,
             method=method,
             b_samples=b_samples,
             alpha=alpha,
