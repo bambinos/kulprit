@@ -44,7 +44,8 @@ class TestLoss(KulpritTest):
         assert div.shape == ()
 
     def test_unimplemented_family(self):
-        """Test the error raised when unimplemented family is used."""
+        """Test that an error raised when an unimplemented family is used."""
+
         with pytest.raises(NotImplementedError):
             bad_family = HalfCauchyFamily()
             KullbackLeiblerLoss(bad_family)

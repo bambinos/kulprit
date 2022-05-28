@@ -22,6 +22,8 @@ class TestProjector(KulpritTest):
         assert no_idata_ref_model.data.structure.num_draws is not None
 
     def test_no_intercept_error(self):
+        """Test that an error is raised when no intercept is present."""
+
         # load baseball data
         df = bmb.load_data("batting").head(10)
         # build model without an intercept
@@ -33,6 +35,8 @@ class TestProjector(KulpritTest):
             kpt.ReferenceModel(bad_model, bad_idata)
 
     def test_architecture_forward(self, ref_model):
+        """Test that the architecture forward method works."""
+
         architecture = GLMArchitecture(ref_model.data.structure)
         y = architecture.forward(ref_model.data.structure.X)
 
@@ -42,6 +46,8 @@ class TestProjector(KulpritTest):
         )
 
     def test_analytic_project(self, ref_model):
+        """Test that the analytic projection method works."""
+
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"])
 
@@ -50,6 +56,8 @@ class TestProjector(KulpritTest):
         assert sub_model.structure.model_size == 1
 
     def test_gradient_project(self, ref_model):
+        """Test that the gradient projection method works."""
+
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"], method="gradient")
 
@@ -58,6 +66,8 @@ class TestProjector(KulpritTest):
         assert sub_model.structure.model_size == 1
 
     def test_projected_idata_dims(self, ref_model, bambi_model_idata):
+        """Test that the dimensions of the projected inference data are correct."""
+
         # extract dimensions of projected idata
         sub_model = ref_model.project(terms=ref_model.data.structure.term_names)
         sub_model_idata = sub_model.idata
@@ -92,9 +102,7 @@ class TestProjector(KulpritTest):
         )
 
     def test_reshaping(self, ref_model):
-        """
-        Ensure that torch reshaping is performing the true inverse of arviz stacking
-        """
+        """Test that the reshaping is correct."""
 
         # extract the parameters from the reference model
         theta = torch.from_numpy(
@@ -126,6 +134,8 @@ class TestProjector(KulpritTest):
         assert (reshaped == transposed).all()
 
     def test_project_one_term(self, ref_model):
+        """Test that the projection method works for a single term."""
+
         # project the reference model to some parameter subset
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
@@ -133,6 +143,8 @@ class TestProjector(KulpritTest):
         assert submodel.structure.num_terms == 2
 
     def test_project_too_many_terms(self, ref_model):
+        """Test that the projection method raises an error for too many terms."""
+
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model_copy = copy.copy(ref_model)
@@ -140,6 +152,8 @@ class TestProjector(KulpritTest):
             ref_model_copy.project(terms=10)
 
     def test_project_negative_terms(self, ref_model):
+        """Test that the projection method raises an error for negative terms."""
+
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model_copy = copy.copy(ref_model)
@@ -147,6 +161,8 @@ class TestProjector(KulpritTest):
             ref_model_copy.project(terms=-1)
 
     def test_project_wrong_term_names(self, ref_model):
+        """Test that the projection method raises an error for wrong term names."""
+
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model.project(terms=["spam", "ham"])

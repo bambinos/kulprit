@@ -15,6 +15,8 @@ NUM_DRAWS, NUM_CHAINS = 50, 2
 
 @pytest.fixture(scope="session")
 def bambi_model():
+    """Return a bambi model."""
+
     # define model data
     data = bmb.load_data("my_data")
     # define model
@@ -24,6 +26,8 @@ def bambi_model():
 
 @pytest.fixture(scope="session")
 def bambi_model_idata(bambi_model):
+    """Return a bambi model fitted inference data."""
+
     # fit model with MCMC
     idata = bambi_model.fit(draws=NUM_DRAWS, chains=NUM_CHAINS)
     return idata
