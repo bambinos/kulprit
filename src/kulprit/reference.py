@@ -3,8 +3,6 @@
 from typing import Union, Optional, List
 from typing_extensions import Literal
 
-from sympy import plot_backends
-
 from arviz import InferenceData
 from bambi.models import Model
 import pandas as pd
