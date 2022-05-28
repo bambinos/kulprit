@@ -42,6 +42,7 @@ ref_model = kpt.ReferenceModel(model, idata)
 ref_model.search()
 
 # compare submodels found in the search
+# setting option `plot=True` will return a comparison plot
 ref_model.loo_compare()
 
 # project the reference model onto a chosen submodel size
