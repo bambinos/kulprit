@@ -142,10 +142,11 @@ class ReferenceModel:
         seed=None,
         scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
         var_name: Optional[str] = None,
+        plot_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
 
         # perform pair-wise predictive performance comparison with LOO
-        comparison = self.searcher.loo_compare(
+        comparison, axes = self.searcher.loo_compare(
             ic=ic,
             plot=plot,
             method=method,
@@ -154,5 +155,6 @@ class ReferenceModel:
             seed=seed,
             scale=scale,
             var_name=var_name,
+            plot_kwargs=plot_kwargs,
         )
-        return comparison
+        return comparison, axes
