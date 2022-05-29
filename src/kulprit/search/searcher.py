@@ -109,13 +109,15 @@ class Searcher:
         plot_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
         """Compare the ELPD of the projected models along the search path."""
-        print("hola")
+
         # test that search has been previously run
         if self.search_completed is False:
             raise UserWarning("Please run search before comparing submodels.")
-
+        
+        # initiate plotting arguments if none provided
         if plot_kwargs is None:
             plot_kwargs = {}
+            
         # make dictionary of inferencedata objects for each projection
         self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
 
