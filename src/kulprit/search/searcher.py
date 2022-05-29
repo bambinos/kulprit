@@ -56,10 +56,7 @@ class Searcher:
 
         # add submodel to search path
         self.path.add_submodel(
-            k=k,
-            k_term_names=k_term_names,
-            k_submodel=k_submodel,
-            k_dist=k_dist,
+            k=k, k_term_names=k_term_names, k_submodel=k_submodel, k_dist=k_dist,
         )
 
         # perform forward search through parameter space
@@ -113,11 +110,11 @@ class Searcher:
         # test that search has been previously run
         if self.search_completed is False:
             raise UserWarning("Please run search before comparing submodels.")
-        
+
         # initiate plotting arguments if none provided
         if plot_kwargs is None:
             plot_kwargs = {}
-            
+
         # make dictionary of inferencedata objects for each projection
         self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
 
