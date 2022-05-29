@@ -56,7 +56,10 @@ class Searcher:
 
         # add submodel to search path
         self.path.add_submodel(
-            k=k, k_term_names=k_term_names, k_submodel=k_submodel, k_dist=k_dist,
+            k=k,
+            k_term_names=k_term_names,
+            k_submodel=k_submodel,
+            k_dist=k_dist,
         )
 
         # perform forward search through parameter space

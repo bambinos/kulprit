@@ -46,7 +46,9 @@ class Projector:
         self.path = path
 
     def project(
-        self, terms: Union[List[str], int], method: Literal["analytic", "gradient"],
+        self,
+        terms: Union[List[str], int],
+        method: Literal["analytic", "gradient"],
     ) -> ModelData:
         """Wrapper function for projection method.
 
@@ -88,7 +90,9 @@ class Projector:
             return self.path[terms]
 
     def project_names(
-        self, term_names: List[List[str]], method: Literal["analytic", "gradient"],
+        self,
+        term_names: List[List[str]],
+        method: Literal["analytic", "gradient"],
     ) -> ModelData:
         """Primary projection method for GLM reference model.
 

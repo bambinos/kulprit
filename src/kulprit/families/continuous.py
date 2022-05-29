@@ -93,7 +93,9 @@ class GaussianFamily(BaseFamily):
 
         # compute the Kullback-Leibler divergence between projection and truth
         vec_kld = np.vectorize(
-            _kld, signature="(n),(m)->()", doc="Vectorised `_kld` method",
+            _kld,
+            signature="(n),(m)->()",
+            doc="Vectorised `_kld` method",
         )
         total_kld = torch.from_numpy(vec_kld(theta_ast, theta_perp)).float()
         loss = torch.mean(total_kld).item()
@@ -116,7 +118,9 @@ class GaussianFamily(BaseFamily):
         """
 
         def _dispersion_proj(
-            theta_ast: torch.tensor, theta_perp: torch.tensor, sigma_ast: torch.tensor,
+            theta_ast: torch.tensor,
+            theta_perp: torch.tensor,
+            sigma_ast: torch.tensor,
         ) -> np.ndarray:
             """Analytic solution to the point-wise dispersion projection.
 
@@ -138,7 +142,7 @@ class GaussianFamily(BaseFamily):
             f = X_ast @ theta_ast
             f_perp = X_perp @ theta_perp
             sigma_perp = torch.sqrt(
-                sigma_ast ** 2
+                sigma_ast**2
                 + 1 / self.data.structure.num_obs * (f - f_perp).T @ (f - f_perp)
             )
             sigma_perp = sigma_perp.numpy()

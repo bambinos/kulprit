@@ -63,7 +63,9 @@ class ReferenceModel:
 
         # instantiate projector, search, and search path classes
         self.projector = Projector(
-            data=self.data, num_iters=num_iters, learning_rate=learning_rate,
+            data=self.data,
+            num_iters=num_iters,
+            learning_rate=learning_rate,
         )
         self.searcher = Searcher(self.data, self.projector)
         self.path = None

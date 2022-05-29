@@ -42,7 +42,11 @@ class SearchPath:
         return string
 
     def add_submodel(
-        self, k: int, k_term_names: list, k_submodel: ModelData, k_dist: float,
+        self,
+        k: int,
+        k_term_names: list,
+        k_submodel: ModelData,
+        k_dist: float,
     ) -> None:
         """Update search path with new submodel."""
 
