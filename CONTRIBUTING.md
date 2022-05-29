@@ -4,6 +4,8 @@ Contributions to the package are very welcome! We recommend using `pyenv` to ins
 
 ## Development
 
+### Python version
+
 For those using Mac, `pyenv` can be installed via homebrew with
 ```bash
 $ brew install pyenv
@@ -16,6 +18,8 @@ $ pyenv local 3.7.2
 $ eval "$(pyenv init --path)"
 $ python --version # check that new version is being used
 ```
+
+### Dependency managament
 
 `poetry` can be installed with
 ```bash
@@ -40,8 +44,20 @@ More information on the two tools can be found at the following links:
 
 ### Testing
 
+Tests (whose scripts are located within the `kulprit/tests/` directory) can be run locally using `pytest` with the command
 ```sh
 $ poetry run pytest
+```
+
+### Pre-commit checks
+
+We use pre-commit hooks to automate formatting and code style checks. When developing locally, please initialise the pre-commit hooks with the command
+```sh
+$ poetry run pre-commit install
+```
+This will run the hooks with each commit. If you would like to run the hooks outwith a commit, then you can do so with
+```sh
+$ poetry run pre-commit run --all-files
 ```
 
 ### Documentation
