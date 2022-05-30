@@ -14,13 +14,21 @@ theme:
         name: Switch to light mode
 
 nav:
-  - Introduction: 'index.md'
+  - Overview: 'index.md'
+  - Tutorials:
+    - Introduction: notebooks/tutorials/projpred.ipynb
+  - Quick start: notebooks/quick-start.ipynb
   - api_docs.md
   - changelog.md
 
 markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
+  - pymdownx.arithmatex
+
+extra_javascript:
+  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
+  - assets/extra.js
 
 plugins:
   - search:
@@ -33,3 +41,4 @@ plugins:
             show_source: true
       watch:
         - src/kulprit
+  - mknotebooks
