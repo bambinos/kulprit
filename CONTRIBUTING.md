@@ -51,11 +51,15 @@ $ poetry run pytest
 
 ### Pre-commit checks
 
-We use pre-commit hooks to automate formatting and code style checks. When developing locally, please initialise the pre-commit hooks with the command
+We use pre-commit hooks to automate formatting, linting, and quality checks. When developing locally, please initialise the pre-commit hooks with the command
 ```sh
 $ poetry run pre-commit install
 ```
-This will run the hooks with each commit. If you would like to run the hooks outwith a commit, then you can do so with
+This will run the hooks with each commit. If you would like them to run only for each push:
+```sh
+$ pre-commit install -t pre-push
+```
+If you would like to run the hooks outwith a commit, then you can do so with
 ```sh
 $ poetry run pre-commit run --all-files
 ```
@@ -71,31 +75,8 @@ $ poetry run mkdocs serve
 ```
 from the root directory.
 
-### Releasing
+## Releasing
 
 Trigger the [Draft release workflow](https://github.com/yannmclatchie/kulprit/actions/workflows/draft_release.yml) (press _Run workflow_). This will update the changelog & version and create a GitHub release which is in _Draft_ state.
 
-Find the draft release from the [GitHub releases](https://github.com/yannmclatchie/kulprit/releases) and publish it. When a release is published, it'll trigger [release](https://github.com/yannmclatchie/kulprit/blob/master/.github/workflows/release.yml) workflow which creates PyPI release and deploys updated documentation.
-
-### Pre-commit
-
-Pre-commit hooks run all the auto-formatters (e.g. `black`, `isort`), linters (e.g. `mypy`, `flake8`), and other quality
- checks to make sure the changeset is in good shape before a commit/push happens.
-
-You can install the hooks with (runs for each commit):
-
-```sh
-$ pre-commit install
-```
-
-Or if you want them to run only for each push:
-
-```sh
-$ pre-commit install -t pre-push
-```
-
-Or if you want e.g. want to run all checks manually for all files:
-
-```sh
-$ poetry run pre-commit run --all-files
-```
+Find the draft release from the [GitHub releases](https://github.com/yannmclatchie/kulprit/releases) and publish it. When a release is published, it'll trigger [release](https://github.com/yannmclatchie/kulprit/blob/main/.github/workflows/release.yml) workflow which creates PyPI release and deploys updated documentation.
