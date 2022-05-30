@@ -12,6 +12,13 @@ theme:
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.suggest
+
 
 nav:
   - Overview: 'index.md'
@@ -42,3 +49,11 @@ plugins:
       watch:
         - src/kulprit
   - mknotebooks
+
+copyright: Copyright &copy; 2022 Yann McLatchie
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yannmclatchie/kulprit
+      name: kulprit on GitHub
