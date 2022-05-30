@@ -42,8 +42,9 @@ ref_model = kpt.ReferenceModel(model, idata)
 ref_model.search()
 
 # compare submodels found in the search
-# setting option `plot=True` will return a comparison plot
-ref_model.loo_compare()
+# setting option `plot=True` will return a comparison plot axes object
+cmp, _ = ref_model.loo_compare()
+cmp
 
 # project the reference model onto a chosen submodel size
 submodel = ref_model.project(1)
@@ -61,7 +62,7 @@ $ pip install git+https://github.com/yannmclatchie/kulprit.git
 
 ## Development
 
-Read our development guide in [CONTRIBUTING.md](https://github.com/yannmclatchie/kulprit/blob/master/CONTRIBUTING.md).
+Read our development guide in [CONTRIBUTING.md](https://github.com/yannmclatchie/kulprit/blob/main/CONTRIBUTING.md).
 
 ---
 
