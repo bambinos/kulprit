@@ -4,14 +4,17 @@ repo_url: https://github.com/yannmclatchie/kulprit
 theme:
   name: material
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
+    - accent: indigo
   features:
     - navigation.sections
     - navigation.tabs
@@ -31,11 +34,11 @@ nav:
 markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
-  - pymdownx.arithmatex
+  - pymdownx.arithmatex:
 
 extra_javascript:
-  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
   - assets/extra.js
+  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
 
 plugins:
   - search:
@@ -48,11 +51,12 @@ plugins:
             show_source: true
       watch:
         - src/kulprit
-  - mknotebooks
+  - mknotebooks:
 
 copyright: Copyright &copy; 2022 Yann McLatchie
 
 extra:
+  generator: false
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/yannmclatchie/kulprit
