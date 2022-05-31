@@ -21,22 +21,21 @@ theme:
 
 nav:
   - Overview: 'index.md'
-  - Tutorials:
-    - Introduction: notebooks/tutorials/projpred.ipynb
   - Quick start: notebooks/quick-start.ipynb
+  - Tutorials:
+    - Introduction: notebooks/tutorials/intro.md
+    - Logistic regression: notebooks/tutorials/logistic-regression.ipynb
   - api_docs.md
   - changelog.md
 
 markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
-  - pymdownx.arithmatex:
-      generic: true
+  - pymdownx.arithmatex
 
 extra_javascript:
-  - assets/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
+  - assets/extra.js
 
 plugins:
   - search:
