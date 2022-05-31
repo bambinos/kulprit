@@ -1,1 +1,1 @@
---8<-- "README.md"
+--8<-- "docs/OVERVIEW.md"
