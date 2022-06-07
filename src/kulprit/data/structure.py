@@ -15,7 +15,7 @@ class ModelStructure:
         Attributes:
             X (torch.tensor): Model design matrix
             y (torch.tensor): Model variate observations
-            backend (pymc3.Model): The PyMC3 model backend
+            backend (pymc.Model): The PyMC model backend
             design (formulae.matrices.DesignMatrices): The formulae design matrix
                 object underpinning the GLM
             link (bambi.families.Link): GLM link function object
@@ -66,7 +66,7 @@ class ModelStructure:
 
         # extract data from the fitted bambi model
         self.X = torch.from_numpy(model._design.common.design_matrix).float()
-        self.y = torch.from_numpy(model._design.response.design_vector).float()
+        self.y = torch.from_numpy(model._design.response.design_matrix).float()
         self.predictions = None
 
         # extract some key dimensions needed for optimisation
