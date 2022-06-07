@@ -3,16 +3,16 @@ repo_url: https://github.com/yannmclatchie/kulprit
 
 theme:
   name: material
+  icon:
+    logo: material/home
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      toggle:
-        icon: material/toggle-switch-off-outline
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: default
       toggle:
         icon: material/toggle-switch
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch-off-outline
         name: Switch to light mode
     - accent: indigo
   features:
