@@ -3,24 +3,42 @@ repo_url: https://github.com/yannmclatchie/kulprit
 
 theme:
   name: material
+  icon:
+    logo: material/home
   palette:
     - scheme: default
       toggle:
-        icon: material/toggle-switch-off-outline
+        icon: material/toggle-switch
         name: Switch to dark mode
     - scheme: slate
       toggle:
-        icon: material/toggle-switch
+        icon: material/toggle-switch-off-outline
         name: Switch to light mode
+    - accent: indigo
+  features:
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.suggest
 
 nav:
-  - Introduction: 'index.md'
+  - Overview: 'index.md'
+  - Quick start: notebooks/quick-start.ipynb
+  - Tutorials:
+    - Introduction: notebooks/tutorials/intro.md
+    - Logistic regression: notebooks/tutorials/logistic-regression.ipynb
   - api_docs.md
   - changelog.md
 
 markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
+  - pymdownx.arithmatex:
+
+extra_javascript:
+  - assets/extra.js
+  - https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML
 
 plugins:
   - search:
@@ -33,3 +51,13 @@ plugins:
             show_source: true
       watch:
         - src/kulprit
+  - mknotebooks:
+
+copyright: Copyright &copy; 2022 Yann McLatchie
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yannmclatchie/kulprit
+      name: kulprit on GitHub

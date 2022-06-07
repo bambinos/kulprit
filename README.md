@@ -7,7 +7,7 @@ _(Pronounced: kuːl.prɪt)_
 [![PyPI - License](https://img.shields.io/pypi/l/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
 [![Backend - PyTorch](https://img.shields.io/badge/backend-PyTorch-red?style=flat-square)](https://pytorch.org/)
 
-[Getting Started](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/notebooks/01-ym-prototype-workflow.ipynb) | [Documentation](https://yannmclatchie.github.io/kulprit) | [Contributing](https://github.com/yannmclatchie/kulprit/blob/main/CONTRIBUTING.md)
+[Getting Started](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/docs/notebooks/quick-start.ipynb) | [Documentation](https://yannmclatchie.github.io/kulprit) | [Contributing](https://github.com/yannmclatchie/kulprit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -17,7 +17,7 @@ Kullback-Leibler projections for Bayesian model selection in Generalised Linear 
 
 🚧 **WIP** 🚧
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/notebooks/01-ym-prototype-workflow.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/docs/notebooks/quick-start.ipynb)
 
 ```python
 import pandas as pd

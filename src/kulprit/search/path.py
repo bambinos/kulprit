@@ -59,12 +59,11 @@ class SearchPath:
 
         Args:
             k (int): The number of terms in the previous submodel, from which we
-            wish to
-                find all possible candidate submodels
+                wish to find all possible candidate submodels
 
         Returns:
             List[List]: A list of lists, each containing the terms of all candidate
-            submodels
+                submodels
         """
 
         prev_subset = self.k_term_names[k]
