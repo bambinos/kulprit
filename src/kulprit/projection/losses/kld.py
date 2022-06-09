@@ -1,6 +1,7 @@
 """Kullback-Leibler divergence losses module."""
 
 import torch
+import torch.nn as nn
 
 from kulprit.families.family import Family
 from kulprit.projection.losses import Loss
@@ -74,8 +75,16 @@ class GaussianKullbackLeiblerLoss(Loss):
     def __init__(self) -> None:
         super(GaussianKullbackLeiblerLoss, self).__init__()
 
+        self.loss = nn.MSELoss()
+
     def forward(self, P: torch.tensor, Q: torch.tensor) -> torch.tensor:
         """Kullback-Leibler divergence between two Gaussians.
+
+        We compute the Kullback-Leibler divergence through the surrogate use of
+        mean square error (MSE) between the two Gaussians. In this case,
+        minimising the mean square error is equivalent to achieving the maximum
+        likelihood estimate (MLE) of the Gaussian submodel, which in turn is
+        equivalent to minimising the Kulback-Leibler divergence.
 
         Args:
             P (torch.tensor): Tensor of reference model posterior parameter
@@ -86,8 +95,8 @@ class GaussianKullbackLeiblerLoss(Loss):
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
-        # compute KL divergence loss
-        loss = torch.mean(torch.abs(P - Q) ** 2) ** (1 / 2)
+        # compute the MSE
+        mse = self.loss(P, Q)
 
-        assert loss.shape == (), f"Expected data dimensions {()}, received {loss.shape}."
-        return loss
+        assert mse.shape == (), f"Expected data dimensions {()}, received {mse.shape}."
+        return mse
