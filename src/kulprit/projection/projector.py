@@ -73,7 +73,6 @@ class Projector:
                     "Please ensure that all terms selected for projection exist in"
                     + " the reference model."
                 )
-
             # perform projection
             return self.project_names(term_names=terms, method=method)
 

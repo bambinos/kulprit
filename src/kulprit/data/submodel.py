@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 
 from typing import Optional, List
-from pymc3 import Model
+from pymc import Model
 
 import arviz as az
 from arviz import InferenceData
@@ -207,6 +207,7 @@ class SubModelInferenceData(SubModel):
         Returns:
             list: The list of dictionaries of point samples
         """
+        initial_point = self.data.structure.backend.model.initial_point(seed=None)
 
         # build samples dictionary from posterior of idata
         samples = {
@@ -215,39 +216,47 @@ class SubModelInferenceData(SubModel):
                 if key in posterior.keys()
                 else np.zeros((self.data.structure.num_draws,))
             )
-            for key in self.data.structure.backend.model.test_point.keys()
+            for key in initial_point.keys()
         }
+        shapes = [val.shape for val in initial_point.values()]
         # extract observed and unobserved RV names and sample matrix
         var_names = list(samples.keys())
         obs_matrix = np.vstack(list(samples.values()))
+
         # build points list of dictionaries
         points = [
             {
-                var_names[j]: (
-                    np.array([obs_matrix[j, i]])
-                    if var_names[j] != f"{self.data.structure.response_name}_sigma_log__"
-                    else np.array(obs_matrix[j, i])
-                )
-                for j in range(obs_matrix.shape[0])
+                var_names[j]: np.full(shape, obs_matrix[j, i])
+                for j, shape in zip(range(obs_matrix.shape[0]), shapes)
             }
             for i in range(obs_matrix.shape[1])
         ]
+
         return points
 
     def compute_log_likelihood(self, backend: Model, points: list) -> dict:
         """Compute log-likelihood of some data points given a PyMC model.
 
         Args:
-            backend (pymc.Model) : PyMC3 model for which to compute log-likelihood
+            backend (pymc.Model) : PyMC model for which to compute log-likelihood
             points (list) : List of dictionaries, where each dictionary is a named
                 sample of all parameters in the model
 
         Returns:
-            dict: Dictionary of log-liklelihoods at each point
+            dict: Dictionary of log-likelihoods at each point
         """
-
-        cached = [(var, var.logp_elemwise) for var in backend.model.observed_RVs]
-
+        model = backend.model
+        cached = [
+            (
+                var,
+                model.compile_fn(
+                    model.logpt(var, sum=False)[0],
+                    inputs=model.value_vars,
+                    on_unused_input="ignore",
+                ),
+            )
+            for var in model.observed_RVs
+        ]
         log_likelihood_dict = {}
         for var, log_like_fun in cached:
             log_likelihood = np.array([one_de(log_like_fun(point)) for point in points])
