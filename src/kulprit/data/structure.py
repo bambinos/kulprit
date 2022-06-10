@@ -3,6 +3,7 @@
 import torch
 
 from bambi.models import Model
+from pymc.util import is_transformed_name, get_untransformed_name
 
 
 class ModelStructure:
@@ -50,6 +51,15 @@ class ModelStructure:
         # log the underlying backend model
         self.backend = model.backend
 
+        pymc_model = model.backend.model
+        # log the transformations
+        self.transforms = get_transforms(pymc_model)
+
+        # log the compiled model log probability
+        self.model_logp = pymc_model.compile_logp(
+            sum=False, vars=pymc_model.observed_RVs
+        )
+
         # define model architecture
         self.architecture = "glm" if len(model.group_specific_terms) == 0 else "glmm"
 
@@ -72,3 +82,25 @@ class ModelStructure:
         # extract some key dimensions needed for optimisation
         self.num_obs, self.num_terms = model._design.common.design_matrix.shape
         self.model_size = len(self.common_terms)  # does not include intercept
+
+
+def get_transforms(model):
+    """Generate dict with information about transformations
+
+    Args:
+        backend (pymc.Model) : PyMC model
+    Returns:
+        Dictionary with keys unstransformed variable name
+        and values (tranformation name, forward transformation)
+    """
+    transforms = {}
+    for var in model.value_vars:
+        name = var.name
+        transform_name = " "
+        transform_function = None
+        if is_transformed_name(name):
+            name = get_untransformed_name(name)
+            transform_name = var.tag.transform.name
+            transform_function = var.tag.transform.forward
+        transforms[name] = (transform_name, transform_function)
+    return transforms
