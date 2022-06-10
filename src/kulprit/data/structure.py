@@ -96,7 +96,7 @@ def get_transforms(model):
     transforms = {}
     for var in model.value_vars:
         name = var.name
-        transform_name = " "
+        transform_name = ""
         transform_function = None
         if is_transformed_name(name):
             name = get_untransformed_name(name)
