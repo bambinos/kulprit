@@ -146,27 +146,33 @@ class SubModelInferenceData(SubModel):
 
         theta_perp = torch.reshape(theta_perp, (num_chain, num_draw, num_terms))
 
+        transforms = self.data.structure.transforms
+
         # build posterior dictionary from projected parameters
         posterior = {
             term: theta_perp[:, :, i]
             for i, term in enumerate(submodel_structure.term_names)
         }
+        posterior_ = posterior.copy()
         if disp_perp is not None:
             # reshape `disp_perp` if present
             disp_perp = torch.reshape(disp_perp, (num_chain, num_draw))
             # update the posterior draws dictionary with dispersion parameter
-            disp_dict = {
-                f"{self.data.structure.response_name}_sigma": disp_perp,
-                f"{self.data.structure.response_name}_sigma_log__": torch.log(disp_perp),
-            }
-
-            # TODO: find a way to automatically perform the inverse PyMC
-            # transformation for transformed dispersion parameters
-
+            response_name = f"{self.data.structure.response_name}_sigma"
+            disp_dict = {response_name: disp_perp}
             posterior.update(disp_dict)
+            # check for transformed variables
+            transform_name, transform_function = transforms[response_name]
+            if transform_name:
+                disp_dict = {
+                    f"{response_name}_{transform_name}__": transform_function(
+                        disp_perp.numpy()
+                    ).eval(),
+                }
+                posterior_.update(disp_dict)
 
         # build points data from the posterior dictionaries
-        points = self.posterior_to_points(posterior)
+        points = self.posterior_to_points(posterior_)
 
         # compute log-likelihood of projected model from this posterior
         log_likelihood = self.compute_log_likelihood(self.data.structure.backend, points)
@@ -245,20 +251,11 @@ class SubModelInferenceData(SubModel):
         Returns:
             dict: Dictionary of log-likelihoods at each point
         """
-        model = backend.model
-        cached = [
-            (
-                var,
-                model.compile_fn(
-                    model.logpt(var, sum=False)[0],
-                    inputs=model.value_vars,
-                    on_unused_input="ignore",
-                ),
+        log_likelihood_dict = {
+            var.name: np.array(
+                [self.data.structure.model_logp(point) for point in points]
             )
-            for var in model.observed_RVs
-        ]
-        log_likelihood_dict = {}
-        for var, log_like_fun in cached:
-            log_likelihood = np.array([one_de(log_like_fun(point)) for point in points])
-            log_likelihood_dict[var.name] = log_likelihood
+            for var in backend.model.observed_RVs
+        }
+
         return log_likelihood_dict
