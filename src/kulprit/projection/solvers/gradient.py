@@ -16,7 +16,7 @@ class GradientDescentSolver(BaseSolver):
         self,
         data: ModelData,
         family: Family,
-        num_iters: int = 200,
+        num_iters: int = 500,
         learning_rate: float = 0.01,
     ):
         # log reference model data and family
@@ -46,12 +46,13 @@ class GradientDescentSolver(BaseSolver):
         # extract submodel design matrix
         X_perp = submodel_structure.X
 
-        # extract reference model posterior predictions
+        # extract thinned reference model posterior predictive samples
         y_ast = torch.from_numpy(
             self.data.structure.predictions.stack(samples=("chain", "draw"))
             .transpose(*("samples", f"{self.data.structure.response_name}_dim_0"))
             .values
         ).float()
+        y_ast = y_ast[self.data.structure.thinned_idx]
 
         # project parameter samples and compute distance from reference model
         theta_perp, final_loss = self.optimise(X_perp, y_ast)

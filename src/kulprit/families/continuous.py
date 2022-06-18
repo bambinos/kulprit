@@ -164,6 +164,12 @@ class GaussianFamily(BaseFamily):
             .transpose()
             .values
         ).float()
+
+        # thin the parameter draws to match the optimisation
+        theta_ast = theta_ast[self.data.structure.thinned_idx]
+        sigma_ast = sigma_ast[self.data.structure.thinned_idx]
+
+        # extract the design matrix of the reference model
         X_ast = self.data.structure.X
 
         # project the dispersion parameter

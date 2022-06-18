@@ -127,8 +127,8 @@ class SubModelInferenceData(SubModel):
         """Convert some set of pytorch tensors into an ArviZ idata object.
 
         Args:
-            model (kulprit.ModelData): The restricted ModelData object whose
-                posterior to build
+            submodel_structure (kulprit.data.SubModelStructure): The restricted
+                model's structure object
             theta_perp (torch.tensor): Restricted parameter posterior projections,
                 including the intercept term
             disp_perp (torch.tensor): Restricted model dispersions parameter
@@ -140,7 +140,7 @@ class SubModelInferenceData(SubModel):
 
         # reshape `theta_perp` so it has the same shape as the reference model
         num_chain = len(self.data.idata.posterior.coords.get("chain"))
-        num_draw = len(self.data.idata.posterior.coords.get("draw"))
+        num_draw = int(submodel_structure.num_thinned_draws / num_chain)
         num_terms = submodel_structure.num_terms
         num_obs = self.data.structure.num_obs
 
@@ -220,7 +220,7 @@ class SubModelInferenceData(SubModel):
             key: (
                 posterior[key].flatten()
                 if key in posterior.keys()
-                else np.zeros((self.data.structure.num_draws,))
+                else np.zeros((self.data.structure.num_thinned_draws,))
             )
             for key in initial_point.keys()
         }

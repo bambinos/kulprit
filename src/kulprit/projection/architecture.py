@@ -81,12 +81,10 @@ class GLMArchitecture(BaseArchitecture):
         # assign data shapes and GLM inverse link function
         self.num_obs = submodel_structure.num_obs
         self.num_terms = submodel_structure.num_terms
-        self.num_draws = submodel_structure.num_draws
+        self.num_draws = submodel_structure.num_thinned_draws
         self.inv_link = submodel_structure.link.linkinv
         # build linear component of GLM without intercept
-        self.lin = nn.Linear(
-            submodel_structure.num_terms, submodel_structure.num_draws, bias=False
-        )
+        self.lin = nn.Linear(self.num_terms, self.num_draws, bias=False)
 
     def forward(self, X: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.

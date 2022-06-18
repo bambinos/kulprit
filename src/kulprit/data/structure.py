@@ -28,7 +28,6 @@ class ModelStructure:
             num_obs (int): Number of data observations
             num_terms (int): Number of variables observed, and equivalently the
                 number of common terms in the model (including intercept)
-            num_draws (int): Number of posterior draws in the model
             model_size (int): Number of common terms in the model (terms not
                 including the intercept)
             has_intercept (bool): Flag whether intercept included in model
