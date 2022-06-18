@@ -16,7 +16,7 @@ class GradientDescentSolver(BaseSolver):
         self,
         data: ModelData,
         family: Family,
-        num_iters: int = 500,
+        num_iters: int = 400,
         learning_rate: float = 0.01,
     ):
         # log reference model data and family

@@ -15,7 +15,7 @@ class Projector:
         self,
         data: ModelData,
         path: Optional[SearchPath] = None,
-        num_iters: Optional[int] = 200,
+        num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
         """Reference model builder for projection predictive model selection.

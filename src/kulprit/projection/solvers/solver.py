@@ -19,7 +19,7 @@ class Solver:
         data: ModelData,
         family: Family,
         method: Literal["analytic", "gradient"],
-        num_iters: Optional[int] = 200,
+        num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
         """Solver factory class.

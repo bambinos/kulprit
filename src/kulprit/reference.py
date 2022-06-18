@@ -23,7 +23,7 @@ class ReferenceModel:
         self,
         model: Model,
         idata: Optional[InferenceData] = None,
-        num_iters: Optional[int] = 200,
+        num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
         num_thinned_draws: Optional[int] = 400,
     ) -> None:
