@@ -64,7 +64,9 @@ class ReferenceModel:
         )
 
         # define thinning
-        self.data.structure.num_thinned_draws = num_thinned_draws
+        self.data.structure.num_thinned_draws = min(
+            num_thinned_draws, self.data.structure.num_draws
+        )
         self.data.structure.thinned_idx = torch.randperm(self.data.structure.num_draws)[
             : self.data.structure.num_thinned_draws
         ]

@@ -1,5 +1,7 @@
 """Gradient descent solver module."""
 
+from typing import Optional
+
 import torch
 
 from kulprit.data.data import ModelData
@@ -16,8 +18,8 @@ class GradientDescentSolver(BaseSolver):
         self,
         data: ModelData,
         family: Family,
-        num_iters: int = 400,
-        learning_rate: float = 0.01,
+        num_iters: Optional[int] = 400,
+        learning_rate: Optional[float] = 0.01,
     ):
         # log reference model data and family
         self.data = data
