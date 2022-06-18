@@ -10,7 +10,6 @@ import torch
 
 from kulprit.data import ModelData, ModelStructure
 from kulprit.projection.projector import Projector
-from kulprit.search.path import SearchPath
 from kulprit.search.searcher import Searcher
 
 
@@ -94,7 +93,7 @@ class ReferenceModel:
         self,
         max_terms: Optional[int] = None,
         method: Literal["forward", "l1"] = "forward",
-    ) -> SearchPath:
+    ) -> dict:
         """Model search method through parameter space.
 
         If ``max_terms`` is not provided, then the search path runs from the

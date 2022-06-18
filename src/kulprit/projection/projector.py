@@ -7,14 +7,13 @@ from kulprit.data.data import ModelData
 from kulprit.data.submodel import SubModelStructure, SubModelInferenceData
 from kulprit.families.family import Family
 from kulprit.projection.solver import Solver
-from kulprit.search.path import SearchPath
 
 
 class Projector:
     def __init__(
         self,
         data: ModelData,
-        path: Optional[SearchPath] = None,
+        path: Optional[dict] = None,
         num_iters: Optional[int] = 200,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
@@ -75,7 +74,7 @@ class Projector:
         # project a number of terms
         else:
             # test `model_size` input
-            if self.path is None or terms not in list(self.path.k_submodel.keys()):
+            if self.path is None or terms not in list(self.path.keys()):
                 raise UserWarning(
                     "In order to project onto an integer number of terms, please "
                     + "first complete a parameter search."

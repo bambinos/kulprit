@@ -24,11 +24,6 @@ class ForwardSearchPath(SearchPath):
         self.k_submodel = {}
         self.k_dist = {}
 
-    def __getitem__(self, k: int) -> ModelData:
-        """Return the submodel in the search path with k terms."""
-
-        return self.k_submodel[k]
-
     def __repr__(self) -> str:
         """String representation of the search path."""
 

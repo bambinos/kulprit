@@ -28,11 +28,6 @@ class L1SearchPath(SearchPath):
 
         self.search_completed = True
 
-    def __getitem__(self, k: int) -> ModelData:
-        """Return the submodel in the search path with k terms."""
-
-        return self.k_submodel[k]
-
     def __repr__(self) -> str:
         """String representation of the search path."""
 
@@ -47,17 +42,6 @@ class L1SearchPath(SearchPath):
         string = df.to_string()
         return string
 
-    def add_submodel(
-        self,
-        k: int,
-        k_submodel: ModelData,
-        k_dist: float,
-    ) -> None:
-        """Update search path with new submodel."""
-
-        self.k_submodel[k] = k_submodel
-        self.k_dist[k] = k_dist
-
     def first_non_zero_idx(self, arr):
         """Find the index of the first non-zero element in each row of a matrix.
 
@@ -68,12 +52,22 @@ class L1SearchPath(SearchPath):
             dict: Dictionary keyed by the row number where each value is the index
                 of the first non-zero element in that row."""
 
+        # initialise dictionary of indices
         idx_dict = {}
+
+        # loop through each row and find first non-zero element
         for i, j in zip(*np.where(arr > 0)):
             if i in idx_dict:
                 continue
             else:
                 idx_dict[i] = j
+
+        # identify which keys are missing and set their values to infinity
+        if len(idx_dict) < arr.shape[0]:
+            missing_keys = set(range(arr.shape[0])) - set(idx_dict.keys())
+            for key in missing_keys:
+                idx_dict[key] = np.inf
+
         return idx_dict
 
     def compute_path(self) -> None:
