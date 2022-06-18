@@ -45,21 +45,11 @@ class TestProjector(KulpritTest):
             ref_model.data.structure.num_obs,
         )
 
-    def test_analytic_project(self, ref_model):
+    def test_project(self, ref_model):
         """Test that the analytic projection method works."""
 
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"])
-
-        assert sub_model.structure.X.shape == (ref_model.data.structure.num_obs, 2)
-        assert sub_model.structure.num_terms == 2
-        assert sub_model.structure.model_size == 1
-
-    def test_gradient_project(self, ref_model):
-        """Test that the gradient projection method works."""
-
-        # project the reference model to some parameter subset
-        sub_model = ref_model.project(terms=["x"], method="gradient")
 
         assert sub_model.structure.X.shape == (ref_model.data.structure.num_obs, 2)
         assert sub_model.structure.num_terms == 2
