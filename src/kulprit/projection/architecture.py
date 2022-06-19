@@ -75,7 +75,6 @@ class GLMArchitecture(BaseArchitecture):
             submodel_structure (kulprit.data.SubModelStructure): The structure object of
                 the submodel
         """
-
         super(GLMArchitecture, self).__init__()
 
         # assign data shapes and GLM inverse link function
