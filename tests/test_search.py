@@ -1,5 +1,8 @@
 import bambi as bmb
 import kulprit as kpt
+from kulprit.search.l1 import L1SearchPath
+
+import numpy as np
 
 import copy
 import pytest
@@ -23,6 +26,17 @@ class TestSearch:
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search(method="l1")
         assert list(ref_model_copy.path.keys()) == [0, 1, 2]
+
+    def test_l1_utils(self, ref_model):
+        """Test that L1 utility methods return expected result."""
+
+        copy.copy(ref_model)
+        proj = ref_model.projector
+        searcher = L1SearchPath(proj)
+        arr = np.array(
+            [[0.0, 1.0, 2.0, 3.0], [0.0, 0.0, -1.0, 2.0], [0.0, 0.0, 0.0, 0.0]]
+        )
+        assert searcher.first_non_zero_idx(arr) == {0: 1, 1: 2, 2: np.inf}
 
     def test_bad_search_method(self, ref_model):
         """Test that an error is raised when an invalid search method is used."""

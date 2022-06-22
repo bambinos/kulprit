@@ -56,11 +56,10 @@ class L1SearchPath(SearchPath):
         idx_dict = {}
 
         # loop through each row and find first non-zero element
-        for i, j in zip(*np.where(arr > 0)):
+        for i, j in zip(*np.where(arr != 0)):
             if i in idx_dict:
                 continue
-            else:
-                idx_dict[i] = j
+            idx_dict[i] = j
 
         # identify which keys are missing and set their values to infinity
         if len(idx_dict) < arr.shape[0]:
