@@ -1,5 +1,8 @@
 import bambi as bmb
 import kulprit as kpt
+from kulprit.search.l1 import L1SearchPath
+
+import numpy as np
 
 import copy
 import pytest
@@ -15,7 +18,32 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        assert list(ref_model_copy.path.k_submodel.keys()) == [0, 1, 2]
+        assert list(ref_model_copy.path.keys()) == [0, 1, 2]
+
+    def test_l1(self, ref_model):
+        """Test that L1 search gives expected result."""
+
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.search(method="l1")
+        assert list(ref_model_copy.path.keys()) == [0, 1, 2]
+
+    def test_l1_utils(self, ref_model):
+        """Test that L1 utility methods return expected result."""
+
+        copy.copy(ref_model)
+        proj = ref_model.projector
+        searcher = L1SearchPath(proj)
+        arr = np.array(
+            [[0.0, 1.0, 2.0, 3.0], [0.0, 0.0, -1.0, 2.0], [0.0, 0.0, 0.0, 0.0]]
+        )
+        assert searcher.first_non_zero_idx(arr) == {0: 1, 1: 2, 2: np.inf}
+
+    def test_bad_search_method(self, ref_model):
+        """Test that an error is raised when an invalid search method is used."""
+
+        with pytest.raises(UserWarning):
+            ref_model_copy = copy.copy(ref_model)
+            ref_model_copy.search(method="bad_method")
 
     def test_search_too_many_terms(self, ref_model):
         """Test than an error is raise when too many terms are used."""
@@ -45,11 +73,19 @@ class TestSearch:
             ref_model = kpt.ReferenceModel(model=bambi_model, idata=idata)
             ref_model.loo_compare()
 
-    def test_repr(self, ref_model):
-        """Test the string representation of the search path."""
+    def test_forward_repr(self, ref_model):
+        """Test the string representation of the forward search path."""
 
         ref_model_copy = copy.copy(ref_model)
         path = ref_model_copy.search()
+        assert type(ref_model_copy.searcher.__repr__()) == str
+        assert type(path.__repr__()) == str
+
+    def test_l1_repr(self, ref_model):
+        """Test the string representation of the L1 search path."""
+
+        ref_model_copy = copy.copy(ref_model)
+        path = ref_model_copy.search(method="l1")
         assert type(ref_model_copy.searcher.__repr__()) == str
         assert type(path.__repr__()) == str
 

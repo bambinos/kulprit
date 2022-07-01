@@ -1,4 +1,4 @@
-"""Gradient descent solver module."""
+"""Optimisation solver module."""
 
 import torch
 
@@ -6,12 +6,9 @@ from kulprit.data.data import ModelData
 from kulprit.families.family import Family
 from kulprit.projection.architecture import Architecture
 from kulprit.projection.losses.kld import KullbackLeiblerLoss
-from kulprit.projection.solvers import BaseSolver
 
 
-class GradientDescentSolver(BaseSolver):
-    """Gradient descent projection optimisation solver."""
-
+class Solver:
     def __init__(
         self,
         data: ModelData,
@@ -19,6 +16,18 @@ class GradientDescentSolver(BaseSolver):
         num_iters: int = 200,
         learning_rate: float = 0.01,
     ):
+        """Initialise solver object.
+
+        Args:
+            data (ModelData): The data object containing the model data of
+                the reference model
+            family (Family): The family object of the reference model
+            num_iters (int, optional): The number of iterations to run the
+                optimisation for, defaults to 200
+            learning_rate (float, optional): The learning rate for the optimisation
+                algorithm, defaults to 0.01
+        """
+
         # log reference model data and family
         self.data = data
         self.family = family
@@ -88,3 +97,22 @@ class GradientDescentSolver(BaseSolver):
         theta_perp = list(solver.parameters())[0].data
         final_loss = loss.item()
         return theta_perp, final_loss
+
+    def solve_dispersion(
+        self, theta_perp: torch.tensor, X_perp: torch.tensor
+    ) -> torch.tensor:
+        """Analytic projection of the model dispersion parameters.
+
+        Args:
+            theta_perp (torch.tensor): A PyTorch tensor of the restricted
+                parameter draws
+            X_perp (np.ndarray): The design matrix of the restricted model we
+                are projecting onto
+
+        Returns:
+            torch.tensor: The restricted projections of the dispersion parameters
+        """
+
+        # compute the solution and return
+        solution = self.family.solve_dispersion(theta_perp=theta_perp, X_perp=X_perp)
+        return solution

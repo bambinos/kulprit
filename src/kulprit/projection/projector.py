@@ -6,15 +6,14 @@ from typing_extensions import Literal
 from kulprit.data.data import ModelData
 from kulprit.data.submodel import SubModelStructure, SubModelInferenceData
 from kulprit.families.family import Family
-from kulprit.projection.solvers.solver import Solver
-from kulprit.search.path import SearchPath
+from kulprit.projection.solver import Solver
 
 
 class Projector:
     def __init__(
         self,
         data: ModelData,
-        path: Optional[SearchPath] = None,
+        path: Optional[dict] = None,
         num_iters: Optional[int] = 200,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
@@ -48,7 +47,6 @@ class Projector:
     def project(
         self,
         terms: Union[List[str], int],
-        method: Literal["analytic", "gradient"],
     ) -> ModelData:
         """Wrapper function for projection method.
 
@@ -57,9 +55,6 @@ class Projector:
                 the names of the parameters to include the submodel, or the
                 number of parameters to include in the submodel, **not**
                 including the intercept term
-            method (str): The projection method to employ, either "analytic" to
-                use the hard-coded solutions the optimisation problem, or
-                "gradient" to employ gradient descent methods
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
@@ -74,12 +69,12 @@ class Projector:
                     + " the reference model."
                 )
             # perform projection
-            return self.project_names(term_names=terms, method=method)
+            return self.project_names(term_names=terms)
 
         # project a number of terms
         else:
             # test `model_size` input
-            if self.path is None or terms not in list(self.path.k_submodel.keys()):
+            if self.path is None or terms not in list(self.path.keys()):
                 raise UserWarning(
                     "In order to project onto an integer number of terms, please "
                     + "first complete a parameter search."
@@ -91,7 +86,6 @@ class Projector:
     def project_names(
         self,
         term_names: List[List[str]],
-        method: Literal["analytic", "gradient"],
     ) -> ModelData:
         """Primary projection method for GLM reference model.
 
@@ -103,7 +97,6 @@ class Projector:
         Args:
             term_names (List[str]): The names of parameters to project onto the
                 submodel, **not** including the intercept term
-            method (str): The method to use in projection
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
@@ -117,7 +110,6 @@ class Projector:
         self.solver = Solver(
             data=self.data,
             family=self.family,
-            method=method,
             num_iters=self.num_iters,
             learning_rate=self.learning_rate,
         )
