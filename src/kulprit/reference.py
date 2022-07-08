@@ -10,7 +10,6 @@ import torch
 
 from kulprit.data import ModelData, ModelStructure
 from kulprit.projection.projector import Projector
-from kulprit.search.path import SearchPath
 from kulprit.search.searcher import Searcher
 
 
@@ -77,13 +76,12 @@ class ReferenceModel:
             num_iters=num_iters,
             learning_rate=learning_rate,
         )
-        self.searcher = Searcher(self.data, self.projector)
+        self.searcher = Searcher(self.projector)
         self.path = None
 
     def project(
         self,
         terms: Union[List[str], int],
-        method: Literal["analytic", "gradient"] = "analytic",
     ) -> ModelData:
         """Projection the reference model onto a variable subset.
 
@@ -92,23 +90,20 @@ class ReferenceModel:
                 the names of the parameters to include the submodel, or the
                 number of parameters to include in the submodel, **not**
                 including the intercept term
-            method (str): The projection method to employ, either "analytic" to
-                use the hard-coded solutions the optimisation problem, or
-                "gradient" to employ gradient descent methods
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
         # project the reference model onto a subset of covariates
-        sub_model = self.projector.project(terms=terms, method=method)
+        sub_model = self.projector.project(terms=terms)
         return sub_model
 
     def search(
         self,
         max_terms: Optional[int] = None,
-        method: Literal["analytic", "gradient"] = "analytic",
-    ) -> SearchPath:
+        method: Literal["forward", "l1"] = "forward",
+    ) -> dict:
         """Model search method through parameter space.
 
         If ``max_terms`` is not provided, then the search path runs from the
@@ -118,12 +113,13 @@ class ReferenceModel:
         Args:
             max_terms (int): The number of parameters of the largest submodel in
                 the search path, **not** including the intercept term
-            method (str): The projection method to employ, either "analytic" to
-                use the hard-coded solutions the optimisation problem, or
-                "gradient" to employ gradient descent methods
+            method (str): The search method to employ, either "forward" to
+                employ a forward search heuristic through the space, or "l1" to
+                use the L1-regularised search path
 
         Returns:
-            kulprit.search.SearchPath: The model selection procedure search path
+            dict: The model selection procedure search path, containing the
+                submodels along the search path, keyed by their model size
         """
 
         # set default `max_terms` value
@@ -139,7 +135,6 @@ class ReferenceModel:
             )
 
         self.path = self.searcher.search(max_terms=max_terms, method=method)
-        self.projector.path = self.path  # feed path result through to the projector
         return self.path
 
     def loo_compare(

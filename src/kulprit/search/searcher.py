@@ -6,24 +6,30 @@ from typing_extensions import Literal
 import pandas as pd
 import arviz as az
 
-from kulprit.data.data import ModelData
 from kulprit.projection.projector import Projector
-from kulprit.search.path import SearchPath
+from kulprit.search.forward import ForwardSearchPath
+from kulprit.search.l1 import L1SearchPath
 
 
 class Searcher:
-    def __init__(self, data: ModelData, projector: Projector) -> None:
-        """Initialise forward search class."""
+    def __init__(self, projector: Projector) -> None:
+        """Initialise forward search class.
 
-        # initialise reference model and set of reference model term names
-        self.data = data
-        self.term_names = data.structure.common_terms
+        Args:
+            projector (Projector): Projector object.
+
+        Raises:
+            UserWarning: If method is not "forward" or "l1".
+        """
 
         # initialise projector for the search procedure
         self.projector = projector
 
-        # initialise search path
-        self.path = SearchPath(ref_terms=self.term_names)
+        # define all available search heuristics
+        self.method_dict = {
+            "forward": ForwardSearchPath,
+            "l1": L1SearchPath,
+        }
 
         # indicator variable tracking whether or not a search has been run
         self.search_completed = False
@@ -34,8 +40,8 @@ class Searcher:
         return self.path.__repr__()
 
     def search(
-        self, max_terms: int, method: Literal["analytic", "gradient"]
-    ) -> SearchPath:
+        self, max_terms: int, method: Literal["forward", "l1"] = "forward"
+    ) -> dict:
         """Primary search method of the procedure.
 
         Performs forward search through the parameter space.
@@ -43,58 +49,31 @@ class Searcher:
         Args:
             max_terms (int): Number of terms to perform the forward search
                 up to.
-            method (str): The projection method to employ, either "analytic" to
-                use the hard-coded solutions the optimisation problem, or
-                "gradient" to employ gradient descent methods
+            method (str): Method to use for search.
+
+        Returns:
+            dict: A dictionary of submodels, keyed by the number of terms in the
+                submodel.
         """
 
-        # initial intercept-only subset
-        k = 0
-        k_term_names = []
-        k_submodel = self.projector.project(terms=k_term_names, method=method)
-        k_dist = k_submodel.dist_to_ref_model
+        # test valid solution method
+        if method not in self.method_dict:
+            raise UserWarning("Please either select either forward search or L1 search.")
 
-        # add submodel to search path
-        self.path.add_submodel(
-            k=k,
-            k_term_names=k_term_names,
-            k_submodel=k_submodel,
-            k_dist=k_dist,
-        )
+        # initialise search path
+        self.path = self.method_dict[method](self.projector)
 
-        # perform forward search through parameter space
-        while k < max_terms:
-            # get list of candidate submodels, project onto them, and compute
-            # their distances
-            k_candidates = self.path.get_candidates(k=k)
-            k_projections = [
-                self.projector.project(terms=candidate, method=method)
-                for candidate in k_candidates
-            ]
-
-            # identify the best candidate by distance from reference model
-            best_submodel = min(
-                k_projections, key=lambda projection: projection.sort_index
-            )
-            best_dist = best_submodel.sort_index
-
-            # retrieve the best candidate's term names and indices
-            k_term_names = best_submodel.structure.common_terms
-
-            # increment number of parameters
-            k = len(k_term_names)
-
-            # add best candidate to search path
-            self.path.add_submodel(
-                k=k,
-                k_term_names=k_term_names,
-                k_submodel=best_submodel,
-                k_dist=best_dist,
-            )
+        # perform the search according to the chosen heuristic
+        k_submodels = self.path.search(max_terms=max_terms)
 
         # toggle indicator variable and return search path
         self.search_completed = True
-        return self.path
+
+        # feed path result through to the projector
+        self.projector.path = k_submodels
+
+        # return the final search path
+        return k_submodels
 
     def loo_compare(
         self,

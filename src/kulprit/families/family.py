@@ -41,25 +41,6 @@ class Family:
         family_class = self.family_dict[self.family_name]
         return family_class(self.data)
 
-    def solve_analytic(self, submodel_structure: SubModelStructure) -> torch.tensor:
-        """Analytic solution to the reference model parameter projection.
-
-        Args:
-            submodel_structure (SubModelStructure): The submodel structure object
-
-        Returns
-            tuple: A tuple of the projection solution along with the final loss
-                value of the gradient descent
-        """
-
-        # test whether or not the family has an analytic solution
-        if not self.family.has_analytic_solution:  # pragma: no cover
-            raise UserWarning(f"Cannot project {self.family.name} analytically.")
-
-        # compute the solution and return
-        solution = self.family.solve_analytic(submodel_structure=submodel_structure)
-        return solution
-
     def solve_dispersion(self, theta_perp: torch.tensor, X_perp: torch.tensor):
         """Analytic projection of the model dispersion parameters.
 
