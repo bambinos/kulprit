@@ -1,13 +1,11 @@
-"""Kullback-Leibler divergence losses module."""
-
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-from kulprit.families.family import Family
 from kulprit.projection.losses import Loss
 
 
-class KullbackLeiblerLoss:
+class KullbackLeiblerLoss(Loss):
     """Kullback-Leibler (KL) divergence loss module.
 
     This class computes some KL divergence loss for observations seen from the
@@ -15,88 +13,42 @@ class KullbackLeiblerLoss:
     motivated loss function by Goutis and Robert (1998).
     """
 
-    def __init__(self, family: Family) -> None:
+    def __init__(self) -> None:
         """Loss module constructor.
 
-        Args:
-            family (Family): Reference model family object
+        Note that our architecture consists of a PyTorch KL divergence loss
+        module with setting ``reduction="batchmean"``. This setting is chosen
+        as a result of the PyTorch internals leading to this option being the
+        mathematically correct one. For more information, please refer to the
+        [PyTorch docs on the subject](https://pytorch.org/docs/stable/generated/
+        torch.nn.KLDivLoss.html).
         """
+        super(KullbackLeiblerLoss, self).__init__()
 
-        # log family and retrieve family name
-        self.family = family
-        self.family_name = family.family.name
+        self.loss = nn.KLDivLoss(reduction="batchmean", log_target=True)
 
-        # define all available KL divergence loss classes
-        self.loss_dict = {
-            "gaussian": GaussianKullbackLeiblerLoss,
-        }
-
-        # test that family has been implemented
-        if self.family_name not in self.loss_dict:
-            raise NotImplementedError(
-                f"The {self.family_name} class has not yet been implemented."
-            )
-
-        self.loss = self.factory_method()
-
-    def factory_method(self) -> Loss:
-        """Choose the appropriate divergence class given the model."""
-
-        # return appropriate divergence class given model variate family
-        loss_class = self.loss_dict[self.family_name]
-        return loss_class()
-
-    def forward(self, P: torch.tensor, Q: torch.tensor) -> torch.tensor:
+    def forward(self, input: torch.tensor, target: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.
 
-        This method computes the Kullback-Leibler divergence between the
-        reference model variate draws ``P``and the restricted model's variate
-        draws ``Q``. This is done using the two samples' respective sufficient
-        sample statistics and a divergence equation found in the ``Family``
-        class.
+        This method computes the sample Kullback-Leibler divergence between the
+        reference model posterior predictive log probabilities, and those of the
+        submodel we wish to optimise. We initially input the raw draws, before
+        converting them into log probabilities.
 
         Args:
-            P (torch.tensor): Tensor of the reference model posterior MCMC
+            input (torch.tensor): Tensor of the submodel posterior predictive
                 draws
-            Q (torch.tensor): Tensor of the restricted model posterior MCMC
-                draws
+            target (torch.tensor): Tensor of the reference model posterior
+                predictive draws
 
         Returns:
             torch.tensor: Tensor of shape () containing sample KL divergence
         """
 
-        kld = self.loss.forward(P, Q)
-        return kld
+        # transform samples to log probabilities
+        input = F.log_softmax(input, dim=-1)
+        target = F.log_softmax(target, dim=-1)
 
-
-class GaussianKullbackLeiblerLoss(Loss):
-    """Gaussian empirical KL divergence class."""
-
-    def __init__(self) -> None:
-        super(GaussianKullbackLeiblerLoss, self).__init__()
-
-        self.loss = nn.MSELoss()
-
-    def forward(self, P: torch.tensor, Q: torch.tensor) -> torch.tensor:
-        """Kullback-Leibler divergence between two Gaussians.
-
-        We compute the Kullback-Leibler divergence through the surrogate use of
-        mean square error (MSE) between the two Gaussians. In this case,
-        minimising the mean square error is equivalent to achieving the maximum
-        likelihood estimate (MLE) of the Gaussian submodel, which in turn is
-        equivalent to minimising the Kulback-Leibler divergence.
-
-        Args:
-            P (torch.tensor): Tensor of reference model posterior parameter
-                draws
-            Q (torch.tensor): Tensor of submodel posterior parameter draws
-
-        Returns:
-            torch.tensor: Tensor of shape () containing sample KL divergence
-        """
-
-        # compute the MSE
-        mse = self.loss(P, Q)
-
-        assert mse.shape == (), f"Expected data dimensions {()}, received {mse.shape}."
-        return mse
+        # compute the KL divergence between the two predictive posteriors
+        kl = self.loss(input, target)
+        return kl

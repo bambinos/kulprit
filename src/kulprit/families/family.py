@@ -3,7 +3,6 @@
 import torch
 
 from kulprit.data.data import ModelData
-from kulprit.data.submodel import SubModelStructure
 from kulprit.families import BaseFamily
 from kulprit.families.continuous import GaussianFamily
 

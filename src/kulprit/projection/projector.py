@@ -1,7 +1,6 @@
 """Base projection class."""
 
 from typing import Optional, List, Union
-from typing_extensions import Literal
 
 from kulprit.data.data import ModelData
 from kulprit.data.submodel import SubModelStructure, SubModelInferenceData
@@ -14,7 +13,7 @@ class Projector:
         self,
         data: ModelData,
         path: Optional[dict] = None,
-        num_iters: Optional[int] = 200,
+        num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
     ) -> None:
         """Reference model builder for projection predictive model selection.
@@ -27,6 +26,9 @@ class Projector:
 
         Args:
             data (kulprit.data.ModelData): Reference model dataclass object
+            path (dict): An optional search path dictionary, initialised to None
+                and assigned by the ReferenceModel parent object following a
+                search for efficient submodel retrieval
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
         """

@@ -22,8 +22,9 @@ class ReferenceModel:
         self,
         model: Model,
         idata: Optional[InferenceData] = None,
-        num_iters: Optional[int] = 200,
+        num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
+        num_thinned_draws: Optional[int] = 400,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -41,6 +42,7 @@ class ReferenceModel:
                 of the fitted reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
+            num_thinned_draws (int): The number of draws to use in optimisation
         """
 
         # test that the reference model has an intercept term
@@ -59,6 +61,14 @@ class ReferenceModel:
         self.data = ModelData(
             structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0)
         )
+
+        # define thinning
+        self.data.structure.num_thinned_draws = min(
+            num_thinned_draws, self.data.structure.num_draws
+        )
+        self.data.structure.thinned_idx = torch.randperm(self.data.structure.num_draws)[
+            : self.data.structure.num_thinned_draws
+        ]
 
         # instantiate projector, search, and search path classes
         self.projector = Projector(
