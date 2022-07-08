@@ -1,5 +1,4 @@
-from kulprit.families.family import Family
-from kulprit.projection.losses import KullbackLeiblerLoss
+from kulprit.projection.losses.kld import KullbackLeiblerLoss
 
 import pytest
 
