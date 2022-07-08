@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import lasso_path
 
-from kulprit.data.data import ModelData
 from kulprit.projection.projector import Projector
 from kulprit.search import SearchPath
 

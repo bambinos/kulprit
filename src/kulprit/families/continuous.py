@@ -1,7 +1,6 @@
 """Continuous distribution families."""
 
 from kulprit.data.data import ModelData
-from kulprit.data.submodel import SubModelStructure
 from kulprit.families import BaseFamily
 
 import numpy as np

@@ -8,7 +8,6 @@ from pymc import Model
 
 import arviz as az
 from arviz import InferenceData
-from arviz.utils import one_de
 
 import numpy as np
 import torch
