@@ -135,7 +135,7 @@ class SubModelInferenceData(SubModel):
                 posterior projections
 
         Returns:
-            arviz.inferencedata: Restricted model idata object
+            arviz.InferenceData: Restricted model idata object
         """
 
         # reshape `theta_perp` so it has the same shape as the reference model

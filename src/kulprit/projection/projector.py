@@ -26,6 +26,9 @@ class Projector:
 
         Args:
             data (kulprit.data.ModelData): Reference model dataclass object
+            path (dict): An optional search path dictionary, initialised to None
+                and assigned by the ReferenceModel parent object following a
+                search for efficient submodel retrieval
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
         """

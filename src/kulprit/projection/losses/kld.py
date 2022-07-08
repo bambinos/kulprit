@@ -14,7 +14,15 @@ class KullbackLeiblerLoss(Loss):
     """
 
     def __init__(self) -> None:
-        """Loss module constructor."""
+        """Loss module constructor.
+
+        Note that our architecture consists of a PyTorch KL divergence loss
+        module with setting ``reduction="batchmean"``. This setting is chosen
+        as a result of the PyTorch internals leading to this option being the
+        mathematically correct one. For more information, please refer to the
+        [PyTorch docs on the subject](https://pytorch.org/docs/stable/generated/
+        torch.nn.KLDivLoss.html).
+        """
         super(KullbackLeiblerLoss, self).__init__()
 
         self.loss = nn.KLDivLoss(reduction="batchmean", log_target=True)
