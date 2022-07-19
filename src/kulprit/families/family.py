@@ -1,62 +1,51 @@
 """Core family class to be accessed"""
 
-import torch
-
-from kulprit.data.data import ModelData
-from kulprit.families import BaseFamily
+from bambi import Model
 from kulprit.families.continuous import GaussianFamily
+from kulprit.families.link import Link
+
+# extract families built into Bambi
+from bambi.defaults.defaults import BUILTIN_FAMILIES
+
+
+FAMILIES = {
+    "gaussian": GaussianFamily,
+}
 
 
 class Family:
-    def __init__(self, data: ModelData) -> None:
-        """Family factory constructor.
+    """Representation of a distribution family.
 
-        Args:
-            data (kulprit.data.ModelData): Reference model dataclass object
-        """
+    Attributes:
+        model (bambi.models.Model): The reference Bambi model object
+    """
 
-        # log model data and family name
-        self.data = data
-        self.family_name = data.structure.family
-
-        # define all available family classes
-        self.family_dict = {
-            "gaussian": GaussianFamily,
-        }
-
-        # test family name
-        if self.family_name not in self.family_dict:
+    def __init__(self, model: Model):
+        self.name = model.family.name
+        if self.name not in FAMILIES:
             raise NotImplementedError(
-                f"The {self.family_name} family has not yet been implemented."
+                f"Family '{self.name}' is not supported.",
             )
+        self.link = Link(model.family.link.name)
+        self.model = model
+        self.family = FAMILIES[self.name](self.model, self.link)
+        self.has_dispersion_parameters = self.family.has_dispersion_parameters
 
-        # build BaseFamily object
-        self.family = self.factory_method()
+        # initialise the name of the dispersion parameter
+        self.disp_name = None
+        if self.has_dispersion_parameters:
+            # extract model parameter names
+            response_name = model.response.name
+            disp_param = list(
+                BUILTIN_FAMILIES.get(self.name).get("likelihood").get("args").keys()
+            )[0]
+            self.disp_name = f"{response_name}_{disp_param}"
 
-    def factory_method(self) -> BaseFamily:
-        """Choose the appropriate family class given the model."""
+    def solve_dispersion(self, **kwargs):
+        return self.family.solve_dispersion(**kwargs)
 
-        # return appropriate family class given model variate family
-        family_class = self.family_dict[self.family_name]
-        return family_class(self.data)
+    def posterior_predictive(self, **kwargs):
+        return self.family.posterior_predictive(**kwargs)
 
-    def solve_dispersion(self, theta_perp: torch.tensor, X_perp: torch.tensor):
-        """Analytic projection of the model dispersion parameters.
-
-        Args:
-            theta_perp (torch.tensor): A PyTorch tensor of the restricted
-                parameter draws
-            X_perp (np.ndarray): The design matrix of the restricted model we
-                are projecting onto
-
-        Returns:
-            torch.tensor: The restricted projections of the dispersion parameters
-        """
-
-        # test whether or not the family has dispersion parameters
-        if not self.family.has_dispersion_parameters:  # pragma: no cover
-            return None
-
-        # compute the solution and return
-        solution = self.family.solve_dispersion(theta_perp=theta_perp, X_perp=X_perp)
-        return solution
+    def extract_disp(self, **kwargs):
+        return self.family.extract_disp(**kwargs)

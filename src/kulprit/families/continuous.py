@@ -1,18 +1,23 @@
 """Continuous distribution families."""
 
+from bambi import Model
 from kulprit.data.data import ModelData
 from kulprit.families import BaseFamily
+from kulprit.families.link import Link
 
 import numpy as np
 import torch
 
 
 class GaussianFamily(BaseFamily):
-    def __init__(self, data: ModelData) -> None:
+    SUPPORTED_LINKS = ["identity", "log", "inverse"]
+
+    def __init__(self, model: Model, link: Link) -> None:
         # initialise family object with necessary attributes
-        self.data = data
+        self.model = model
         self.has_dispersion_parameters = True
         self.name = "gaussian"
+        self.link = link
 
     def solve_dispersion(self, theta_perp: torch.tensor, X_perp: torch.tensor):
         """Analytic projection of the model dispersion parameters.
@@ -97,3 +102,17 @@ class GaussianFamily(BaseFamily):
         # assure correct shape
         assert sigma_perp.shape == sigma_ast.shape
         return sigma_perp
+
+    def posterior_predictive(self, linear_predictor, disp):
+        """Sample from posterior predictive distribution."""
+
+        mean = self.link.linkinv(linear_predictor)
+        return torch.normal(mean, disp)
+
+    def extract_disp(self, idata):
+        """Extract the dispsersion parameter from a Gaussian posterior."""
+
+        sigma = idata.posterior[self.model.response.name + "_sigma"].values
+        sigma = sigma[:, :, np.newaxis]
+        sigma = torch.from_numpy(sigma).float()
+        return sigma

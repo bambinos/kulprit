@@ -17,8 +17,17 @@ class L1SearchPath(SearchPath):
         # log the projector object
         self.projector = projector
 
-        # log the model data object of the reference model
-        self.data = projector.data
+        # test whether the model includes categorical terms, and if so raise error
+        if (
+            sum(
+                [
+                    self.projector.model.terms[term].categorical
+                    for term in self.projector.model.terms.keys()
+                ]
+            )
+            > 0
+        ):
+            raise NotImplementedError("Group-lasso not yet implemented")
 
         # initialise search
         self.k_term_names = {}
@@ -84,16 +93,17 @@ class L1SearchPath(SearchPath):
         # extract reference model data and latent predictor
         X = np.column_stack(
             [
-                self.data.structure.design.common[term]
-                for term in self.data.structure.common_terms
+                self.projector.model._design.common[term]
+                for term in self.projector.model.common_terms
             ]
         )
-        eta = self.data.structure.link.link(self.data.structure.y.numpy())
+        eta = self.projector.family.link.link(
+            np.array(self.projector.model._design.response)
+        )
 
         # compute L1 path in the latent space
         _, coef_path, _ = lasso_path(X, eta)
         cov_order = self.first_non_zero_idx(coef_path)
-
         return cov_order
 
     def search(self, max_terms: int) -> None:

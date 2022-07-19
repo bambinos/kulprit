@@ -13,7 +13,7 @@ class ForwardSearchPath(SearchPath):
         """Initialise search path class."""
 
         # log the names of the terms in the reference model
-        self.ref_terms = projector.data.structure.term_names
+        self.ref_terms = projector.model.term_names
 
         # log the projector object
         self.projector = projector
@@ -28,7 +28,7 @@ class ForwardSearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.structure.term_names, submodel.dist_to_ref_model]
+            k: [submodel.structure.term_names, submodel.kl_div]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -82,9 +82,9 @@ class ForwardSearchPath(SearchPath):
 
         # initial intercept-only subset
         k = 0
-        k_term_names = []
+        k_term_names = ["Intercept"]
         k_submodel = self.projector.project(terms=k_term_names)
-        k_dist = k_submodel.dist_to_ref_model
+        k_dist = k_submodel.kl_div
 
         # add submodel to search path
         self.add_submodel(
@@ -104,16 +104,14 @@ class ForwardSearchPath(SearchPath):
             ]
 
             # identify the best candidate by distance from reference model
-            best_submodel = min(
-                k_projections, key=lambda projection: projection.sort_index
-            )
-            best_dist = best_submodel.sort_index
+            best_submodel = min(k_projections, key=lambda projection: projection.kl_div)
+            best_dist = best_submodel.kl_div
 
             # retrieve the best candidate's term names and indices
-            k_term_names = best_submodel.structure.common_terms
+            k_term_names = best_submodel.term_names
 
             # increment number of parameters
-            k = len(k_term_names)
+            k += 1
 
             # add best candidate to search path
             self.add_submodel(

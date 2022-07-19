@@ -9,6 +9,7 @@ import pandas as pd
 import torch
 
 from kulprit.data import ModelData, ModelStructure
+from kulprit.families.family import Family
 from kulprit.projection.projector import Projector
 from kulprit.search.searcher import Searcher
 
@@ -24,7 +25,7 @@ class ReferenceModel:
         idata: Optional[InferenceData] = None,
         num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
-        num_thinned_draws: Optional[int] = 400,
+        num_thinned_samples: Optional[int] = 400,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -45,6 +46,10 @@ class ReferenceModel:
             num_thinned_draws (int): The number of draws to use in optimisation
         """
 
+        # test compatibility between model and idata
+        if not test_model_idata_compatability(model=model, idata=idata):
+            raise UserWarning("Incompatible model and inference data.")
+
         # test that the reference model has an intercept term
         if model.intercept_term is None:
             raise UserWarning(
@@ -56,25 +61,16 @@ class ReferenceModel:
         if idata is None:
             idata = model.fit()
 
-        # build model data class
-        structure = ModelStructure(model)
-        self.data = ModelData(
-            structure=structure, idata=idata, dist_to_ref_model=torch.tensor(0)
-        )
-
-        # define thinning
-        self.data.structure.num_thinned_draws = min(
-            num_thinned_draws, self.data.structure.num_draws
-        )
-        self.data.structure.thinned_idx = torch.randperm(self.data.structure.num_draws)[
-            : self.data.structure.num_thinned_draws
-        ]
+        self.model = model
+        self.idata = idata
 
         # instantiate projector, search, and search path classes
         self.projector = Projector(
-            data=self.data,
+            model=self.model,
+            idata=self.idata,
             num_iters=num_iters,
             learning_rate=learning_rate,
+            num_thinned_samples=num_thinned_samples,
         )
         self.searcher = Searcher(self.projector)
         self.path = None
@@ -124,10 +120,10 @@ class ReferenceModel:
 
         # set default `max_terms` value
         if max_terms is None:
-            max_terms = self.data.structure.num_terms - 1
+            max_terms = len(self.model.common_terms)
 
         # test `max_terms` input
-        if max_terms > self.data.structure.num_terms:
+        if max_terms > len(self.model.common_terms):
             raise UserWarning(
                 "Please ensure that the maximum number to consider in the "
                 + "submodel search is between 1 and the number of terms in the "
@@ -163,3 +159,21 @@ class ReferenceModel:
             plot_kwargs=plot_kwargs,
         )
         return comparison, axes
+
+
+def test_model_idata_compatability(model, idata):
+    """Test that the Bambi model and idata are compatible with vanilla procedure.
+
+    In the future, this will be extended to allow for different structures and
+    covariates, testing instead only that the observation data are the same.
+
+    Args:
+        model (bambi.models.Model): The reference Bambi model object
+        idata (arviz.InferenceData): The reference model fitted inference data obejct
+
+    Returns:
+        bool: Indicator of whether the two objects are compatible
+    """
+
+    family = Family(model=model)
+    return set(idata.posterior.keys()) == set(model.term_names).union({family.disp_name})

@@ -1,5 +1,6 @@
+"""Kullback-Leibler divergence loss module."""
+
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 from kulprit.projection.losses import Loss
@@ -14,18 +15,8 @@ class KullbackLeiblerLoss(Loss):
     """
 
     def __init__(self) -> None:
-        """Loss module constructor.
-
-        Note that our architecture consists of a PyTorch KL divergence loss
-        module with setting ``reduction="batchmean"``. This setting is chosen
-        as a result of the PyTorch internals leading to this option being the
-        mathematically correct one. For more information, please refer to the
-        [PyTorch docs on the subject](https://pytorch.org/docs/stable/generated/
-        torch.nn.KLDivLoss.html).
-        """
+        """Loss module constructor."""
         super(KullbackLeiblerLoss, self).__init__()
-
-        self.loss = nn.KLDivLoss(reduction="batchmean", log_target=True)
 
     def forward(self, input: torch.tensor, target: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.
@@ -49,6 +40,9 @@ class KullbackLeiblerLoss(Loss):
         input = F.log_softmax(input, dim=-1)
         target = F.log_softmax(target, dim=-1)
 
-        # compute the KL divergence between the two predictive posteriors
-        kl = self.loss(input, target)
-        return kl
+        # compute sample-wise KL divergence
+        loss_samplewise = target.exp() * (target - input)
+        loss_samplewise = loss_samplewise.sum(dim=-1) / input.size(0)
+
+        # reduce over samples
+        return loss_samplewise.sum()

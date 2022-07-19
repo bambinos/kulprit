@@ -1,7 +1,7 @@
 """Submodel factory class."""
 
-from abc import ABC, abstractmethod
 from copy import copy
+from dataclasses import dataclass
 
 from typing import Optional, List
 from pymc import Model
@@ -16,12 +16,14 @@ from kulprit.data.data import ModelData
 from kulprit.data.structure import ModelStructure
 
 
-class SubModel(ABC):
-    """Abstract base class for submodel data classes."""
+@dataclass
+class SubModel:
+    """Submodel dataclass."""
 
-    @abstractmethod
-    def create(self):  # pragma: no cover
-        pass
+    idata: InferenceData
+    kl_div: float
+    size: int
+    term_names: list
 
 
 class SubModelStructure(SubModel):
