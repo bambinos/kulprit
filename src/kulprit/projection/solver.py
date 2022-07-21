@@ -45,7 +45,7 @@ class Solver:
                 # make posterior predictive distribution of full model
                 self.ref_model.predict(self.ref_idata, kind="pps")
             except Exception as e:
-                raise UserWarning(
+                raise e.__class__(
                     "Please make posterior predictions with the reference ",
                     "model. For more information, kindly consult https://bambin",
                     "os.github.io/bambi/main/api_reference.html#bambi.models.M",
@@ -186,9 +186,10 @@ class Solver:
 
         # build SubModel object and return
         sub_model = SubModel(
+            backend=self.ref_model.backend,
             idata=res_idata,
             kl_div=kl_div,
-            size=res_idata.posterior.attrs.get("size"),  # TODO: fix size definition
+            size=len([term for term in term_names if term != "Intercept"]),
             term_names=term_names,
         )
         return sub_model

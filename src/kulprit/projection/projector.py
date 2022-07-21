@@ -6,7 +6,7 @@ from arviz import InferenceData
 from bambi import Model
 
 from kulprit.data.data import ModelData
-from kulprit.data.res_idata import init_idata
+from kulprit.data.submodel import init_idata
 from kulprit.families.family import Family
 from kulprit.projection.solver import Solver
 
@@ -127,4 +127,8 @@ class Projector:
 
         # solve the parameter projections
         sub_model = self.solver.solve(res_idata=res_idata, term_names=term_names)
+
+        # compute the submodel's log-likelihood
+        if "log_likelihood" not in sub_model.idata.groups():
+            sub_model.add_log_likelihood()
         return sub_model

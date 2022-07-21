@@ -1,19 +1,20 @@
-"""Submodel factory class."""
+"""Submodel dataclass module."""
 
-from copy import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from typing import Optional, List
-from pymc import Model
+from typing import Any, List
 
-import arviz as az
 from arviz import InferenceData
 
-import numpy as np
-import torch
+from pymc.model import Model
+from bambi.backend.pymc import PyMCModel
+from pymc.util import is_transformed_name, get_untransformed_name
 
-from kulprit.data.data import ModelData
-from kulprit.data.structure import ModelStructure
+import xarray as xr
+
+import numpy as np
+
+from kulprit.families.family import Family
 
 
 @dataclass
@@ -21,185 +22,56 @@ class SubModel:
     """Submodel dataclass."""
 
     idata: InferenceData
+    backend: PyMCModel
     kl_div: float
     size: int
     term_names: list
+    model: Model = field(init=False)
+    model_logp: Any = field(init=False)  # TODO: define datatype
+    transforms: Any = field(init=False)  # TODO: define datatype
+    num_chain: int = field(init=False)
+    num_draw: int = field(init=False)
+    num_samples: int = field(init=False)
+    num_obs: int = field(init=False)
 
+    def __post_init__(self):
+        # extract PyMC model from backend
+        self.model = self.backend.model
 
-class SubModelStructure(SubModel):
-    def __init__(self, data: ModelData) -> None:
-        """Submodel object used to create submodels from a reference model.
-
-        Args:
-            data (kulprit.data.ModelData): The reference model from which
-                to build the submodel
-        """
-
-        # log reference model ModelData
-        self.data = data
-
-    def generate(self, var_names: List[str]) -> ModelStructure:
-        """Generate new ModelStructure class attributes for a submodel.
-
-        Args:
-            var_names (list): The names of the parameters to use in the r
-                estricted model
-
-        Returns:
-            Tuple: Structure attributes of the resulting submodel
-        """
-
-        if len(var_names) > 0:
-            # extract the submatrix from the reference model's design matrix
-            X_res = torch.from_numpy(
-                np.column_stack(
-                    [self.data.structure.design.common[term] for term in var_names]
-                )
-            ).float()
-            # manually add intercept to new design matrix
-            X_res = torch.hstack((torch.ones(self.data.structure.num_obs, 1), X_res))
-        else:
-            # intercept-only model
-            X_res = torch.ones(self.data.structure.num_obs, 1).float()
-
-        # update common term names and dimensions and build new ModelData object
-        _, num_terms = X_res.shape
-        submode_term_names = ["Intercept"] + var_names
-        model_size = len(var_names)
-
-        return X_res, num_terms, model_size, submode_term_names, var_names
-
-    def create(self, var_names: List[str]) -> ModelStructure:
-        """Build a submodel from a reference model containing specific terms.
-
-        Args:
-            var_names (list): The names of the parameters to use in the r
-                estricted model
-
-        Returns:
-            ModelData: The resulting submodel `ModelData` object
-        """
-
-        # test that the submodel is indeed a submodel
-        full_set = set(self.data.structure.term_names)
-        projection_set = set(var_names)
-        if not projection_set.issubset(full_set):
-            raise UserWarning(
-                "Please ensure that the submodel you wish to build contains "
-                + "only terms from the larger model."
-            )
-
-        # copy and instantiate new ModelStructure object
-        submodel_structure = copy(self.data.structure)
-        (
-            submodel_structure.X,
-            submodel_structure.num_terms,
-            submodel_structure.model_size,
-            submodel_structure.term_names,
-            submodel_structure.common_terms,
-        ) = self.generate(var_names)
-
-        # ensure correct dimensions
-        assert submodel_structure.X.shape == (
-            self.data.structure.num_obs,
-            submodel_structure.model_size + 1,
+        # log the compiled model log probability
+        self.model_logp = self.model.compile_logp(
+            sum=False, vars=self.model.observed_RVs
         )
-        return submodel_structure
 
+        # log the transformations
+        self.transforms = get_transforms(self.model)
 
-class SubModelInferenceData(SubModel):
-    def __init__(self, data: ModelData) -> None:
-        """Submodel object used to create submodels from a reference model.
+        # extract dimensions
+        self.num_chain = self.idata.posterior.dims["chain"]
+        self.num_draw = self.idata.posterior.dims["draw"]
+        self.num_samples = self.num_chain * self.num_draw
+        response_name = list(self.idata.observed_data.data_vars.keys())[0]
+        self.num_obs = self.idata.observed_data.dims[f"{response_name}_dim_0"]
 
-        Args:
-            data (kulprit.data.ModelData): The reference model ModelData object
-                from which to build the submodel
-        """
-
-        # log reference model ModelData
-        self.data = data
-
-    def create(
-        self,
-        submodel_structure: SubModelStructure,
-        theta_perp: torch.tensor,
-        disp_perp: Optional[torch.tensor] = None,
-    ) -> InferenceData:
-        """Convert some set of pytorch tensors into an ArviZ idata object.
-
-        Args:
-            submodel_structure (kulprit.data.SubModelStructure): The restricted
-                model's structure object
-            theta_perp (torch.tensor): Restricted parameter posterior projections,
-                including the intercept term
-            disp_perp (torch.tensor): Restricted model dispersions parameter
-                posterior projections
-
-        Returns:
-            arviz.InferenceData: Restricted model idata object
-        """
-
-        # reshape `theta_perp` so it has the same shape as the reference model
-        num_chain = len(self.data.idata.posterior.coords.get("chain"))
-        num_draw = int(submodel_structure.num_thinned_draws / num_chain)
-        num_terms = submodel_structure.num_terms
-        num_obs = self.data.structure.num_obs
-
-        theta_perp = torch.reshape(theta_perp, (num_chain, num_draw, num_terms))
-
-        transforms = self.data.structure.transforms
-
-        # build posterior dictionary from projected parameters
-        posterior = {
-            term: theta_perp[:, :, i]
-            for i, term in enumerate(submodel_structure.term_names)
-        }
-        posterior_ = posterior.copy()
-        if disp_perp is not None:
-            # reshape `disp_perp` if present
-            disp_perp = torch.reshape(disp_perp, (num_chain, num_draw))
-            # update the posterior draws dictionary with dispersion parameter
-            response_name = f"{self.data.structure.response_name}_sigma"
-            disp_dict = {response_name: disp_perp}
-            posterior.update(disp_dict)
-            # check for transformed variables
-            transform_name, transform_function = transforms[response_name]
-            if transform_name:
-                disp_dict = {
-                    f"{response_name}_{transform_name}__": transform_function(
-                        disp_perp.numpy()
-                    ).eval(),
-                }
-                posterior_.update(disp_dict)
-
+    def add_log_likelihood(self):
         # build points data from the posterior dictionaries
+        posterior_ = self.idata.to_dict(groups="posterior")["posterior"]
         points = self.posterior_to_points(posterior_)
 
         # compute log-likelihood of projected model from this posterior
-        log_likelihood = self.compute_log_likelihood(self.data.structure.backend, points)
+        log_likelihood = self.compute_log_likelihood(self.backend, points)
 
         # reshape the log-likelihood values to be inline with reference model
         log_likelihood.update(
-            (key, value.reshape(num_chain, num_draw, num_obs))
+            (key, value.reshape(self.num_chain, self.num_draw, self.num_obs))
             for key, value in log_likelihood.items()
         )
 
-        # add observed data component of projected idata
-        observed_data = {
-            self.data.structure.response_name: self.data.idata.observed_data.get(
-                self.data.structure.response_name
-            )
-            .to_dict()
-            .get("data")
-        }
+        # convert dictionary to dataset
+        # TODO
 
-        # build idata object for the projected model
-        idata = az.data.from_dict(
-            posterior=posterior,
-            log_likelihood=log_likelihood,
-            observed_data=observed_data,
-        )
-        return idata
+        # add to idata object
+        self.idata.add_groups({"log_likelihood": log_likelihood})
 
     def posterior_to_points(self, posterior: dict) -> list:
         """Convert the posterior samples from a restricted model into list of dicts.
@@ -214,14 +86,14 @@ class SubModelInferenceData(SubModel):
         Returns:
             list: The list of dictionaries of point samples
         """
-        initial_point = self.data.structure.backend.model.initial_point(seed=None)
+        initial_point = self.model.initial_point(seed=None)
 
         # build samples dictionary from posterior of idata
         samples = {
             key: (
                 posterior[key].flatten()
                 if key in posterior.keys()
-                else np.zeros((self.data.structure.num_thinned_draws,))
+                else np.zeros((self.num_samples,))
             )
             for key in initial_point.keys()
         }
@@ -253,10 +125,121 @@ class SubModelInferenceData(SubModel):
             dict: Dictionary of log-likelihoods at each point
         """
         log_likelihood_dict = {
-            var.name: np.array(
-                [self.data.structure.model_logp(point) for point in points]
-            )
+            var.name: np.array([self.model_logp(point) for point in points])
             for var in backend.model.observed_RVs
         }
 
         return log_likelihood_dict
+
+
+def get_transforms(model):
+    """Generate dict with information about transformations
+
+    Args:
+        backend (pymc.Model) : PyMC model
+    Returns:
+        Dictionary with keys unstransformed variable name
+        and values (tranformation name, forward transformation)
+    """
+    transforms = {}
+    for var in model.value_vars:
+        name = var.name
+        transform_name = ""
+        transform_function = None
+        if is_transformed_name(name):
+            name = get_untransformed_name(name)
+            transform_name = var.tag.transform.name
+            transform_function = var.tag.transform.forward
+        transforms[name] = (transform_name, transform_function)
+    return transforms
+
+
+def init_idata(
+    ref_model: Model,
+    ref_idata: InferenceData,
+    term_names: List[str] = None,
+    num_thinned_samples: int = 400,
+):
+    """Initialise a submodel InferenceData object including only certain terms.
+
+    Args:
+        ref_model (bambi.models.Model): The reference Bambi model to inherit
+            from
+        ref_idata (arviz.InferenceData): The fitted reference Bambi model's
+            ``InferenceData`` object to modify and inherit from
+        term_names (list): The names of the terms to include in the submodel
+        num_thinned_samples (int): The number of samples to use in thinned
+            optimisation
+
+    Returns:
+        arviz.InferenceData: An InferenceData object for the submodel inheriting
+            from the fitted reference model and including only information
+            pertaining to certain terms
+
+    To do:
+        * Allow this method to take a ``ref_model`` different to the one which
+            produced ``ref_idata``. In a word, allow the procedure to operate
+            on submodel parameter spaces that are disjoint to the reference
+            model parameter space
+    """
+
+    # set default projection
+    if not term_names:
+        term_names = ref_model.term_names
+
+    # copy term names so as not to modify input variables
+    term_names_ = term_names.copy()
+
+    # initialise family object
+    family = Family(model=ref_model)
+    if family.has_dispersion_parameters:
+        term_names_.append(family.disp_name)
+
+    # make copy of the reference model's inference data
+    res_idata = ref_idata.copy()
+    del res_idata.log_likelihood, res_idata.sample_stats
+
+    # extract dimensions from reference model's inference data
+    num_chain = ref_idata.posterior.dims["chain"]
+    num_draw = ref_idata.posterior.dims["draw"]
+    num_samples = num_chain * num_draw
+
+    # produce thinned indices
+    thinned_idx = np.random.randint(0, num_samples, num_thinned_samples)
+
+    # extract thinned parameters
+    new_data_vars = {
+        name: (list(var.dims), var.values[thinned_idx])
+        for name, var in ref_idata.posterior.transpose(*("chain", "draw", ...))
+        .stack(samples=("chain", "draw"))[term_names_]
+        .transpose(*("samples", ...))
+        .data_vars.items()
+    }
+
+    # define new posterior dimensions
+    new_dims = dict(ref_idata.posterior.dims)
+    new_dims["draw"] = 100
+    new_coords = {
+        name: np.arange(stop=new_dims[name], step=1) for name in new_dims.keys()
+    }
+
+    # build attributes dictionary
+    res_attrs = {
+        "term_names": term_names_,
+        "response_name": ref_model.response.name,
+        "has_intercept": ref_model.intercept_term is not None,
+        "num_obs": ref_model._design.common.design_matrix.shape[0],
+        "num_terms": ref_model._design.common.design_matrix.shape[1],
+        "family": ref_model.family,
+    }
+
+    # build restricted posterior object and replace old one
+    res_posterior = xr.Dataset(
+        data_vars=new_data_vars, coords=new_coords, attrs=res_attrs
+    )
+    res_idata.posterior = res_posterior.transpose(*("draw", ...))
+
+    # unstack dimensions
+    res_idata.stack(samples=["chain", "draw"], inplace=True)
+    res_idata.unstack(inplace=True)
+    return res_idata
