@@ -60,8 +60,7 @@ class SubModel:
         """
 
         # build points data from the posterior dictionaries
-        posterior_ = extract_dataset(self.idata).to_dict()
-        points = self.posterior_to_points(posterior_)
+        points = self.posterior_to_points(self.idata.posterior)
 
         # compute log-likelihood of projected model from this posterior
         log_likelihood = self.compute_log_likelihood(self.backend, points)
@@ -92,14 +91,15 @@ class SubModel:
         initial_point = self.model.initial_point(seed=None)
 
         points = []
-        for i in range(self.num_samples):
-            point = {}
-            for var, value in initial_point.items():
-                if var in posterior.keys():
-                    point[var] = posterior[var][i]
-                else:
-                    point[var] = np.zeros_like(value)
-            points.append(point)
+        for c in range(self.num_chain):
+            for d in range(self.num_draw):
+                point = {}
+                for var, value in initial_point.items():
+                    if var in posterior.keys():
+                        point[var] = posterior[var].sel({"chain": c, "draw": d})
+                    else:
+                        point[var] = np.zeros_like(value)
+                points.append(point)
 
         return points
 
