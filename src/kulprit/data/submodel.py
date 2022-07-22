@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, List
 
 from arviz import InferenceData
+from arviz.data.utils import extract_dataset
 
 from pymc.model import Model
 from bambi.backend.pymc import PyMCModel
@@ -55,7 +56,7 @@ class SubModel:
 
     def add_log_likelihood(self):
         # build points data from the posterior dictionaries
-        posterior_ = self.idata.to_dict(groups="posterior")["posterior"]
+        posterior_ = extract_dataset(self.idata).to_dict()
         points = self.posterior_to_points(posterior_)
 
         # compute log-likelihood of projected model from this posterior
@@ -88,28 +89,15 @@ class SubModel:
         """
         initial_point = self.model.initial_point(seed=None)
 
-        # build samples dictionary from posterior of idata
-        samples = {
-            key: (
-                posterior[key].flatten()
-                if key in posterior.keys()
-                else np.zeros((self.num_samples,))
-            )
-            for key in initial_point.keys()
-        }
-        shapes = [val.shape for val in initial_point.values()]
-        # extract observed and unobserved RV names and sample matrix
-        var_names = list(samples.keys())
-        obs_matrix = np.vstack(list(samples.values()))
-
-        # build points list of dictionaries
-        points = [
-            {
-                var_names[j]: np.full(shape, obs_matrix[j, i])
-                for j, shape in zip(range(obs_matrix.shape[0]), shapes)
-            }
-            for i in range(obs_matrix.shape[1])
-        ]
+        points = []
+        for i in range(self.num_samples):
+            point = {}
+            for var, value in initial_point.items():
+                if var in posterior.keys():
+                    point[var] = posterior[var][i]
+                else:
+                    point[var] = np.zeros_like(value)
+            points.append(point)
 
         return points
 
