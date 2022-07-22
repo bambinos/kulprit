@@ -99,6 +99,7 @@ class Searcher:
 
         # make dictionary of inferencedata objects for each projection
         self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
+        self.idatas.update({len(self.projector.model.term_names): self.projector.idata})
 
         # compare the submodels by some criterion
         comparison = az.compare(

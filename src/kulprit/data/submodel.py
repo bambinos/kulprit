@@ -55,6 +55,10 @@ class SubModel:
         self.num_obs = self.idata.observed_data.dims[f"{response_name}_dim_0"]
 
     def add_log_likelihood(self):
+        """
+        Build and attach a computed log-likelihood group to the submodel idata.
+        """
+
         # build points data from the posterior dictionaries
         posterior_ = extract_dataset(self.idata).to_dict()
         points = self.posterior_to_points(posterior_)
@@ -67,9 +71,6 @@ class SubModel:
             (key, value.reshape(self.num_chain, self.num_draw, self.num_obs))
             for key, value in log_likelihood.items()
         )
-
-        # convert dictionary to dataset
-        # TODO
 
         # add to idata object
         self.idata.add_groups({"log_likelihood": log_likelihood})
@@ -87,6 +88,7 @@ class SubModel:
         Returns:
             list: The list of dictionaries of point samples
         """
+
         initial_point = self.model.initial_point(seed=None)
 
         points = []
@@ -112,6 +114,7 @@ class SubModel:
         Returns:
             dict: Dictionary of log-likelihoods at each point
         """
+
         log_likelihood_dict = {
             var.name: np.array([self.model_logp(point) for point in points])
             for var in backend.model.observed_RVs
@@ -129,6 +132,7 @@ def get_transforms(model):
         Dictionary with keys unstransformed variable name
         and values (tranformation name, forward transformation)
     """
+
     transforms = {}
     for var in model.value_vars:
         name = var.name

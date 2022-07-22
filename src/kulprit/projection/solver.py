@@ -182,12 +182,12 @@ class Solver:
 
         # project parameter samples and compute distance from reference model
         theta_perp, kl_div = self.optimise(res_idata)
-        res_idata = self.build_idata(theta_perp)
+        res_idata_ = self.build_idata(theta_perp)
 
         # build SubModel object and return
         sub_model = SubModel(
             backend=self.ref_model.backend,
-            idata=res_idata,
+            idata=res_idata_,
             kl_div=kl_div,
             size=len([term for term in term_names if term != "Intercept"]),
             term_names=term_names,
