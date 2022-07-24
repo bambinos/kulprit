@@ -96,7 +96,11 @@ class SubModel:
                 point = {}
                 for var, value in initial_point.items():
                     if var in posterior.keys():
-                        point[var] = posterior[var].sel({"chain": c, "draw": d})
+                        point[var] = (
+                            posterior[var]
+                            .sel({"chain": c, "draw": d})
+                            .values.reshape(initial_point[var].shape)
+                        )
                     else:
                         point[var] = np.zeros_like(value)
                 points.append(point)
@@ -210,7 +214,7 @@ def init_idata(
 
     # define new posterior dimensions
     new_dims = dict(ref_idata.posterior.dims)
-    new_dims["draw"] = 100
+    new_dims["draw"] = int(num_draw * (num_thinned_samples / num_samples))
     new_coords = {
         name: np.arange(stop=new_dims[name], step=1) for name in new_dims.keys()
     }
@@ -232,6 +236,6 @@ def init_idata(
     res_idata.posterior = res_posterior.transpose(*("draw", ...))
 
     # unstack dimensions
-    res_idata.stack(samples=["chain", "draw"], inplace=True)
+    res_idata.stack(samples=("chain", "draw"), inplace=True)
     res_idata.unstack(inplace=True)
     return res_idata

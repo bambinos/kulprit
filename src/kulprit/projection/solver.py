@@ -20,7 +20,7 @@ class Solver:
         ref_model: Model,
         ref_idata: InferenceData,
         num_thinned_samples: int = 400,
-        num_iters: Optional[int] = 1_000,
+        num_iters: Optional[int] = 400,
         learning_rate: Optional[float] = 0.01,
     ):
         """Initialise solver object.
