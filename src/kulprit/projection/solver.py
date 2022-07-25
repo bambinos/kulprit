@@ -10,8 +10,9 @@ import xarray as xr
 import torch
 
 from kulprit.data.submodel import SubModel
+from kulprit.families.family import Family
 from kulprit.projection.losses.kld import KullbackLeiblerLoss
-from kulprit.projection.posterior_pred import PosteriorPredictive
+from kulprit.projection.pps import PosteriorPredictive
 
 
 class Solver:
@@ -26,16 +27,13 @@ class Solver:
         """Initialise solver object.
 
         Args:
-            data (ModelData): The data object containing the model data of
-                the reference model
-            family (Family): The family object of the reference model
             num_iters (int, optional): The number of iterations to run the
                 optimisation for, defaults to 200
             learning_rate (float, optional): The learning rate for the optimisation
                 algorithm, defaults to 0.01
         """
 
-        # log reference model data and family
+        # log reference model object and fitted inference data
         self.ref_model = ref_model
         self.ref_idata = ref_idata
 
@@ -77,7 +75,23 @@ class Solver:
         ).float()[self.thinned_idx]
 
     def optimise(self, res_idata):
-        """Primary optimisation loop."""
+        """Primary optimisation loop.
+
+        TODO:
+            * Allow for flexibility in restricted family. Specifically, allow for
+                the restricted model to admit a different family observation model
+                to the reference model in general. This may require a more
+                fundamental internal refactoring
+
+        Args:
+            res_idata (arviz.InferenceData): The restricted model's initial idata
+                object
+
+        Returns:
+            theta_perp (np.ndarray): The optimisation decision variable solutions
+            final_loss (float): The final KL divergence between optimised
+                restricted posterior and the reference model posterior
+        """
 
         # build optimisation framework
         self.posterior_predictive = PosteriorPredictive(
@@ -87,7 +101,7 @@ class Solver:
         optim = torch.optim.Adam(
             self.posterior_predictive.parameters(), lr=self.learning_rate
         )
-        loss_fn = KullbackLeiblerLoss()
+        loss_fn = KullbackLeiblerLoss(self.ref_model)
 
         # run optimisation loop
         for _ in range(self.num_iters):

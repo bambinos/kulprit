@@ -2,6 +2,7 @@
 
 import torch
 import torch.nn.functional as F
+from kulprit.families.family import Family
 
 from kulprit.projection.losses import Loss
 
@@ -14,9 +15,11 @@ class KullbackLeiblerLoss(Loss):
     motivated loss function by Goutis and Robert (1998).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, ref_model) -> None:
         """Loss module constructor."""
         super(KullbackLeiblerLoss, self).__init__()
+
+        self.family = Family(ref_model)
 
     def forward(self, input: torch.tensor, target: torch.tensor) -> torch.tensor:
         """Forward method in learning loop.

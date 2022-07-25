@@ -1,7 +1,6 @@
 """Continuous distribution families."""
 
 from bambi import Model
-from kulprit.data.data import ModelData
 from kulprit.families import BaseFamily
 from kulprit.families.link import Link
 
@@ -108,6 +107,16 @@ class GaussianFamily(BaseFamily):
 
         mean = self.link.linkinv(linear_predictor)
         return torch.normal(mean, disp)
+
+    def kl_div(self, kwargs):
+        """Kullback-Leibler divergence between two Gaussians.
+
+        TODO:
+            * Compute the analytic KL divergence between two Gaussians given the
+                reference and restricted model parameters
+        """
+
+        raise NotImplementedError
 
     def extract_disp(self, idata):
         """Extract the dispsersion parameter from a Gaussian posterior."""
