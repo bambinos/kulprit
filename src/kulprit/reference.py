@@ -6,9 +6,8 @@ from typing_extensions import Literal
 from arviz import InferenceData
 from bambi.models import Model
 import pandas as pd
-import torch
+from kulprit.data.submodel import SubModel
 
-from kulprit.data import ModelData, ModelStructure
 from kulprit.families.family import Family
 from kulprit.projection.projector import Projector
 from kulprit.search.searcher import Searcher
@@ -78,7 +77,7 @@ class ReferenceModel:
     def project(
         self,
         terms: Union[List[str], int],
-    ) -> ModelData:
+    ) -> SubModel:
         """Projection the reference model onto a variable subset.
 
         Args:
@@ -88,7 +87,7 @@ class ReferenceModel:
                 including the intercept term
 
         Returns:
-            kulprit.data.ModelData: Projected submodel ``ModelData`` object
+            kulprit.data.SubModel: Projected submodel object
         """
 
         # project the reference model onto a subset of covariates

@@ -37,6 +37,10 @@ class Solver:
         self.ref_model = ref_model
         self.ref_idata = ref_idata
 
+        # build family and link objects
+        self.family = Family(ref_model)
+        self.link = self.family.link
+
         # test posterior predictive distribution has been computed for full model
         if "posterior_predictive" not in self.ref_idata.groups():
             try:
@@ -68,11 +72,15 @@ class Solver:
         """Compute the reference model's posterior predictive distribution."""
 
         # produce thinned pps
-        return torch.from_numpy(
-            self.ref_idata.posterior_predictive.stack(samples=("chain", "draw"))
-            .transpose(*("samples", ...))[self.ref_model.response.name]
-            .values
-        ).float()[self.thinned_idx]
+        return (
+            torch.from_numpy(
+                self.ref_idata.posterior_predictive.stack(samples=("chain", "draw"))
+                .transpose(*("samples", ...))[self.ref_model.response.name]
+                .values
+            )
+            .float()
+            .mean(-1)
+        )
 
     def optimise(self, res_idata):
         """Primary optimisation loop.
@@ -101,13 +109,19 @@ class Solver:
         optim = torch.optim.Adam(
             self.posterior_predictive.parameters(), lr=self.learning_rate
         )
-        loss_fn = KullbackLeiblerLoss(self.ref_model)
+        loss_fn = KullbackLeiblerLoss(self.ref_model, self.family)
+
+        # compute reference model summary statistics
+        linear_predictor_ref = self.link.link(self.pps_ast)
+        disp_ref = self.family.extract_disp(self.ref_idata).flatten()
 
         # run optimisation loop
         for _ in range(self.num_iters):
             optim.zero_grad()
-            pps_perp = self.posterior_predictive.forward()
-            loss = loss_fn.forward(self.pps_ast, pps_perp)
+            linear_predictor, disp = self.posterior_predictive.forward()
+            loss = loss_fn.forward(
+                linear_predictor, disp, linear_predictor_ref, disp_ref
+            )
             loss.backward()
             optim.step()
 

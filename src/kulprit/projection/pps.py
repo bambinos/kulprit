@@ -283,11 +283,4 @@ class PosteriorPredictive(nn.Module):
             contribution = contribution.reshape(shape)
             linear_predictor += contribution
 
-        pps = self.family.posterior_predictive(
-            linear_predictor=linear_predictor, disp=self.disp
-        )
-        if len(self.beta_x.shape) == 2:
-            pps = pps.reshape(self.chain_n * self.draw_n, self.common_design.shape[0])
-        else:
-            raise NotImplementedError("Multivariate outputs not implemented.")
-        return pps
+        return linear_predictor.mean(-1).flatten(), self.disp.flatten()

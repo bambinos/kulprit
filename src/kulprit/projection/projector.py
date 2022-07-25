@@ -5,8 +5,7 @@ from typing import Optional, List, Union
 from arviz import InferenceData
 from bambi import Model
 
-from kulprit.data.data import ModelData
-from kulprit.data.submodel import init_idata
+from kulprit.data.submodel import SubModel, init_idata
 from kulprit.families.family import Family
 from kulprit.projection.solver import Solver
 
@@ -62,7 +61,7 @@ class Projector:
     def project(
         self,
         terms: Union[List[str], int],
-    ) -> ModelData:
+    ) -> SubModel:
         """Wrapper function for projection method.
 
         Args:
@@ -101,7 +100,7 @@ class Projector:
     def project_names(
         self,
         term_names: List[str],
-    ) -> ModelData:
+    ) -> SubModel:
         """Primary projection method for GLM reference model.
 
         The projection is defined as the values of the submodel parameters

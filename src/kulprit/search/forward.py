@@ -3,7 +3,7 @@
 from typing import List
 
 import pandas as pd
-from kulprit.data.data import ModelData
+from kulprit.data.submodel import SubModel
 from kulprit.projection.projector import Projector
 from kulprit.search import SearchPath
 
@@ -42,7 +42,7 @@ class ForwardSearchPath(SearchPath):
         self,
         k: int,
         k_term_names: list,
-        k_submodel: ModelData,
+        k_submodel: SubModel,
         k_dist: float,
     ) -> None:
         """Update search path with new submodel."""

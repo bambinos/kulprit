@@ -108,15 +108,21 @@ class GaussianFamily(BaseFamily):
         mean = self.link.linkinv(linear_predictor)
         return torch.normal(mean, disp)
 
-    def kl_div(self, kwargs):
-        """Kullback-Leibler divergence between two Gaussians.
+    def kl_div(self, linear_predictor, disp, linear_predictor_ref, disp_ref):
+        """Kullback-Leibler divergence between two Gaussians."""
 
-        TODO:
-            * Compute the analytic KL divergence between two Gaussians given the
-                reference and restricted model parameters
-        """
+        mean_perp = self.link.linkinv(linear_predictor).mean()
+        sigma_perp = disp.mean()
+        mean_ref = linear_predictor_ref.mean()
+        sigma_ref = disp_ref.mean()
 
-        raise NotImplementedError
+        # compute KL divergence
+        loss = (
+            torch.log(sigma_ref / sigma_perp)
+            + (sigma_perp**2 + (mean_perp - mean_ref) ** 2) / (2 * sigma_ref**2)
+            - 0.5
+        )
+        return loss
 
     def extract_disp(self, idata):
         """Extract the dispsersion parameter from a Gaussian posterior."""

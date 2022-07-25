@@ -41,11 +41,11 @@ class Family:
             )[0]
             self.disp_name = f"{response_name}_{disp_param}"
 
-    def solve_dispersion(self, **kwargs):
-        return self.family.solve_dispersion(**kwargs)
+    def kl_div(self, linear_predictor, disp, linear_predictor_ref, disp_ref):
+        return self.family.kl_div(linear_predictor, disp, linear_predictor_ref, disp_ref)
 
     def posterior_predictive(self, **kwargs):
         return self.family.posterior_predictive(**kwargs)
 
-    def extract_disp(self, **kwargs):
-        return self.family.extract_disp(**kwargs)
+    def extract_disp(self, idata):
+        return self.family.extract_disp(idata)
