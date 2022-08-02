@@ -77,6 +77,19 @@ class TestProjector(KulpritTest):
         )
         assert sub_model.size == 1
 
+    def test_project_categorical(self):
+        """Test that the projection method works with a categorical model."""
+
+        data = bmb.load_data("carclaims")
+        data = data[data["claimcst0"] > 0]
+        model_cat = bmb.Model(
+            "claimcst0 ~ C(agecat) + gender + area", data, family="gaussian"
+        )
+        fitted_cat = model_cat.fit(draws=100, tune=2000, target_accept=0.9)
+        ref_model = kpt.ReferenceModel(model=model_cat, idata=fitted_cat)
+        sub_model = ref_model.project(terms=["gender"])
+        assert sub_model.size == 1
+
     def test_project_one_term(self, ref_model):
         """Test that the projection method works for a single term."""
 
