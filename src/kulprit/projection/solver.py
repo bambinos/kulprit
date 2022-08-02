@@ -1,6 +1,6 @@
 """Optimisation module."""
 
-from typing import Optional
+from typing import Optional, Tuple
 from arviz import InferenceData
 from bambi import Model
 import numpy as np
@@ -74,7 +74,7 @@ class Solver:
             .mean(-1)
         )
 
-    def optimise(self, res_idata):
+    def optimise(self, res_idata: InferenceData) -> Tuple[np.ndarray, float]:
         """Primary optimisation loop.
 
         TODO:
@@ -125,7 +125,7 @@ class Solver:
         }
         return theta_perp, final_loss
 
-    def build_idata(self, theta_perp):
+    def build_idata(self, theta_perp: torch.tensor) -> InferenceData:
         """Build a new restricted idata object given projected posterior."""
 
         # compute new coordinates

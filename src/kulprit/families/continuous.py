@@ -1,5 +1,6 @@
 """Continuous distribution families."""
 
+from arviz import InferenceData
 from bambi import Model
 from kulprit.families import BaseFamily
 from kulprit.families.link import Link
@@ -18,8 +19,29 @@ class GaussianFamily(BaseFamily):
         self.name = "gaussian"
         self.link = link
 
-    def kl_div(self, linear_predictor, disp, linear_predictor_ref, disp_ref):
-        """Kullback-Leibler divergence between two Gaussians."""
+    def kl_div(
+        self,
+        linear_predictor: torch.tensor,
+        disp: torch.tensor,
+        linear_predictor_ref: torch.tensor,
+        disp_ref: torch.tensor,
+    ) -> torch.tensor:
+        """Kullback-Leibler divergence between two Gaussians.
+
+        Args:
+            linear_predictor (torch.tensor): Torch tensor of the latent predictor
+                posterior of the submodel
+            disp (torch.tensor): Torch tensor of the dispersion parameter posterior
+                of the submodel
+            linear_predictor_ref (torch.tensor): Torch tensor of the latent predictor
+                posterior of the reference model
+            disp_ref (torch.tensor): Torch tensor of the dispersion parameter
+                posterior of the reference model
+
+        Returns:
+            torch.tensor: The kullback-Leibler divergence between the submodel
+                and the reference model computed under a Gaussian distribution
+        """
 
         mean_perp = self.link.linkinv(linear_predictor).mean()
         sigma_perp = disp.mean()
@@ -34,7 +56,7 @@ class GaussianFamily(BaseFamily):
         )
         return loss
 
-    def extract_disp(self, idata):
+    def extract_disp(self, idata: InferenceData) -> torch.tensor:
         """Extract the dispsersion parameter from a Gaussian posterior."""
 
         sigma = idata.posterior[self.model.response.name + "_sigma"].values

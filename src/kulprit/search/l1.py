@@ -105,7 +105,7 @@ class L1SearchPath(SearchPath):
         return cov_order
 
     def search(self, max_terms: int) -> None:
-        """Perform L1 search through the parameter."""
+        """Perform L1 search through the parameter space."""
 
         # compute L1 path for each model size
         coef_path = self.compute_path()
