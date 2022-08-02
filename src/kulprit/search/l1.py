@@ -40,7 +40,7 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.structure.term_names, submodel.dist_to_ref_model]
+            k: [submodel.term_names, submodel.kl_div]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -91,11 +91,9 @@ class L1SearchPath(SearchPath):
         """
 
         # extract reference model data and latent predictor
+        self.common_terms = list(self.projector.model.common_terms)
         X = np.column_stack(
-            [
-                self.projector.model._design.common[term]
-                for term in self.projector.model.common_terms
-            ]
+            [self.projector.model._design.common[term] for term in self.common_terms]
         )
         eta = self.projector.family.link.link(
             np.array(self.projector.model._design.response)
@@ -116,8 +114,8 @@ class L1SearchPath(SearchPath):
         cov_lasso = {
             k: v for k, v in sorted(coef_path.items(), key=lambda item: item[1])
         }
-        sorted_covs = [self.data.structure.common_terms[k] for k in cov_lasso]
-        sorted_covs = [["Intercept"] + sorted_covs[:i] for i in range(max_terms + 1)]
+        sorted_covs = [self.common_terms[k] for k in cov_lasso]
+        sorted_covs = [["Intercept"] + sorted_covs[:i] for i in range(max_terms)]
 
         # produce submodels for each model size
         self.k_term_names = {len(terms) - 1: terms for terms in sorted_covs}
@@ -125,7 +123,7 @@ class L1SearchPath(SearchPath):
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
             self.k_submodel[k] = self.projector.project(term_names)
-            self.k_dist[k] = self.k_submodel[k].dist_to_ref_model
+            self.k_dist[k] = self.k_submodel[k].kl_div
 
         # toggle indicator variable and return search path
         self.search_completed = True

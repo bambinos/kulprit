@@ -4,7 +4,7 @@ from collections import namedtuple
 import torch
 
 
-def force_within_unit_interval(x):
+def force_within_unit_interval(x):  # pragma: no cover
     """Make sure data in unit interval is in (0, 1)."""
 
     eps = torch.finfo(torch.float).eps
@@ -13,7 +13,7 @@ def force_within_unit_interval(x):
     return x
 
 
-def force_greater_than_zero(x):
+def force_greater_than_zero(x):  # pragma: no cover
     """Make sure data in positive reals is in (0, infty)"""
 
     eps = torch.finfo(torch.float).eps
@@ -21,39 +21,39 @@ def force_greater_than_zero(x):
     return x
 
 
-def identity(x):
+def identity(x):  # pragma: no cover
     return x
 
 
-def cloglog(mu):
+def cloglog(mu):  # pragma: no cover
     """Cloglog function that ensures the input is greater than 0."""
 
     mu = force_greater_than_zero(mu)
     return torch.special.log(-torch.special.log(1 - mu))
 
 
-def invcloglog(eta):
+def invcloglog(eta):  # pragma: no cover
     """Inverse of the cloglog function that ensures result is in (0, 1)."""
 
     result = 1 - torch.special.exp(-torch.exp(eta))
     return force_within_unit_interval(result)
 
 
-def probit(mu):
+def probit(mu):  # pragma: no cover
     """Probit function that ensures the input is in (0, 1)."""
 
     mu = force_within_unit_interval(mu)
     return 2**0.5 * torch.special.erfinv(2 * mu - 1)
 
 
-def invprobit(eta):
+def invprobit(eta):  # pragma: no cover
     """Inverse of the probit function that ensures result is in (0, 1)."""
 
     result = 0.5 + 0.5 * torch.special.erf(eta / 2**0.5)
     return force_within_unit_interval(result)
 
 
-def expit(eta):
+def expit(eta):  # pragma: no cover
     """Expit function that ensures result is in (0, 1)."""
 
     result = torch.special.expit(eta)
@@ -61,14 +61,14 @@ def expit(eta):
     return result
 
 
-def logit(mu):
+def logit(mu):  # pragma: no cover
     """Logit function that ensures the input is in (0, 1)."""
 
     mu = force_within_unit_interval(mu)
     return torch.special.logit(mu)
 
 
-def softmax(eta, axis=None):
+def softmax(eta, axis=None):  # pragma: no cover
     """Softmax function."""
 
     result = torch.special.softmax(eta, axis=axis)
@@ -76,31 +76,31 @@ def softmax(eta, axis=None):
     return result
 
 
-def inverse_squared(mu):
+def inverse_squared(mu):  # pragma: no cover
     return 1 / mu**2
 
 
-def inv_inverse_squared(eta):
+def inv_inverse_squared(eta):  # pragma: no cover
     return 1 / torch.sqrt(eta)
 
 
-def arctan_2(eta):
+def arctan_2(eta):  # pragma: no cover
     return 2 * torch.arctan(eta)
 
 
-def tan_2(mu):
+def tan_2(mu):  # pragma: no cover
     return torch.tan(mu / 2)
 
 
-def inverse(mu):
+def inverse(mu):  # pragma: no cover
     return 1 / mu
 
 
-def inv_inverse(eta):
+def inv_inverse(eta):  # pragma: no cover
     return 1 / eta
 
 
-def link_not_implemented(*args, **kwargs):
+def link_not_implemented(*args, **kwargs):  # pragma: no cover
     raise NotImplementedError("link not implemented")
 
 
@@ -122,7 +122,7 @@ LINKS = {
 }
 
 
-class Link:
+class Link:  # pragma: no cover
     r"""Representation of a link function.
     This object is adapted from Bambi and contains two main functions. One is
     the link function itself, the function that maps values in the response

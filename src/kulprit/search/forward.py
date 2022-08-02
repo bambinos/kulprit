@@ -28,7 +28,7 @@ class ForwardSearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.structure.term_names, submodel.kl_div]
+            k: [submodel.term_names, submodel.kl_div]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -95,7 +95,7 @@ class ForwardSearchPath(SearchPath):
         )
 
         # perform forward search through parameter space
-        while k < max_terms:
+        while k < max_terms - 1:
             # get list of candidate submodels, project onto them, and compute
             # their distances
             k_candidates = self.get_candidates(k=k)

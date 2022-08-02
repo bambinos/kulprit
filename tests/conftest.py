@@ -14,7 +14,7 @@ NUM_DRAWS, NUM_CHAINS = 50, 2
 
 
 @pytest.fixture(scope="session")
-def bambi_model():
+def bambi_model():  # pragma: no cover
     """Return a bambi model."""
 
     # define model data
@@ -25,7 +25,7 @@ def bambi_model():
 
 
 @pytest.fixture(scope="session")
-def bambi_model_idata(bambi_model):
+def bambi_model_idata(bambi_model):  # pragma: no cover
     """Return a bambi model fitted inference data."""
 
     # fit model with MCMC
@@ -34,7 +34,7 @@ def bambi_model_idata(bambi_model):
 
 
 @pytest.fixture(scope="session")
-def ref_model(bambi_model, bambi_model_idata):
+def ref_model(bambi_model, bambi_model_idata):  # pragma: no cover
     """Initialise a Gaussian reference model for use in later tests."""
 
     # build and return reference model object
@@ -42,14 +42,14 @@ def ref_model(bambi_model, bambi_model_idata):
 
 
 @pytest.fixture(scope="session")
-def sub_model(ref_model):
+def sub_model(ref_model):  # pragma: no cover
     """Initialise a standard submodel projection."""
 
     return ref_model.project(["x"])
 
 
 @pytest.fixture(scope="session")
-def disp_proj_data(ref_model, sub_model):
+def disp_proj_data(ref_model, sub_model):  # pragma: no cover
     """Produce data needed for dispersion projection tests."""
 
     # extract reference model data and parameters
@@ -73,7 +73,7 @@ def disp_proj_data(ref_model, sub_model):
 
 
 @pytest.fixture(scope="session")
-def draws():
+def draws():  # pragma: no cover
     """Define some random Gaussian draw tensor to test loss methods."""
 
     return torch.from_numpy(np.random.normal(0, 1, 100)).float()

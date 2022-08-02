@@ -15,7 +15,7 @@ class KullbackLeiblerLoss(Loss):
     motivated loss function by Goutis and Robert (1998).
     """
 
-    def __init__(self, ref_model, family) -> None:
+    def __init__(self, family: Family) -> None:
         """Loss module constructor."""
         super(KullbackLeiblerLoss, self).__init__()
 

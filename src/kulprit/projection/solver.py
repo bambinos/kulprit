@@ -41,18 +41,10 @@ class Solver:
         self.family = Family(ref_model)
         self.link = self.family.link
 
+        print(self.ref_idata.groups())
         # test posterior predictive distribution has been computed for full model
         if "posterior_predictive" not in self.ref_idata.groups():
-            try:
-                # make posterior predictive distribution of full model
-                self.ref_model.predict(self.ref_idata, kind="pps")
-            except Exception as e:
-                raise e.__class__(
-                    "Please make posterior predictions with the reference ",
-                    "model. For more information, kindly consult https://bambin",
-                    "os.github.io/bambi/main/api_reference.html#bambi.models.M",
-                    "odel.predict",
-                ) from e
+            self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
         # log dimensions of optimisation
         self.num_chain = len(self.ref_idata.posterior_predictive.coords.get("chain"))
@@ -109,7 +101,7 @@ class Solver:
         optim = torch.optim.Adam(
             self.posterior_predictive.parameters(), lr=self.learning_rate
         )
-        loss_fn = KullbackLeiblerLoss(self.ref_model, self.family)
+        loss_fn = KullbackLeiblerLoss(self.family)
 
         # compute reference model summary statistics
         linear_predictor_ref = self.link.link(self.pps_ast)
@@ -173,10 +165,10 @@ class Solver:
                 }
             )
 
-        if "beta_z" in theta_perp:
-            raise NotImplementedError
+        if "beta_z" in theta_perp:  # pragma: no cover
+            raise NotImplementedError("Hierarchical models not yet implemented")
 
-        if self.posterior_predictive.disp_name in theta_perp:
+        if self.posterior_predictive.disp_name in theta_perp:  # pragma: no cover
             new_data_vars.update(
                 {
                     self.posterior_predictive.disp_name: (

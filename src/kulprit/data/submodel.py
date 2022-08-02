@@ -153,7 +153,7 @@ def get_transforms(model):
 def init_idata(
     ref_model: Model,
     ref_idata: InferenceData,
-    term_names: List[str] = None,
+    term_names: List[str],
     num_thinned_samples: int = 400,
 ):
     """Initialise a submodel InferenceData object including only certain terms.
@@ -178,10 +178,6 @@ def init_idata(
             on submodel parameter spaces that are disjoint to the reference
             model parameter space
     """
-
-    # set default projection
-    if not term_names:
-        term_names = ref_model.term_names
 
     # copy term names so as not to modify input variables
     term_names_ = term_names.copy()

@@ -58,7 +58,7 @@ class PosteriorPredictive(nn.Module):
         )
 
     @property
-    def offset_terms(self):
+    def offset_terms(self):  # pragma: no cover
         """Return dict of all offset effects in model."""
         return {
             k: v
@@ -67,7 +67,7 @@ class PosteriorPredictive(nn.Module):
         }
 
     @property
-    def intercept_term(self):
+    def intercept_term(self):  # pragma: no cover
         """Return the intercept term"""
         term = [
             v
@@ -80,7 +80,7 @@ class PosteriorPredictive(nn.Module):
             return None
 
     @property
-    def common_design(self):
+    def common_design(self):  # pragma: no cover
         common_design = None
         if self.model._design.common:
             X = self.model._design.common.design_matrix
@@ -103,7 +103,7 @@ class PosteriorPredictive(nn.Module):
             return None
 
     @property
-    def group_design(self):
+    def group_design(self):  # pragma: no cover
         group_design = None
         if self.model._design.group is not None:
             group_design = self.model._design.group.design_matrix
@@ -112,7 +112,7 @@ class PosteriorPredictive(nn.Module):
             return None
 
     @property
-    def init_beta_x(self):
+    def init_beta_x(self):  # pragma: no cover
         """Initialise model covariate parameter values.
 
         Much of this script is adapted from Bambi's prediction method.
@@ -164,7 +164,7 @@ class PosteriorPredictive(nn.Module):
             return None
 
     @property
-    def init_beta_z(self):
+    def init_beta_z(self):  # pragma: no cover
         """Initialise model group-level parameter values.
 
         Much of this script is adapted from Bambi's prediction method.
@@ -212,7 +212,7 @@ class PosteriorPredictive(nn.Module):
             return None
 
     @property
-    def init_disp(self):
+    def init_disp(self):  # pragma: no cover
         """Initialise model dispersion parameter."""
 
         if self.family.has_dispersion_parameters:
@@ -220,7 +220,7 @@ class PosteriorPredictive(nn.Module):
         else:
             return None
 
-    def forward(self):
+    def forward(self):  # pragma: no cover
         """Compute posterior predictive distribution given parameters.
 
         Returns:

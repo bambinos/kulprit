@@ -45,6 +45,10 @@ class ReferenceModel:
             num_thinned_draws (int): The number of draws to use in optimisation
         """
 
+        # build posterior if not provided
+        if idata is None:
+            idata = model.fit()
+
         # test compatibility between model and idata
         if not test_model_idata_compatability(model=model, idata=idata):
             raise UserWarning("Incompatible model and inference data.")
@@ -55,10 +59,6 @@ class ReferenceModel:
                 "The procedure currently requires reference models to have an, "
                 + " intercept term."
             )
-
-        # build posterior if not provided
-        if idata is None:
-            idata = model.fit()
 
         self.model = model
         self.idata = idata

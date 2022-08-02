@@ -5,14 +5,14 @@ import pytest
 from tests import KulpritTest
 
 
-class MyStructure:
+class MyFamily:
     def __init__(self):
-        self.family = "unimplemented-family"
+        self.name = "bad-family"
 
 
-class MyData:
+class MyModel:
     def __init__(self):
-        self.structure = MyStructure()
+        self.family = MyFamily()
 
 
 class TestFamily(KulpritTest):
@@ -22,5 +22,5 @@ class TestFamily(KulpritTest):
         """Test that unimplemented families raise a warning."""
 
         with pytest.raises(NotImplementedError):
-            bad_data = MyData()
-            Family(data=bad_data)
+            bad_model = MyModel()
+            Family(model=bad_model)
