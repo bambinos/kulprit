@@ -45,6 +45,17 @@ class ReferenceModel:
             num_thinned_draws (int): The number of draws to use in optimisation
         """
 
+        # test that the reference model has an intercept term
+        if model.intercept_term is None:
+            raise UserWarning(
+                "The procedure currently requires reference models to have an, "
+                + " intercept term."
+            )
+
+        # test that the reference model does not admit any hierarchical structure
+        if model.group_specific_terms:
+            raise NotImplementedError("Hierarchical models currently not supported.")
+
         # build posterior if not provided
         if idata is None:
             idata = model.fit()
@@ -52,13 +63,6 @@ class ReferenceModel:
         # test compatibility between model and idata
         if not test_model_idata_compatability(model=model, idata=idata):
             raise UserWarning("Incompatible model and inference data.")
-
-        # test that the reference model has an intercept term
-        if model.intercept_term is None:
-            raise UserWarning(
-                "The procedure currently requires reference models to have an, "
-                + " intercept term."
-            )
 
         self.model = model
         self.idata = idata
