@@ -37,6 +37,18 @@ class TestProjector(KulpritTest):
             # build a bad reference model object
             kpt.ReferenceModel(bad_model, bad_idata)
 
+    def test_hierarchical_error(self):
+        """Test that an error is raised when model is hierarchical."""
+
+        # define model data
+        data = bmb.load_data("my_data")
+        # define model
+        bad_model = bmb.Model("z ~ (x|y)", data, family="gaussian")
+
+        with pytest.raises(NotImplementedError):
+            # build a bad reference model object
+            kpt.ReferenceModel(bad_model)
+
     def test_incompatible_error(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
 
