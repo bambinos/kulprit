@@ -48,7 +48,7 @@ class ReferenceModel:
         # test that the reference model has an intercept term
         if model.intercept_term is None:
             raise UserWarning(
-                "The procedure currently requires reference models to have an, "
+                "The procedure currently requires reference models to have an"
                 + " intercept term."
             )
 
