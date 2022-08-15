@@ -41,7 +41,6 @@ class Solver:
         self.family = Family(ref_model)
         self.link = self.family.link
 
-        print(self.ref_idata.groups())
         # test posterior predictive distribution has been computed for full model
         if "posterior_predictive" not in self.ref_idata.groups():
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)

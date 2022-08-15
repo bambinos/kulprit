@@ -283,4 +283,7 @@ class PosteriorPredictive(nn.Module):
             contribution = contribution.reshape(shape)
             linear_predictor += contribution
 
+        print(linear_predictor.shape)
+        print(linear_predictor.mean(-1).flatten().shape)
+        print(self.disp.flatten().shape)
         return linear_predictor.mean(-1).flatten(), self.disp.flatten()

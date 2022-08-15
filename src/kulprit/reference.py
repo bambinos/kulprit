@@ -42,7 +42,7 @@ class ReferenceModel:
                 of the fitted reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
-            num_thinned_draws (int): The number of draws to use in optimisation
+            num_thinned_samples (int): The number of draws to use in optimisation
         """
 
         # test that the reference model has an intercept term
