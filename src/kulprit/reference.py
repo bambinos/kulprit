@@ -3,12 +3,12 @@
 from typing import Union, Optional, List
 from typing_extensions import Literal
 
-from arviz import InferenceData
-from bambi.models import Model
-import pandas as pd
-from kulprit.data.submodel import SubModel
+import arviz
+import bambi
 
-from kulprit.families.family import Family
+import pandas as pd
+
+from kulprit.data.submodel import SubModel
 from kulprit.projection.projector import Projector
 from kulprit.search.searcher import Searcher
 
@@ -20,8 +20,8 @@ class ReferenceModel:
 
     def __init__(
         self,
-        model: Model,
-        idata: Optional[InferenceData] = None,
+        model: bambi.models.Model,
+        idata: Optional[arviz.InferenceData] = None,
         num_steps: Optional[int] = 5_000,
         obj_n_mc: Optional[float] = 10,
     ) -> None:
@@ -63,6 +63,7 @@ class ReferenceModel:
         if not test_model_idata_compatability(model=model, idata=idata):
             raise UserWarning("Incompatible model and inference data.")
 
+        # log reference model and inference data
         self.model = model
         self.idata = idata
 
@@ -176,5 +177,14 @@ def test_model_idata_compatability(model, idata):
         bool: Indicator of whether the two objects are compatible
     """
 
-    family = Family(model=model)
-    return set(idata.posterior.keys()) == set(model.term_names).union({family.disp_name})
+    # test that the variate's name is the same in reference model and idata
+    assert model.response.name == list(idata.observed_data.data_vars.variables)[0]
+
+    # test that the variate has the same dimensions in reference model and idata
+    assert (
+        idata.observed_data[model.response.name].to_numpy().shape
+        == model.data[model.response.name].shape
+    )
+
+    # return default truth
+    return True
