@@ -6,7 +6,6 @@ from arviz import InferenceData
 from bambi import Model
 
 from kulprit.data.submodel import SubModel
-from kulprit.families.family import Family
 from kulprit.projection.solver import Solver
 
 
@@ -39,7 +38,6 @@ class Projector:
         # log reference model and reference inference data object
         self.idata = idata
         self.model = model
-        self.family = Family(model)
 
         # set optimiser parameters
         self.num_steps = num_steps

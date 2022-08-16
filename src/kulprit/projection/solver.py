@@ -67,7 +67,6 @@ class Solver:
         """Build the restricted model in Bambi."""
 
         new_formula = self._build_restricted_formula(term_names=term_names)
-        print(new_formula)
         new_model = bmb.Model(new_formula, self.new_data, family=self.ref_family)
         new_model.build()
         return new_model
@@ -100,7 +99,9 @@ class Solver:
         with underlying_model:
             approx = pm.MeanField()
             inference = pm.KLqp(approx, beta=0.0)
-            mean_field = inference.fit(n=self.num_steps, obj_n_mc=self.obj_n_mc)
+            mean_field = inference.fit(
+                n=self.num_steps, obj_n_mc=self.obj_n_mc, progressbar=False
+            )
 
         # compute the LOO-CV predictive performance of the submodel
         num_draws = (
@@ -112,8 +113,8 @@ class Solver:
             trace=trace, model=underlying_model, log_likelihood=True
         )
 
-        # compute the average loss
-        loss = self._infmean(
+        # compute the average elbo
+        elbo = self._infmean(
             mean_field.hist[max(0, self.num_steps - 1000) : self.num_steps + 1]
         )
 
@@ -121,7 +122,7 @@ class Solver:
         sub_model = SubModel(
             model=new_model,
             idata=new_idata,
-            loss=loss,
+            elbo=elbo,
             size=len([term for term in term_names if term != "Intercept"]),
             term_names=term_names,
         )

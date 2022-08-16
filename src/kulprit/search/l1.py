@@ -40,7 +40,7 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.term_names, submodel.loss]
+            k: [submodel.term_names, submodel.elbo]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -126,7 +126,7 @@ class L1SearchPath(SearchPath):
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
             self.k_submodel[k] = self.projector.project(term_names)
-            self.k_dist[k] = self.k_submodel[k].loss
+            self.k_dist[k] = self.k_submodel[k].elbo
 
         # toggle indicator variable and return search path
         self.search_completed = True

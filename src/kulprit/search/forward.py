@@ -86,7 +86,7 @@ class ForwardSearchPath(SearchPath):
         k = 0
         k_term_names = ["1"]
         k_submodel = self.projector.project(terms=k_term_names)
-        k_dist = k_submodel.loss
+        k_dist = k_submodel.elbo
 
         # add submodel to search path
         self.add_submodel(
@@ -105,9 +105,9 @@ class ForwardSearchPath(SearchPath):
                 self.projector.project(terms=candidate) for candidate in k_candidates
             ]
 
-            # identify the best candidate by distance from reference model
-            best_submodel = min(k_projections, key=lambda projection: projection.loss)
-            best_dist = best_submodel.loss
+            # identify the best candidate by elbo (equivalent to KL min)
+            best_submodel = max(k_projections, key=lambda projection: projection.elbo)
+            best_dist = best_submodel.elbo
 
             # retrieve the best candidate's term names and indices
             k_term_names = best_submodel.term_names
