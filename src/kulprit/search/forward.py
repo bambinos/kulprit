@@ -24,7 +24,7 @@ class ForwardSearchPath(SearchPath):
         self.k_term_idx = {}
         self.k_term_names = {}
         self.k_submodel = {}
-        self.k_dist = {}
+        self.k_elbo = {}
 
     def __repr__(self) -> str:
         """String representation of the search path."""
@@ -45,13 +45,13 @@ class ForwardSearchPath(SearchPath):
         k: int,
         k_term_names: list,
         k_submodel: SubModel,
-        k_dist: float,
+        k_elbo: float,
     ) -> None:
         """Update search path with new submodel."""
 
         self.k_term_names[k] = k_term_names
         self.k_submodel[k] = k_submodel
-        self.k_dist[k] = k_dist
+        self.k_elbo[k] = k_elbo
 
     def get_candidates(self, k: int) -> List[List]:
         """Method for extracting a list of all candidate submodels.
@@ -86,14 +86,14 @@ class ForwardSearchPath(SearchPath):
         k = 0
         k_term_names = ["1"]
         k_submodel = self.projector.project(terms=k_term_names)
-        k_dist = k_submodel.elbo
+        k_elbo = k_submodel.elbo
 
         # add submodel to search path
         self.add_submodel(
             k=k,
             k_term_names=k_term_names,
             k_submodel=k_submodel,
-            k_dist=k_dist,
+            k_elbo=k_elbo,
         )
 
         # perform forward search through parameter space
@@ -120,7 +120,7 @@ class ForwardSearchPath(SearchPath):
                 k=k,
                 k_term_names=k_term_names,
                 k_submodel=best_submodel,
-                k_dist=best_dist,
+                k_elbo=best_dist,
             )
 
         # toggle indicator variable and return search path
