@@ -5,7 +5,7 @@ from typing import Optional, List, Union
 from arviz import InferenceData
 from bambi import Model
 
-from kulprit.data.submodel import SubModel, init_idata
+from kulprit.data.submodel import SubModel
 from kulprit.families.family import Family
 from kulprit.projection.solver import Solver
 
@@ -16,9 +16,8 @@ class Projector:
         model: Model,
         idata: InferenceData,
         path: Optional[dict] = None,
-        num_iters: Optional[int] = 400,
-        learning_rate: Optional[float] = 0.01,
-        num_thinned_samples: Optional[int] = 400,
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -33,8 +32,8 @@ class Projector:
             path (dict): An optional search path dictionary, initialised to None
                 and assigned by the ReferenceModel parent object following a
                 search for efficient submodel retrieval
-            num_iters (int): Number of iterations over which to run backprop
-            learning_rate (float): The backprop optimiser's learning rate
+            num_steps (int): Number of iterations to run VI for
+            obj_n_mc (int):
         """
 
         # log reference model and reference inference data object
@@ -43,16 +42,15 @@ class Projector:
         self.family = Family(model)
 
         # set optimiser parameters
-        self.num_iters = num_iters
-        self.learning_rate = learning_rate
-        self.num_thinned_samples = num_thinned_samples
+        self.num_steps = num_steps
+        self.obj_n_mc = obj_n_mc
 
         # build solver
         self.solver = Solver(
-            ref_model=self.model,
-            ref_idata=self.idata,
-            num_iters=self.num_iters,
-            learning_rate=self.learning_rate,
+            model=self.model,
+            idata=self.idata,
+            num_steps=self.num_steps,
+            obj_n_mc=self.obj_n_mc,
         )
 
         # log search path
@@ -76,12 +74,6 @@ class Projector:
 
         # project terms by name
         if isinstance(terms, list):
-            # test `terms` input
-            if not all([term in self.model.term_names for term in terms]):
-                raise UserWarning(
-                    "Please ensure that all terms selected for projection exist in"
-                    + " the reference model."
-                )
             # perform projection
             return self.project_names(term_names=terms)
 
@@ -116,18 +108,5 @@ class Projector:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
-        # initialise restricted model inference data
-        res_idata = init_idata(
-            ref_model=self.model,
-            ref_idata=self.idata,
-            term_names=term_names,
-            num_thinned_samples=self.num_thinned_samples,
-        )
-
         # solve the parameter projections
-        sub_model = self.solver.solve(res_idata=res_idata, term_names=term_names)
-
-        # compute the submodel's log-likelihood
-        if "log_likelihood" not in sub_model.idata.groups():
-            sub_model.add_log_likelihood()
-        return sub_model
+        return self.solver.solve(term_names=term_names)

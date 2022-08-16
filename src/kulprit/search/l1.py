@@ -40,7 +40,7 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.term_names, submodel.kl_div]
+            k: [submodel.term_names, submodel.loss]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -114,8 +114,11 @@ class L1SearchPath(SearchPath):
         cov_lasso = {
             k: v for k, v in sorted(coef_path.items(), key=lambda item: item[1])
         }
+        print(self.common_terms, cov_lasso)
         sorted_covs = [self.common_terms[k] for k in cov_lasso]
-        sorted_covs = [["Intercept"] + sorted_covs[:i] for i in range(max_terms)]
+        print(sorted_covs)
+        sorted_covs = [["1"] + sorted_covs[:i] for i in range(max_terms)]
+        print(sorted_covs)
 
         # produce submodels for each model size
         self.k_term_names = {len(terms) - 1: terms for terms in sorted_covs}
@@ -123,7 +126,7 @@ class L1SearchPath(SearchPath):
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
             self.k_submodel[k] = self.projector.project(term_names)
-            self.k_dist[k] = self.k_submodel[k].kl_div
+            self.k_dist[k] = self.k_submodel[k].loss
 
         # toggle indicator variable and return search path
         self.search_completed = True

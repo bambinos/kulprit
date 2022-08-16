@@ -22,9 +22,8 @@ class ReferenceModel:
         self,
         model: Model,
         idata: Optional[InferenceData] = None,
-        num_iters: Optional[int] = 400,
-        learning_rate: Optional[float] = 0.01,
-        num_thinned_samples: Optional[int] = 400,
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -38,7 +37,7 @@ class ReferenceModel:
 
         Args:
             model (bambi.models.Model): The referemce GLM model to project
-            idata (arviz.InferenceData): The arViz InferenceData object
+            idata (arviz.InferenceData): The ArviZ InferenceData object
                 of the fitted reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
@@ -71,9 +70,8 @@ class ReferenceModel:
         self.projector = Projector(
             model=self.model,
             idata=self.idata,
-            num_iters=num_iters,
-            learning_rate=learning_rate,
-            num_thinned_samples=num_thinned_samples,
+            num_steps=num_steps,
+            obj_n_mc=obj_n_mc,
         )
         self.searcher = Searcher(self.projector)
         self.path = None

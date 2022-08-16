@@ -12,11 +12,13 @@ class ForwardSearchPath(SearchPath):
     def __init__(self, projector: Projector) -> None:
         """Initialise search path class."""
 
-        # log the names of the terms in the reference model
-        self.ref_terms = projector.model.term_names
-
         # log the projector object
         self.projector = projector
+
+        # log the names of the terms in the reference model
+        self.ref_terms = list(
+            map(lambda x: x.replace("Intercept", "1"), self.projector.model.term_names)
+        )
 
         # initialise search
         self.k_term_idx = {}
@@ -82,9 +84,9 @@ class ForwardSearchPath(SearchPath):
 
         # initial intercept-only subset
         k = 0
-        k_term_names = ["Intercept"]
+        k_term_names = ["1"]
         k_submodel = self.projector.project(terms=k_term_names)
-        k_dist = k_submodel.kl_div
+        k_dist = k_submodel.loss
 
         # add submodel to search path
         self.add_submodel(
@@ -104,8 +106,8 @@ class ForwardSearchPath(SearchPath):
             ]
 
             # identify the best candidate by distance from reference model
-            best_submodel = min(k_projections, key=lambda projection: projection.kl_div)
-            best_dist = best_submodel.kl_div
+            best_submodel = min(k_projections, key=lambda projection: projection.loss)
+            best_dist = best_submodel.loss
 
             # retrieve the best candidate's term names and indices
             k_term_names = best_submodel.term_names

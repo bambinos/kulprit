@@ -1,213 +1,127 @@
 """Optimisation module."""
 
-from typing import Optional, Tuple
-from arviz import InferenceData
-from bambi import Model
+from typing import Tuple
+
 import numpy as np
 
-import xarray as xr
-
-import torch
-
 from kulprit.data.submodel import SubModel
-from kulprit.families.family import Family
-from kulprit.projection.losses.kld import KullbackLeiblerLoss
-from kulprit.projection.pps import PosteriorPredictive
+
+
+import pymc as pm
+import bambi as bmb
+import arviz as az
+
+import pandas as pd
 
 
 class Solver:
-    def __init__(
-        self,
-        ref_model: Model,
-        ref_idata: InferenceData,
-        num_thinned_samples: int = 400,
-        num_iters: Optional[int] = 400,
-        learning_rate: Optional[float] = 0.01,
-    ):
-        """Initialise solver object.
+    """The primary solver class, used to perform the projection."""
 
-        Args:
-            num_iters (int, optional): The number of iterations to run the
-                optimisation for, defaults to 200
-            learning_rate (float, optional): The learning rate for the optimisation
-                algorithm, defaults to 0.01
+    def __init__(self, model, idata, num_steps=5_000, obj_n_mc=10):
+        """Initialise the main solver object."""
+
+        # log the reference model and inference data objects
+        self.ref_model = model
+        self.ref_idata = idata
+
+        # log the reference model's response name and family
+        self.response_name = self.ref_model.response.name
+        self.ref_family = self.ref_model.family.name
+
+        # set optimiser parameters
+        self.num_steps = num_steps
+        self.obj_n_mc = obj_n_mc
+
+    @property
+    def new_data(self) -> pd.DataFrame:
+        """Build new dataset for projection.
+
+        This new dataset is identical to the reference model dataset in the
+        covariates, but the originally observed variate has been replaced by the
+        point estimate predictions from the reference model.
         """
 
-        # log reference model object and fitted inference data
-        self.ref_model = ref_model
-        self.ref_idata = ref_idata
-
-        # build family and link objects
-        self.family = Family(ref_model)
-        self.link = self.family.link
-
-        # test posterior predictive distribution has been computed for full model
+        # make in-sample predictions with the reference model if not available
         if "posterior_predictive" not in self.ref_idata.groups():
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
-        # log dimensions of optimisation
-        self.num_chain = len(self.ref_idata.posterior_predictive.coords.get("chain"))
-        self.num_draw = len(self.ref_idata.posterior_predictive.coords.get("draw"))
-        self.num_samples = self.num_chain * self.num_draw
-        self.num_thinned_samples = num_thinned_samples
-        self.thinned_idx = np.random.randint(
-            0, self.num_samples, self.num_thinned_samples
+        # extract in-sample predictions
+        preds = (
+            self.ref_idata.posterior_predictive.stack(samples=("chain", "draw"))
+            .transpose(*("samples", ...))[self.response_name]
+            .values.mean(0)
         )
 
-        # log gradient descent parameters
-        self.num_iters = num_iters
-        self.learning_rate = learning_rate
+        # build new dataframe
+        new_data = self.ref_model.data.copy()
+        new_data[self.response_name] = preds
+        return new_data
 
-    @property
-    def pps_ast(self):
-        """Compute the reference model's posterior predictive distribution."""
+    def _build_restricted_formula(self, term_names: list) -> str:
+        """Build the formula for the restricted model."""
 
-        # produce thinned pps
-        return (
-            torch.from_numpy(
-                self.ref_idata.posterior_predictive.stack(samples=("chain", "draw"))
-                .transpose(*("samples", ...))[self.ref_model.response.name]
-                .values
-            )
-            .float()
-            .mean(-1)
-        )
+        formula = f"{self.response_name} ~ " + " + ".join(term_names)
+        return formula
 
-    def optimise(self, res_idata: InferenceData) -> Tuple[np.ndarray, float]:
-        """Primary optimisation loop.
+    def _build_restricted_model(self, term_names: list) -> bmb.Model:
+        """Build the restricted model in Bambi."""
 
-        TODO:
-            * Allow for flexibility in restricted family. Specifically, allow for
-                the restricted model to admit a different family observation model
-                to the reference model in general. This may require a more
-                fundamental internal refactoring
+        new_formula = self._build_restricted_formula(term_names=term_names)
+        print(new_formula)
+        new_model = bmb.Model(new_formula, self.new_data, family=self.ref_family)
+        new_model.build()
+        return new_model
 
-        Args:
-            res_idata (arviz.InferenceData): The restricted model's initial idata
-                object
+    def _infmean(self, input_array):
+        """Return the mean of the finite values of the array.
 
-        Returns:
-            theta_perp (np.ndarray): The optimisation decision variable solutions
-            final_loss (float): The final KL divergence between optimised
-                restricted posterior and the reference model posterior
+        This method is taken from pymc.variational.Inference.
         """
 
-        # build optimisation framework
-        self.posterior_predictive = PosteriorPredictive(
-            ref_model=self.ref_model, res_idata=res_idata
+        input_array = input_array[np.isfinite(input_array)].astype("float64")
+        if len(input_array) == 0:
+            return np.nan
+        else:
+            return np.mean(input_array)
+
+    def solve(self, term_names: list) -> Tuple[bmb.Model, az.InferenceData]:
+        """The primary projection method in the procedure.
+
+        The projection is performed with a mean-field approximation to variational
+        inference rather than concatenating posterior draw-wise optimisation
+        solutions as is suggested by Piironen (2018).
+        """
+
+        # build restricted model
+        new_model = self._build_restricted_model(term_names=term_names)
+        underlying_model = new_model.backend.model
+
+        # perform mean-field MLE
+        with underlying_model:
+            approx = pm.MeanField()
+            inference = pm.KLqp(approx, beta=0.0)
+            mean_field = inference.fit(n=self.num_steps, obj_n_mc=self.obj_n_mc)
+
+        # compute the LOO-CV predictive performance of the submodel
+        num_draws = (
+            self.ref_idata.posterior.dims["chain"]
+            * self.ref_idata.posterior.dims["draw"]
         )
-        self.posterior_predictive.zero_grad()
-        optim = torch.optim.Adam(
-            self.posterior_predictive.parameters(), lr=self.learning_rate
+        trace = mean_field.sample(num_draws, return_inferencedata=False)
+        new_idata = pm.to_inference_data(
+            trace=trace, model=underlying_model, log_likelihood=True
         )
-        loss_fn = KullbackLeiblerLoss(self.family)
 
-        # compute reference model summary statistics
-        linear_predictor_ref = self.link.link(self.pps_ast)
-        disp_ref = self.family.extract_disp(self.ref_idata).flatten()
-
-        # run optimisation loop
-        for _ in range(self.num_iters):
-            optim.zero_grad()
-            linear_predictor, disp = self.posterior_predictive.forward()
-            loss = loss_fn.forward(
-                linear_predictor, disp, linear_predictor_ref, disp_ref
-            )
-            loss.backward()
-            optim.step()
-
-        # extract projected parameters and final loss function value
-        final_loss = loss.item()
-        theta_perp = {
-            param[0]: param[1].data
-            for param in self.posterior_predictive.named_parameters()
-        }
-        return theta_perp, final_loss
-
-    def build_idata(self, theta_perp: torch.tensor) -> InferenceData:
-        """Build a new restricted idata object given projected posterior."""
-
-        # compute new coordinates
-        new_dims = set()
-        for term in self.posterior_predictive.term_names:
-            new_dims = new_dims.union(
-                set(self.posterior_predictive.idata.posterior[term].dims)
-            )
-        new_coords = {
-            dim: np.arange(
-                stop=len(
-                    self.posterior_predictive.idata.posterior[dim]
-                    .coords[dim]
-                    .indexes.get(dim)
-                ),
-                step=1,
-            )
-            for dim in set(new_dims)
-        }
-
-        # initialise new data variables dictionary
-        new_data_vars = {}
-
-        if "beta_x" in theta_perp:
-            # extract new data variables
-            new_data_vars.update(
-                {
-                    term: (
-                        list(self.posterior_predictive.idata.posterior[term].dims),
-                        theta_perp["beta_x"][
-                            self.posterior_predictive.beta_x_lookup.get(term).get(
-                                "slice"
-                            )
-                        ].reshape(self.posterior_predictive.idata.posterior[term].shape),
-                    )
-                    for term in self.posterior_predictive.term_names
-                }
-            )
-
-        if "beta_z" in theta_perp:  # pragma: no cover
-            raise NotImplementedError("Hierarchical models not yet implemented")
-
-        if self.posterior_predictive.disp_name in theta_perp:  # pragma: no cover
-            new_data_vars.update(
-                {
-                    self.posterior_predictive.disp_name: (
-                        list(
-                            self.posterior_predictive.idata.posterior[
-                                self.posterior_predictive.disp_name
-                            ].dims
-                        ),
-                        theta_perp["disp"].reshape(
-                            self.posterior_predictive.idata.posterior[
-                                self.posterior_predictive.disp_name
-                            ].shape
-                        ),
-                    )
-                }
-            )
-
-        # define submodel attributes
-        new_attrs = {"size": len(self.posterior_predictive.term_names)}
-
-        # build restricted posterior object and replace old one
-        res_posterior = xr.Dataset(
-            data_vars=new_data_vars, coords=new_coords, attrs=new_attrs
+        # compute the average loss
+        loss = self._infmean(
+            mean_field.hist[max(0, self.num_steps - 1000) : self.num_steps + 1]
         )
-        self.res_idata = self.posterior_predictive.idata
-        self.res_idata.posterior = res_posterior
-        return self.res_idata
-
-    def solve(self, res_idata: InferenceData, term_names: list) -> tuple:
-        """Perform projection by gradient descent."""
-
-        # project parameter samples and compute distance from reference model
-        theta_perp, kl_div = self.optimise(res_idata)
-        res_idata_ = self.build_idata(theta_perp)
 
         # build SubModel object and return
         sub_model = SubModel(
-            backend=self.ref_model.backend,
-            idata=res_idata_,
-            kl_div=kl_div,
+            model=new_model,
+            idata=new_idata,
+            loss=loss,
             size=len([term for term in term_names if term != "Intercept"]),
             term_names=term_names,
         )
