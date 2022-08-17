@@ -1,5 +1,6 @@
 """L1 search path module."""
 
+from typing import Optional
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import lasso_path
@@ -104,7 +105,14 @@ class L1SearchPath(SearchPath):
         cov_order = self.first_non_zero_idx(coef_path)
         return cov_order
 
-    def search(self, max_terms: int) -> None:
+    def search(
+        self,
+        max_terms: int,
+        num_steps_search: Optional[int] = 5_000,
+        obj_n_mc_search: Optional[float] = 10,
+        num_steps_pred: Optional[int] = 100,
+        obj_n_mc_pred: Optional[float] = 1,
+    ) -> dict:
         """Perform L1 search through the parameter space."""
 
         # compute L1 path for each model size
@@ -122,7 +130,9 @@ class L1SearchPath(SearchPath):
 
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
-            self.k_submodel[k] = self.projector.project(term_names)
+            self.k_submodel[k] = self.projector.project(
+                terms=term_names, num_steps=num_steps_pred, obj_n_mc=obj_n_mc_pred
+            )
             self.k_elbo[k] = self.k_submodel[k].elbo
 
         # toggle indicator variable and return search path

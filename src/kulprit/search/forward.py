@@ -1,6 +1,6 @@
 """Forward search module."""
 
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 from kulprit.data.submodel import SubModel
@@ -70,7 +70,14 @@ class ForwardSearchPath(SearchPath):
         candidates = [prev_subset + [addition] for addition in candidate_additions]
         return candidates
 
-    def search(self, max_terms: int) -> dict:
+    def search(
+        self,
+        max_terms: int,
+        num_steps_search: Optional[int] = 5_000,
+        obj_n_mc_search: Optional[float] = 10,
+        num_steps_pred: Optional[int] = 100,
+        obj_n_mc_pred: Optional[float] = 1,
+    ) -> dict:
         """Forward search through the parameter space.
 
         Args:
@@ -85,7 +92,9 @@ class ForwardSearchPath(SearchPath):
         # initial intercept-only subset
         k = 0
         k_term_names = ["1"]
-        k_submodel = self.projector.project(terms=k_term_names)
+        k_submodel = self.projector.project(
+            terms=k_term_names, num_steps=num_steps_search, obj_n_mc=obj_n_mc_search
+        )
         k_elbo = k_submodel.elbo
 
         # add submodel to search path
@@ -122,6 +131,8 @@ class ForwardSearchPath(SearchPath):
                 k_submodel=best_submodel,
                 k_elbo=best_dist,
             )
+
+        # re-project each model along search path using validation hyperparameters
 
         # toggle indicator variable and return search path
         self.search_completed = True

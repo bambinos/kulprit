@@ -15,8 +15,6 @@ class Projector:
         model: Model,
         idata: InferenceData,
         path: Optional[dict] = None,
-        num_steps: Optional[int] = 5_000,
-        obj_n_mc: Optional[float] = 10,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -39,17 +37,8 @@ class Projector:
         self.idata = idata
         self.model = model
 
-        # set optimiser parameters
-        self.num_steps = num_steps
-        self.obj_n_mc = obj_n_mc
-
         # build solver
-        self.solver = Solver(
-            model=self.model,
-            idata=self.idata,
-            num_steps=self.num_steps,
-            obj_n_mc=self.obj_n_mc,
-        )
+        self.solver = Solver(model=self.model, idata=self.idata)
 
         # log search path
         self.path = path
@@ -57,6 +46,8 @@ class Projector:
     def project(
         self,
         terms: Union[List[str], int],
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
     ) -> SubModel:
         """Wrapper function for projection method.
 
@@ -73,7 +64,9 @@ class Projector:
         # project terms by name
         if isinstance(terms, list):
             # perform projection
-            return self.project_names(term_names=terms)
+            return self.project_names(
+                term_names=terms, num_steps=num_steps, obj_n_mc=obj_n_mc
+            )
 
         # project a number of terms
         else:
@@ -90,6 +83,8 @@ class Projector:
     def project_names(
         self,
         term_names: List[str],
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
     ) -> SubModel:
         """Primary projection method for GLM reference model.
 
@@ -107,4 +102,6 @@ class Projector:
         """
 
         # solve the parameter projections
-        return self.solver.solve(term_names=term_names)
+        return self.solver.solve(
+            term_names=term_names, num_steps=num_steps, obj_n_mc=obj_n_mc
+        )

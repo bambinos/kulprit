@@ -1,6 +1,6 @@
 """Optimisation module."""
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -17,7 +17,7 @@ import pandas as pd
 class Solver:
     """The primary solver class, used to perform the projection."""
 
-    def __init__(self, model, idata, num_steps=5_000, obj_n_mc=10):
+    def __init__(self, model, idata):
         """Initialise the main solver object."""
 
         # log the reference model and inference data objects
@@ -27,10 +27,6 @@ class Solver:
         # log the reference model's response name and family
         self.response_name = self.ref_model.response.name
         self.ref_family = self.ref_model.family.name
-
-        # set optimiser parameters
-        self.num_steps = num_steps
-        self.obj_n_mc = obj_n_mc
 
     @property
     def new_data(self) -> pd.DataFrame:
@@ -83,7 +79,12 @@ class Solver:
         else:
             return np.mean(input_array)
 
-    def solve(self, term_names: list) -> Tuple[bmb.Model, az.InferenceData]:
+    def solve(
+        self,
+        term_names: list,
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
+    ) -> Tuple[bmb.Model, az.InferenceData]:
         """The primary projection method in the procedure.
 
         The projection is performed with a mean-field approximation to variational
@@ -99,9 +100,7 @@ class Solver:
         with underlying_model:
             approx = pm.MeanField()
             inference = pm.KLqp(approx, beta=0.0)
-            mean_field = inference.fit(
-                n=self.num_steps, obj_n_mc=self.obj_n_mc, progressbar=False
-            )
+            mean_field = inference.fit(n=num_steps, obj_n_mc=obj_n_mc, progressbar=False)
 
         # compute the LOO-CV predictive performance of the submodel
         num_draws = (
@@ -114,9 +113,7 @@ class Solver:
         )
 
         # compute the average elbo
-        elbo = self._infmean(
-            mean_field.hist[max(0, self.num_steps - 1000) : self.num_steps + 1]
-        )
+        elbo = self._infmean(mean_field.hist[max(0, num_steps - 1000) : num_steps + 1])
 
         # build SubModel object and return
         sub_model = SubModel(
