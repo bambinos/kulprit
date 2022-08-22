@@ -73,10 +73,10 @@ class ForwardSearchPath(SearchPath):
     def search(
         self,
         max_terms: int,
-        num_steps_search: Optional[int] = 5_000,
-        obj_n_mc_search: Optional[float] = 10,
-        num_steps_pred: Optional[int] = 100,
-        obj_n_mc_pred: Optional[float] = 1,
+        num_steps_search: Optional[int] = 100,
+        obj_n_mc_search: Optional[float] = 2,
+        num_steps_pred: Optional[int] = 5_000,
+        obj_n_mc_pred: Optional[float] = 10,
     ) -> dict:
         """Forward search through the parameter space.
 
@@ -111,7 +111,10 @@ class ForwardSearchPath(SearchPath):
             # their distances
             k_candidates = self.get_candidates(k=k)
             k_projections = [
-                self.projector.project(terms=candidate) for candidate in k_candidates
+                self.projector.project(
+                    terms=candidate, num_steps=num_steps_search, obj_n_mc=obj_n_mc_search
+                )
+                for candidate in k_candidates
             ]
 
             # identify the best candidate by elbo (equivalent to KL min)
@@ -133,6 +136,12 @@ class ForwardSearchPath(SearchPath):
             )
 
         # re-project each model along search path using validation hyperparameters
+        self.k_submodel = {
+            model.size: self.projector.project(
+                terms=model.term_names, num_steps=num_steps_pred, obj_n_mc=obj_n_mc_pred
+            )
+            for model in self.k_submodel.values()
+        }
 
         # toggle indicator variable and return search path
         self.search_completed = True
