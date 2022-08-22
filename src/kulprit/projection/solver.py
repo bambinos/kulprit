@@ -23,6 +23,7 @@ class Solver:
         # log the reference model and inference data objects
         self.ref_model = model
         self.ref_idata = idata
+        self.pymc_model = self.ref_model.backend.model
 
         # log the reference model's response name and family
         self.response_name = self.ref_model.response.name
@@ -42,10 +43,8 @@ class Solver:
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
         # extract in-sample predictions
-        preds = (
-            self.ref_idata.posterior_predictive.stack(samples=("chain", "draw"))
-            .transpose(*("samples", ...))[self.response_name]
-            .values.mean(0)
+        preds = self.ref_idata.posterior_predictive[self.response_name].mean(
+            ["chain", "draw"]
         )
 
         # build new dataframe
@@ -108,6 +107,14 @@ class Solver:
             * self.ref_idata.posterior.dims["draw"]
         )
         trace = mean_field.sample(num_draws, return_inferencedata=False)
+
+        # first obtain the aesara observed RVs
+        new_obs_rvs = underlying_model.named_vars[self.response_name]
+        old_obs_rvs = self.pymc_model.named_vars[self.response_name]
+        # and then we replace the observations in the new model for those in the reference model
+        underlying_model.rvs_to_values[new_obs_rvs] = self.pymc_model.rvs_to_values[
+            old_obs_rvs
+        ]
         new_idata = pm.to_inference_data(
             trace=trace, model=underlying_model, log_likelihood=True
         )
