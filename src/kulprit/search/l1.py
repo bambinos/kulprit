@@ -33,7 +33,6 @@ class L1SearchPath(SearchPath):
         # initialise search
         self.k_term_names = {}
         self.k_submodel = {}
-        self.k_elbo = {}
 
         self.search_completed = True
 
@@ -108,10 +107,10 @@ class L1SearchPath(SearchPath):
     def search(
         self,
         max_terms: int,
-        num_steps_search: Optional[int] = 5_000,
-        obj_n_mc_search: Optional[float] = 10,
-        num_steps_pred: Optional[int] = 100,
-        obj_n_mc_pred: Optional[float] = 1,
+        num_steps_search: Optional[int] = 100,
+        obj_n_mc_search: Optional[float] = 2,
+        num_steps_pred: Optional[int] = 5_000,
+        obj_n_mc_pred: Optional[float] = 50,
     ) -> dict:
         """Perform L1 search through the parameter space."""
 
@@ -123,17 +122,15 @@ class L1SearchPath(SearchPath):
             k: v for k, v in sorted(coef_path.items(), key=lambda item: item[1])
         }
         sorted_covs = [self.common_terms[k] for k in cov_lasso]
-        sorted_covs = [["1"] + sorted_covs[:i] for i in range(max_terms)]
 
         # produce submodels for each model size
-        self.k_term_names = {len(terms) - 1: terms for terms in sorted_covs}
+        self.k_term_names = {k: sorted_covs[:k] for k in range(max_terms + 1)}
 
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
             self.k_submodel[k] = self.projector.project(
                 terms=term_names, num_steps=num_steps_pred, obj_n_mc=obj_n_mc_pred
             )
-            self.k_elbo[k] = self.k_submodel[k].elbo
 
         # toggle indicator variable and return search path
         self.search_completed = True

@@ -16,9 +16,7 @@ class ForwardSearchPath(SearchPath):
         self.projector = projector
 
         # log the names of the terms in the reference model
-        self.ref_terms = list(
-            map(lambda x: x.replace("Intercept", "1"), self.projector.model.term_names)
-        )
+        self.ref_terms = list(self.projector.model.common_terms)
 
         # initialise search
         self.k_term_idx = {}
@@ -65,7 +63,7 @@ class ForwardSearchPath(SearchPath):
                 submodels
         """
 
-        prev_subset = self.k_term_names[k]
+        prev_subset = self.k_term_names[k - 1]
         candidate_additions = list(set(self.ref_terms).difference(prev_subset))
         candidates = [prev_subset + [addition] for addition in candidate_additions]
         return candidates
@@ -76,7 +74,7 @@ class ForwardSearchPath(SearchPath):
         num_steps_search: Optional[int] = 100,
         obj_n_mc_search: Optional[float] = 2,
         num_steps_pred: Optional[int] = 5_000,
-        obj_n_mc_pred: Optional[float] = 10,
+        obj_n_mc_pred: Optional[float] = 50,
     ) -> dict:
         """Forward search through the parameter space.
 
@@ -91,7 +89,7 @@ class ForwardSearchPath(SearchPath):
 
         # initial intercept-only subset
         k = 0
-        k_term_names = ["1"]
+        k_term_names = []
         k_submodel = self.projector.project(
             terms=k_term_names, num_steps=num_steps_search, obj_n_mc=obj_n_mc_search
         )
@@ -106,7 +104,10 @@ class ForwardSearchPath(SearchPath):
         )
 
         # perform forward search through parameter space
-        while k < max_terms - 1:
+        while k < max_terms:
+            # increment submodel size
+            k += 1
+
             # get list of candidate submodels, project onto them, and compute
             # their distances
             k_candidates = self.get_candidates(k=k)
@@ -123,9 +124,6 @@ class ForwardSearchPath(SearchPath):
 
             # retrieve the best candidate's term names and indices
             k_term_names = best_submodel.term_names
-
-            # increment number of parameters
-            k += 1
 
             # add best candidate to search path
             self.add_submodel(

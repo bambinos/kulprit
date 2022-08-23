@@ -55,7 +55,11 @@ class Solver:
     def _build_restricted_formula(self, term_names: list) -> str:
         """Build the formula for the restricted model."""
 
-        formula = f"{self.response_name} ~ " + " + ".join(term_names)
+        formula = (
+            f"{self.response_name} ~ 1 + " + " + ".join(term_names)
+            if len(term_names) > 0
+            else f"{self.response_name} ~ 1"
+        )
         return formula
 
     def _build_restricted_model(self, term_names: list) -> bmb.Model:
@@ -90,6 +94,16 @@ class Solver:
         inference rather than concatenating posterior draw-wise optimisation
         solutions as is suggested by Piironen (2018).
         """
+
+        # if projecting onto the reference model, simply return it
+        if set(term_names) == set(self.ref_model.common_terms.keys()):
+            return SubModel(
+                model=self.ref_model,
+                idata=self.ref_idata,
+                elbo=np.inf,
+                size=len(self.ref_model.common_terms),
+                term_names=term_names,
+            )
 
         # build restricted model
         new_model = self._build_restricted_model(term_names=term_names)
