@@ -5,7 +5,6 @@ from typing import Optional
 import numpy as np
 
 from kulprit.data.submodel import SubModel
-from bambi.models import Model
 from arviz import InferenceData
 
 import pymc as pm
@@ -17,7 +16,7 @@ import pandas as pd
 class Solver:
     """The primary solver class, used to perform the projection."""
 
-    def __init__(self, model: Model, idata: InferenceData) -> None:
+    def __init__(self, model: bmb.Model, idata: InferenceData) -> None:
         """Initialise the main solver object."""
 
         # log the reference model and inference data objects
@@ -28,6 +27,12 @@ class Solver:
         # log the reference model's response name and family
         self.response_name = self.ref_model.response.name
         self.ref_family = self.ref_model.family.name
+
+        # compute and log reference model MCMC sample size
+        self.num_draws = (
+            self.ref_idata.posterior.dims["chain"]
+            * self.ref_idata.posterior.dims["draw"]
+        )
 
     @property
     def new_data(self) -> pd.DataFrame:
@@ -62,7 +67,7 @@ class Solver:
         )
         return formula
 
-    def _build_restricted_model(self, term_names: list) -> Model:
+    def _build_restricted_model(self, term_names: list) -> bmb.Model:
         """Build the restricted model in Bambi."""
 
         new_formula = self._build_restricted_formula(term_names=term_names)
@@ -116,11 +121,7 @@ class Solver:
             mean_field = inference.fit(n=num_steps, obj_n_mc=obj_n_mc, progressbar=False)
 
         # compute the LOO-CV predictive performance of the submodel
-        num_draws = (
-            self.ref_idata.posterior.dims["chain"]
-            * self.ref_idata.posterior.dims["draw"]
-        )
-        trace = mean_field.sample(num_draws, return_inferencedata=False)
+        trace = mean_field.sample(self.num_draws, return_inferencedata=False)
 
         # first obtain the aesara observed RVs
         new_obs_rvs = new_pymc_model.named_vars[self.response_name]
