@@ -10,7 +10,6 @@ import copy
 from kulprit.projection.solver import Solver
 
 from tests import KulpritTest
-from tests.conftest import bambi_model_idata
 
 
 class TestProjector(KulpritTest):
@@ -49,7 +48,7 @@ class TestProjector(KulpritTest):
             # build a bad reference model object
             kpt.ReferenceModel(bad_model)
 
-    def test_incompatible_error(self, bambi_model_idata):
+    def test_different_variate_name(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
 
         # define model data
@@ -60,6 +59,23 @@ class TestProjector(KulpritTest):
 
         # define model
         formula = "y ~ a + b"
+        bad_model = bmb.Model(formula, data, family="gaussian")
+
+        with pytest.raises(UserWarning):
+            # build a bad reference model object
+            kpt.ReferenceModel(bad_model, bambi_model_idata)
+
+    def test_different_variate_dim(self, bambi_model_idata):
+        """Test that an error is raised when model and idata aren't compatible."""
+
+        # define model data
+        z = np.array([1.6907, 1.7242, 1.7552, 1.7842, 1.8113, 1.8369, 1.8610, 1.8839])
+        x = np.array([59, 60, 62, 56, 63, 59, 62, 60])
+        y = np.array([6, 13, 18, 28, 52, 53, 61, 60])
+        data = pd.DataFrame({"z": z, "x": x, "y": y})
+
+        # define model
+        formula = "z ~ x + y"
         bad_model = bmb.Model(formula, data, family="gaussian")
 
         with pytest.raises(UserWarning):
@@ -79,12 +95,9 @@ class TestProjector(KulpritTest):
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"])
 
-        assert sub_model.num_chain == ref_model.idata.posterior.dims["chain"]
-        assert sub_model.num_draw * sub_model.num_chain == 400
-
         response_name = list(ref_model.idata.observed_data.data_vars.keys())[0]
         assert (
-            sub_model.num_obs
+            sub_model.idata.observed_data.dims[f"{response_name}_dim_0"]
             == ref_model.idata.observed_data.dims[f"{response_name}_dim_0"]
         )
         assert sub_model.size == 1
@@ -135,3 +148,31 @@ class TestProjector(KulpritTest):
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model.project(terms=["spam", "ham"])
+
+    def test_build_restricted_model(self, bambi_model, bambi_model_idata):
+        """Test that restricted model building works as expected."""
+
+        # build restricted model which is the same as the reference model
+        solver = kpt.projection.solver.Solver(model=bambi_model, idata=bambi_model_idata)
+        new_model = solver._build_restricted_model(["x", "y"])
+
+        # perform checks
+        assert new_model.formula == bambi_model.formula
+        assert new_model.data.shape == bambi_model.data.shape
+        assert np.all(
+            new_model.data.loc[:, new_model.data.columns != solver.response_name]
+            == bambi_model.data.loc[:, new_model.data.columns != solver.response_name]
+        )
+        assert new_model.family.name == bambi_model.family.name
+        assert new_model.term_names == bambi_model.term_names
+        assert set(new_model.common_terms.keys()) == set(bambi_model.common_terms.keys())
+        assert new_model.response.name == bambi_model.response.name
+        assert new_model.built is True
+
+    def test_infmean(self, bambi_model, bambi_model_idata):
+        # initialise solver object
+        solver = kpt.projection.solver.Solver(model=bambi_model, idata=bambi_model_idata)
+
+        # use `infmean` method with input array only containing infinite values
+        arr = np.array([np.inf])
+        assert np.isnan(solver._infmean(arr))

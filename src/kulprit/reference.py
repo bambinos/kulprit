@@ -3,12 +3,12 @@
 from typing import Union, Optional, List
 from typing_extensions import Literal
 
-from arviz import InferenceData
-from bambi.models import Model
-import pandas as pd
-from kulprit.data.submodel import SubModel
+import arviz
+import bambi
 
-from kulprit.families.family import Family
+import pandas as pd
+
+from kulprit.data.submodel import SubModel
 from kulprit.projection.projector import Projector
 from kulprit.search.searcher import Searcher
 
@@ -20,11 +20,10 @@ class ReferenceModel:
 
     def __init__(
         self,
-        model: Model,
-        idata: Optional[InferenceData] = None,
-        num_iters: Optional[int] = 400,
-        learning_rate: Optional[float] = 0.01,
-        num_thinned_samples: Optional[int] = 400,
+        model: bambi.models.Model,
+        idata: Optional[arviz.InferenceData] = None,
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -38,7 +37,7 @@ class ReferenceModel:
 
         Args:
             model (bambi.models.Model): The referemce GLM model to project
-            idata (arviz.InferenceData): The arViz InferenceData object
+            idata (arviz.InferenceData): The ArviZ InferenceData object
                 of the fitted reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
@@ -64,23 +63,20 @@ class ReferenceModel:
         if not test_model_idata_compatability(model=model, idata=idata):
             raise UserWarning("Incompatible model and inference data.")
 
+        # log reference model and inference data
         self.model = model
         self.idata = idata
 
         # instantiate projector, search, and search path classes
-        self.projector = Projector(
-            model=self.model,
-            idata=self.idata,
-            num_iters=num_iters,
-            learning_rate=learning_rate,
-            num_thinned_samples=num_thinned_samples,
-        )
+        self.projector = Projector(model=self.model, idata=self.idata)
         self.searcher = Searcher(self.projector)
         self.path = None
 
     def project(
         self,
         terms: Union[List[str], int],
+        num_steps: Optional[int] = 5_000,
+        obj_n_mc: Optional[float] = 10,
     ) -> SubModel:
         """Projection the reference model onto a variable subset.
 
@@ -95,13 +91,19 @@ class ReferenceModel:
         """
 
         # project the reference model onto a subset of covariates
-        sub_model = self.projector.project(terms=terms)
+        sub_model = self.projector.project(
+            terms=terms, num_steps=num_steps, obj_n_mc=obj_n_mc
+        )
         return sub_model
 
     def search(
         self,
         max_terms: Optional[int] = None,
         method: Literal["forward", "l1"] = "forward",
+        num_steps_search: Optional[int] = 5_000,
+        obj_n_mc_search: Optional[float] = 10,
+        num_steps_pred: Optional[int] = 100,
+        obj_n_mc_pred: Optional[float] = 1,
     ) -> dict:
         """Model search method through parameter space.
 
@@ -133,7 +135,14 @@ class ReferenceModel:
                 + "reference model."
             )
 
-        self.path = self.searcher.search(max_terms=max_terms, method=method)
+        self.path = self.searcher.search(
+            max_terms=max_terms,
+            method=method,
+            num_steps_search=num_steps_search,
+            obj_n_mc_search=obj_n_mc_search,
+            num_steps_pred=num_steps_pred,
+            obj_n_mc_pred=obj_n_mc_pred,
+        )
         return self.path
 
     def loo_compare(
@@ -178,5 +187,16 @@ def test_model_idata_compatability(model, idata):
         bool: Indicator of whether the two objects are compatible
     """
 
-    family = Family(model=model)
-    return set(idata.posterior.keys()) == set(model.term_names).union({family.disp_name})
+    # test that the variate's name is the same in reference model and idata
+    if not model.response.name == list(idata.observed_data.data_vars.variables)[0]:
+        return False
+
+    # test that the variate has the same dimensions in reference model and idata
+    if not (
+        idata.observed_data[model.response.name].to_numpy().shape
+        == model.data[model.response.name].shape
+    ):
+        return False
+
+    # return default truth
+    return True

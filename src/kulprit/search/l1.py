@@ -1,5 +1,6 @@
 """L1 search path module."""
 
+from typing import Optional
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import lasso_path
@@ -32,7 +33,6 @@ class L1SearchPath(SearchPath):
         # initialise search
         self.k_term_names = {}
         self.k_submodel = {}
-        self.k_dist = {}
 
         self.search_completed = True
 
@@ -40,7 +40,7 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.term_names, submodel.kl_div]
+            k: [submodel.term_names, submodel.elbo]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -95,7 +95,7 @@ class L1SearchPath(SearchPath):
         X = np.column_stack(
             [self.projector.model._design.common[term] for term in self.common_terms]
         )
-        eta = self.projector.family.link.link(
+        eta = self.projector.model.family.link.link(
             np.array(self.projector.model._design.response)
         )
 
@@ -104,7 +104,14 @@ class L1SearchPath(SearchPath):
         cov_order = self.first_non_zero_idx(coef_path)
         return cov_order
 
-    def search(self, max_terms: int) -> None:
+    def search(
+        self,
+        max_terms: int,
+        num_steps_search: Optional[int] = 100,
+        obj_n_mc_search: Optional[float] = 2,
+        num_steps_pred: Optional[int] = 5_000,
+        obj_n_mc_pred: Optional[float] = 50,
+    ) -> dict:
         """Perform L1 search through the parameter space."""
 
         # compute L1 path for each model size
@@ -115,15 +122,15 @@ class L1SearchPath(SearchPath):
             k: v for k, v in sorted(coef_path.items(), key=lambda item: item[1])
         }
         sorted_covs = [self.common_terms[k] for k in cov_lasso]
-        sorted_covs = [["Intercept"] + sorted_covs[:i] for i in range(max_terms)]
 
         # produce submodels for each model size
-        self.k_term_names = {len(terms) - 1: terms for terms in sorted_covs}
+        self.k_term_names = {k: sorted_covs[:k] for k in range(max_terms + 1)}
 
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
-            self.k_submodel[k] = self.projector.project(term_names)
-            self.k_dist[k] = self.k_submodel[k].kl_div
+            self.k_submodel[k] = self.projector.project(
+                terms=term_names, num_steps=num_steps_pred, obj_n_mc=obj_n_mc_pred
+            )
 
         # toggle indicator variable and return search path
         self.search_completed = True
