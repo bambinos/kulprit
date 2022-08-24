@@ -132,7 +132,9 @@ class Solver:
         new_idata = pm.to_inference_data(
             trace=trace, model=new_pymc_model, log_likelihood=True
         )
-        coords_to_drop = [dim for dim in new_idata.posterior.dims if dim.endswith("_dim_0")]
+        coords_to_drop = [
+            dim for dim in new_idata.posterior.dims if dim.endswith("_dim_0")
+        ]
         new_idata.posterior = new_idata.posterior.squeeze(coords_to_drop).reset_coords(
             coords_to_drop, drop=True
         )
