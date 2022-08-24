@@ -18,14 +18,14 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        assert list(ref_model_copy.path.keys()) == [0, 1]
+        assert list(ref_model_copy.path.keys()) == [0, 1, 2]
 
     def test_l1(self, ref_model):
         """Test that L1 search gives expected result."""
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search(method="l1")
-        assert list(ref_model_copy.path.keys()) == [0, 1]
+        assert list(ref_model_copy.path.keys()) == [0, 1, 2]
 
     def test_l1_utils(self, ref_model):
         """Test that L1 utility methods return expected result."""
