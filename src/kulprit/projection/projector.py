@@ -64,7 +64,7 @@ class Projector:
         # project terms by name
         if isinstance(terms, list):
             # test `terms` input
-            if not (set(terms).issubset(set(self.model.common_terms))):
+            if not set(terms).issubset(set(self.model.common_terms)):
                 raise UserWarning(
                     "Please ensure that all terms selected for projection exist in"
                     + " the reference model."
