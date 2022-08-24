@@ -7,7 +7,6 @@ from kulprit import ReferenceModel
 
 import pytest
 import copy
-from kulprit.projection.solver import Solver
 
 from tests import KulpritTest
 
@@ -170,6 +169,8 @@ class TestProjector(KulpritTest):
         assert new_model.built is True
 
     def test_infmean(self, bambi_model, bambi_model_idata):
+        """Ensure that the Solver object's infmean method behaves well."""
+
         # initialise solver object
         solver = kpt.projection.solver.Solver(model=bambi_model, idata=bambi_model_idata)
 
