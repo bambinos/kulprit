@@ -28,7 +28,7 @@ class ForwardSearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.term_names, submodel.kl_div]
+            k: [submodel.term_names, submodel.elbo]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(

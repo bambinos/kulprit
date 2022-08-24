@@ -63,6 +63,12 @@ class Projector:
 
         # project terms by name
         if isinstance(terms, list):
+            # test `terms` input
+            if not (set(terms).issubset(set(self.model.common_terms))):
+                raise UserWarning(
+                    "Please ensure that all terms selected for projection exist in"
+                    + " the reference model."
+                )
             # perform projection
             return self.project_names(
                 term_names=terms, num_steps=num_steps, obj_n_mc=obj_n_mc

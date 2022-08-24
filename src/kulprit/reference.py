@@ -188,13 +188,15 @@ def test_model_idata_compatability(model, idata):
     """
 
     # test that the variate's name is the same in reference model and idata
-    assert model.response.name == list(idata.observed_data.data_vars.variables)[0]
+    if not model.response.name == list(idata.observed_data.data_vars.variables)[0]:
+        return False
 
     # test that the variate has the same dimensions in reference model and idata
-    assert (
+    if not (
         idata.observed_data[model.response.name].to_numpy().shape
         == model.data[model.response.name].shape
-    )
+    ):
+        return False
 
     # return default truth
     return True

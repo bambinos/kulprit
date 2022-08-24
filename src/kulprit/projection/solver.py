@@ -1,15 +1,15 @@
 """Optimisation module."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
 from kulprit.data.submodel import SubModel
-
+from bambi.models import Model
+from arviz import InferenceData
 
 import pymc as pm
 import bambi as bmb
-import arviz as az
 
 import pandas as pd
 
@@ -17,13 +17,13 @@ import pandas as pd
 class Solver:
     """The primary solver class, used to perform the projection."""
 
-    def __init__(self, model, idata):
+    def __init__(self, model: Model, idata: InferenceData) -> None:
         """Initialise the main solver object."""
 
         # log the reference model and inference data objects
         self.ref_model = model
-        self.ref_idata = idata
         self.pymc_model = self.ref_model.backend.model
+        self.ref_idata = idata
 
         # log the reference model's response name and family
         self.response_name = self.ref_model.response.name
@@ -42,7 +42,7 @@ class Solver:
         if "posterior_predictive" not in self.ref_idata.groups():
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
-        # extract in-sample predictions
+        # extract insample predictions
         preds = self.ref_idata.posterior_predictive[self.response_name].mean(
             ["chain", "draw"]
         )
@@ -56,13 +56,13 @@ class Solver:
         """Build the formula for the restricted model."""
 
         formula = (
-            f"{self.response_name} ~ 1 + " + " + ".join(term_names)
+            f"{self.response_name} ~ " + " + ".join(term_names)
             if len(term_names) > 0
             else f"{self.response_name} ~ 1"
         )
         return formula
 
-    def _build_restricted_model(self, term_names: list) -> bmb.Model:
+    def _build_restricted_model(self, term_names: list) -> Model:
         """Build the restricted model in Bambi."""
 
         new_formula = self._build_restricted_formula(term_names=term_names)
@@ -70,7 +70,7 @@ class Solver:
         new_model.build()
         return new_model
 
-    def _infmean(self, input_array):
+    def _infmean(self, input_array: np.ndarray) -> float:
         """Return the mean of the finite values of the array.
 
         This method is taken from pymc.variational.Inference.
@@ -87,7 +87,7 @@ class Solver:
         term_names: list,
         num_steps: Optional[int] = 5_000,
         obj_n_mc: Optional[float] = 10,
-    ) -> Tuple[bmb.Model, az.InferenceData]:
+    ) -> SubModel:
         """The primary projection method in the procedure.
 
         The projection is performed with a mean-field approximation to variational
@@ -107,10 +107,10 @@ class Solver:
 
         # build restricted model
         new_model = self._build_restricted_model(term_names=term_names)
-        underlying_model = new_model.backend.model
+        new_pymc_model = new_model.backend.model
 
         # perform mean-field MLE
-        with underlying_model:
+        with new_pymc_model:
             approx = pm.MeanField()
             inference = pm.KLqp(approx, beta=0.0)
             mean_field = inference.fit(n=num_steps, obj_n_mc=obj_n_mc, progressbar=False)
@@ -123,14 +123,14 @@ class Solver:
         trace = mean_field.sample(num_draws, return_inferencedata=False)
 
         # first obtain the aesara observed RVs
-        new_obs_rvs = underlying_model.named_vars[self.response_name]
+        new_obs_rvs = new_pymc_model.named_vars[self.response_name]
         old_obs_rvs = self.pymc_model.named_vars[self.response_name]
         # and then we replace the observations in the new model for those in the reference model
-        underlying_model.rvs_to_values[new_obs_rvs] = self.pymc_model.rvs_to_values[
+        new_pymc_model.rvs_to_values[new_obs_rvs] = self.pymc_model.rvs_to_values[
             old_obs_rvs
         ]
         new_idata = pm.to_inference_data(
-            trace=trace, model=underlying_model, log_likelihood=True
+            trace=trace, model=new_pymc_model, log_likelihood=True
         )
 
         # compute the average elbo
