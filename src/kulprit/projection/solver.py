@@ -78,22 +78,28 @@ class Solver:
         )
         return init
 
-    def _build_new_term_names(self, term_names: List[str]) -> List[str]:
+    def _build_new_term_names(
+        self, new_model: bmb.Model, term_names: List[str]
+    ) -> List[str]:
         """Extend the model term names to include dispersion terms."""
 
-        if self.ref_model.intercept_term:
+        # add intercept term if present
+        if new_model.intercept_term:
             term_names += ["Intercept"]
 
+        # add the auxiliary parameters
         if self.priors:
-            key, _ = next((str(k), str(v)) for k, v in self.priors.items())
-            disp_name = self.response_name + f"_{key}"
-            term_names += [disp_name]
+            aux_params = [f"{self.response_name}_{str(k)}" for k in self.priors.keys()]
+            term_names += aux_params
         return term_names
 
     def _build_bounds(self, init: List[float]) -> list:
-        if "sigma" in self.priors:
+        if self.ref_family in ["gaussian", "beta"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
+        elif self.ref_family == "t":
+            # account for the dispersion parameter
+            bounds = [(None, None)] * (init.size - 2) + [(0, None)] * 2
         else:
             return NotImplementedError
 
@@ -158,9 +164,17 @@ class Solver:
     ) -> np.ndarray:
         """Switch method to compute log-likelihood based on family."""
 
+        # Gaussian observation likelihood
         if self.ref_family == "gaussian":
             mu = design_matrix @ params[:-1]
             return stats.norm.logpdf(obs, mu, params[-1])
+
+        # Student-t observation likelihood
+        elif self.ref_family == "t":
+            mu = design_matrix @ params[:-2]
+            return stats.t.logpdf(obs, loc=mu, df=params[-1], scale=params[-2])
+
+        # unimplemented family error
         else:
             raise NotImplementedError
 
@@ -176,8 +190,7 @@ class Solver:
         @yannmcl/H1CZPjE1i).
 
         Args:
-            params (list): The values of the optimisation parameters, the parameter
-                means.
+            params (list): The optimisation parameters mean values
             obs (list): One sample from the posterior predictive distribution `p`
 
         Returns:
@@ -189,13 +202,20 @@ class Solver:
         logpdf = self._log_pdf(params, obs, design_matrix)
         return -np.sum(logpdf)
 
-    def solve(self, term_names: list) -> SubModel:
+    def solve(self, term_names: List[str]) -> SubModel:
         """The primary projection method in the procedure.
 
         The projection is performed with a mean-field approximation rather than
         concatenating posterior draw-wise optimisation solutions as is suggested
         by Piironen (2018). For more information, kindly read [this tutorial](h
         ttps://www.hackmd.io/@yannmcl/H1CZPjE1i).
+
+        Args:
+            term_names (List[str]): The names of the terms to project onto in
+                the submodel
+
+        Returns:
+            SubModel: The projected submodel object
         """
 
         # if projecting onto the reference model, simply return it
@@ -215,10 +235,13 @@ class Solver:
         design_matrix = new_model._design.common.design_matrix
 
         # build new term_names (add dispersion parameter if included)
-        term_names = self._build_new_term_names(term_names=term_names)
+        term_names = self._build_new_term_names(
+            new_model=new_model, term_names=term_names
+        )
 
         # initialise the optimisation
         init = self._init_optimisation(term_names=term_names)
+        print(init, term_names)
 
         # build the optimisation parameter bounds
         bounds = self._build_bounds(init)
@@ -286,7 +309,7 @@ class Solver:
             model=new_model,
             idata=new_idata,
             elbo=loss,
-            size=len([term for term in term_names if term != "Intercept"]),
+            size=len(new_model.common_terms),
             term_names=term_names,
         )
         return sub_model
