@@ -22,8 +22,6 @@ class ReferenceModel:
         self,
         model: bambi.models.Model,
         idata: Optional[arviz.InferenceData] = None,
-        num_steps: Optional[int] = 5_000,
-        obj_n_mc: Optional[float] = 10,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -75,8 +73,6 @@ class ReferenceModel:
     def project(
         self,
         terms: Union[List[str], int],
-        num_steps: Optional[int] = 5_000,
-        obj_n_mc: Optional[float] = 10,
     ) -> SubModel:
         """Projection the reference model onto a variable subset.
 
@@ -91,9 +87,7 @@ class ReferenceModel:
         """
 
         # project the reference model onto a subset of covariates
-        sub_model = self.projector.project(
-            terms=terms, num_steps=num_steps, obj_n_mc=obj_n_mc
-        )
+        sub_model = self.projector.project(terms=terms)
         return sub_model
 
     def search(

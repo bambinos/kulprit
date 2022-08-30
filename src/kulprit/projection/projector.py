@@ -46,8 +46,6 @@ class Projector:
     def project(
         self,
         terms: Union[List[str], int],
-        num_steps: Optional[int] = 5_000,
-        obj_n_mc: Optional[float] = 10,
     ) -> SubModel:
         """Wrapper function for projection method.
 
@@ -70,9 +68,7 @@ class Projector:
                     + " the reference model."
                 )
             # perform projection
-            return self.project_names(
-                term_names=terms, num_steps=num_steps, obj_n_mc=obj_n_mc
-            )
+            return self.project_names(term_names=terms)
 
         # project a number of terms
         else:
@@ -86,12 +82,7 @@ class Projector:
             # project onto the search path submodel with `terms` number of terms
             return self.path[terms]
 
-    def project_names(
-        self,
-        term_names: List[str],
-        num_steps: Optional[int] = 5_000,
-        obj_n_mc: Optional[float] = 10,
-    ) -> SubModel:
+    def project_names(self, term_names: List[str]) -> SubModel:
         """Primary projection method for GLM reference model.
 
         The projection is defined as the values of the submodel parameters
@@ -108,6 +99,4 @@ class Projector:
         """
 
         # solve the parameter projections
-        return self.solver.solve(
-            term_names=term_names, num_steps=num_steps, obj_n_mc=obj_n_mc
-        )
+        return self.solver.solve(term_names=term_names)

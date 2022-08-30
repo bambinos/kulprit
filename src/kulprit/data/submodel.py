@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-
 import arviz
 import bambi
 
