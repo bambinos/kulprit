@@ -40,13 +40,7 @@ class Searcher:
         return self.path.__repr__()
 
     def search(
-        self,
-        max_terms: int,
-        method: Literal["forward", "l1"] = "forward",
-        num_steps_search: Optional[int] = 5_000,
-        obj_n_mc_search: Optional[float] = 10,
-        num_steps_pred: Optional[int] = 100,
-        obj_n_mc_pred: Optional[float] = 1,
+        self, max_terms: int, method: Literal["forward", "l1"] = "forward"
     ) -> dict:
         """Primary search method of the procedure.
 
@@ -70,13 +64,7 @@ class Searcher:
         self.path = self.method_dict[method](self.projector)
 
         # perform the search according to the chosen heuristic
-        k_submodels = self.path.search(
-            max_terms=max_terms,
-            num_steps_search=num_steps_search,
-            obj_n_mc_search=obj_n_mc_search,
-            num_steps_pred=num_steps_pred,
-            obj_n_mc_pred=obj_n_mc_pred,
-        )
+        k_submodels = self.path.search(max_terms=max_terms)
 
         # toggle indicator variable and return search path
         self.search_completed = True

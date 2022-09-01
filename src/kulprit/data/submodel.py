@@ -15,8 +15,8 @@ class SubModel:
             we can extract a built pymc model.
         idata (InferenceData): The inference data object of the submodel
             containing the projected posterior draws and log-likelihood.
-        elbo (float): The final ELBO of the submodel following projection
-            predictive inference
+        loss (float): The final loss (negative log-likelihood) of the submodel
+            following projection predictive inference
         size (int): The number of common terms in the model, not including the
             intercept
         term_names (list): The names of the terms in the model, including the
@@ -25,6 +25,6 @@ class SubModel:
 
     model: bambi.models.Model
     idata: arviz.InferenceData
-    elbo: float
+    loss: float
     size: int
     term_names: list

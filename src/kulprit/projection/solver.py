@@ -100,11 +100,24 @@ class Solver:
         return init
 
     def _build_bounds(self, init: List[float]) -> list:
+        """Build bounds for the parameters in the optimimsation.
+
+        This method is used to ensure that dispersion or other auxiliary
+        parameters present in certain families remain within their valid regions.
+
+        Args:
+            init (List[float]): The list of initial parameter values
+
+        Returns
+            List[Tuple(float)]: The upper and lower bounds for each initialised
+                parameter in the optimisation
+        """
+
+        # build bounds based on family
         if self.ref_family in ["gaussian", "beta"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
         elif self.ref_family == "t":
-            # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 2) + [(0, None)] * 2
         else:
             return NotImplementedError(

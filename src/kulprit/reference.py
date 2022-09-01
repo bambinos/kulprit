@@ -94,10 +94,6 @@ class ReferenceModel:
         self,
         max_terms: Optional[int] = None,
         method: Literal["forward", "l1"] = "forward",
-        num_steps_search: Optional[int] = 5_000,
-        obj_n_mc_search: Optional[float] = 10,
-        num_steps_pred: Optional[int] = 100,
-        obj_n_mc_pred: Optional[float] = 1,
     ) -> dict:
         """Model search method through parameter space.
 
@@ -132,10 +128,6 @@ class ReferenceModel:
         self.path = self.searcher.search(
             max_terms=max_terms,
             method=method,
-            num_steps_search=num_steps_search,
-            obj_n_mc_search=obj_n_mc_search,
-            num_steps_pred=num_steps_pred,
-            obj_n_mc_pred=obj_n_mc_pred,
         )
         return self.path
 

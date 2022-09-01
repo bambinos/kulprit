@@ -109,18 +109,20 @@ class Projector:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
+        term_names_ = term_names.copy()
+
         # if projecting onto the reference model, simply return it
-        if set(term_names) == set(self.model.common_terms.keys()):
+        if set(term_names_) == set(self.model.common_terms.keys()):
             return SubModel(
                 model=self.model,
                 idata=self.idata,
                 loss=0,
                 size=len(self.model.common_terms),
-                term_names=term_names,
+                term_names=term_names_,
             )
 
         # build restricted bambi model
-        new_model = self._build_restricted_model(term_names=term_names)
+        new_model = self._build_restricted_model(term_names=term_names_)
 
         # extract the design matrix from the model
         if new_model._design.common:
@@ -134,10 +136,12 @@ class Projector:
                     X = np.delete(X, term_slice, axis=1)
 
         # build new term_names (add dispersion parameter if included)
-        term_names = self._extend_term_names(new_model=new_model, term_names=term_names)
+        term_names_ = self._extend_term_names(
+            new_model=new_model, term_names=term_names_
+        )
 
         # compute projected posterior
-        projected_posterior, loss = self.solver.solve(term_names=term_names, X=X)
+        projected_posterior, loss = self.solver.solve(term_names=term_names_, X=X)
 
         # add observed data component of projected idata
         observed_data = {
@@ -165,7 +169,7 @@ class Projector:
         sub_model = SubModel(
             model=new_model,
             idata=new_idata,
-            elbo=loss,
+            loss=loss,
             size=len(new_model.common_terms),
             term_names=term_names,
         )
