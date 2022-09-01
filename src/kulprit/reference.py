@@ -1,10 +1,12 @@
 """Core reference model class."""
 
-from typing import Union, Optional, List
+from typing import Tuple, Union, Optional, List
 from typing_extensions import Literal
 
-import arviz
-import bambi
+import matplotlib
+
+import arviz as az
+import bambi as bmb
 
 import pandas as pd
 
@@ -20,8 +22,8 @@ class ReferenceModel:
 
     def __init__(
         self,
-        model: bambi.models.Model,
-        idata: Optional[arviz.InferenceData] = None,
+        model: bmb.models.Model,
+        idata: Optional[az.InferenceData] = None,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -34,8 +36,8 @@ class ReferenceModel:
         choices from previous papers on the topic.
 
         Args:
-            model (bambi.models.Model): The referemce GLM model to project
-            idata (arviz.InferenceData): The ArviZ InferenceData object
+            model (bmb.models.Model): The referemce GLM model to project
+            idata (az.InferenceData): The ArviZ InferenceData object
                 of the fitted reference model
             num_iters (int): Number of iterations over which to run backprop
             learning_rate (float): The backprop optimiser's learning rate
@@ -142,7 +144,7 @@ class ReferenceModel:
         scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
         var_name: Optional[str] = None,
         plot_kwargs: Optional[dict] = None,
-    ) -> pd.DataFrame:
+    ) -> Tuple[pd.DataFrame, matplotlib.axes.Axes]:
 
         # perform pair-wise predictive performance comparison with LOO
         comparison, axes = self.searcher.loo_compare(
@@ -158,6 +160,26 @@ class ReferenceModel:
         )
         return comparison, axes
 
+    def plot_densities(
+        self,
+        var_names: Optional[List[str]] = None,
+        outline: Optional[bool] = False,
+        shade: Optional[float] = 0.4,
+    ) -> matplotlib.axes.Axes:
+        # set default variable names to the reference model terms
+        if not var_names:
+            var_names = self.model.term_names
+
+        ax = az.plot_density(
+            data=[submodel.idata for submodel in self.path.values()],
+            group="posterior",
+            var_names=var_names,
+            outline=outline,
+            shade=shade,
+            data_labels=[submodel.model.formula for submodel in self.path.values()],
+        )
+        return ax
+
 
 def test_model_idata_compatability(model, idata):
     """Test that the Bambi model and idata are compatible with vanilla procedure.
@@ -166,8 +188,8 @@ def test_model_idata_compatability(model, idata):
     covariates, testing instead only that the observation data are the same.
 
     Args:
-        model (bambi.models.Model): The reference Bambi model object
-        idata (arviz.InferenceData): The reference model fitted inference data obejct
+        model (bmb.models.Model): The reference Bambi model object
+        idata (az.InferenceData): The reference model fitted inference data obejct
 
     Returns:
         bool: Indicator of whether the two objects are compatible

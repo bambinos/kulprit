@@ -104,7 +104,6 @@ class ForwardSearchPath(SearchPath):
 
             # get list of candidate submodels, project onto them, and compute
             # their distances
-            print(self.k_term_names)
             k_candidates = self.get_candidates(k=k)
             k_projections = [
                 self.projector.project(terms=candidate) for candidate in k_candidates
