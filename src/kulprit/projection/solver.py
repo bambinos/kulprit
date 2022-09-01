@@ -113,8 +113,7 @@ class Solver:
 
         return bounds
 
-    @nb.njit
-    def neg_llk(
+    def objective(
         self,
         params: np.ndarray,
         obs: np.ndarray,
@@ -141,12 +140,12 @@ class Solver:
         # Gaussian observation likelihood
         if self.ref_family == "gaussian":
             mu = self.linear_predict(beta_x=params[:-1], X=X)
-            llk = self.neg_log_likelihood(points=obs, mu=mu, sigma=params[-1])
+            neg_llk = self.neg_log_likelihood(points=obs, mu=mu, sigma=params[-1])
         else:
             return NotImplementedError(
                 f"The {self.ref_family} family has not yet been implemented."
             )
-        return llk
+        return neg_llk
 
     def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:
         """The primary projection method in the procedure.
@@ -176,7 +175,7 @@ class Solver:
         objectives = []
         for obs in self.pps:
             opt = minimize(
-                self.neg_llk,
+                self.objective,
                 args=(obs, X),
                 x0=init,  # use reference model posterior as initial guess
                 bounds=bounds,  # apply bounds
