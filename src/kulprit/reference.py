@@ -96,7 +96,8 @@ class ReferenceModel:
         self,
         max_terms: Optional[int] = None,
         method: Literal["forward", "l1"] = "forward",
-    ) -> dict:
+        return_path: Optional[bool] = False,
+    ) -> Optional[dict]:
         """Model search method through parameter space.
 
         If ``max_terms`` is not provided, then the search path runs from the
@@ -109,6 +110,8 @@ class ReferenceModel:
             method (str): The search method to employ, either "forward" to
                 employ a forward search heuristic through the space, or "l1" to
                 use the L1-regularised search path
+            return_path (bool): Whether or not to return the search path as a
+                dictionary object to the user
 
         Returns:
             dict: The model selection procedure search path, containing the
@@ -127,11 +130,15 @@ class ReferenceModel:
                 + "reference model."
             )
 
+        # perform search through the parameter space
         self.path = self.searcher.search(
             max_terms=max_terms,
             method=method,
         )
-        return self.path
+
+        # return the path dictionary if specified
+        if return_path:
+            return self.path
 
     def loo_compare(
         self,
@@ -166,11 +173,13 @@ class ReferenceModel:
         outline: Optional[bool] = False,
         shade: Optional[float] = 0.4,
     ) -> matplotlib.axes.Axes:
+        """Compare the projected posterior densities of the submodels"""
+
         # set default variable names to the reference model terms
         if not var_names:
             var_names = self.model.term_names
 
-        ax = az.plot_density(
+        axes = az.plot_density(
             data=[submodel.idata for submodel in self.path.values()],
             group="posterior",
             var_names=var_names,
@@ -178,7 +187,7 @@ class ReferenceModel:
             shade=shade,
             data_labels=[submodel.model.formula for submodel in self.path.values()],
         )
-        return ax
+        return axes
 
 
 def test_model_idata_compatability(model, idata):

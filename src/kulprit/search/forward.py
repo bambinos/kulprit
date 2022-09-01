@@ -110,7 +110,7 @@ class ForwardSearchPath(SearchPath):
             ]
 
             # identify the best candidate by loss (equivalent to KL min)
-            best_submodel = max(k_projections, key=lambda projection: projection.loss)
+            best_submodel = min(k_projections, key=lambda projection: projection.loss)
             best_loss = best_submodel.loss
 
             # retrieve the best candidate's term names and indices

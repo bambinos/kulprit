@@ -92,10 +92,11 @@ class Solver:
 
     def _init_optimisation(self, term_names: List[str]) -> List[float]:
         """Initialise the optimisation with the reference posterior means."""
-        init = (
-            self.ref_idata.posterior.mean(["chain", "draw"])[term_names]
-            .to_array()
-            .values
+        init = np.hstack(
+            [
+                self.ref_idata.posterior.mean(["chain", "draw"])[term].values
+                for term in term_names
+            ]
         )
         return init
 

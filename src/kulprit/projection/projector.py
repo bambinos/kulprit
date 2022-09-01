@@ -220,7 +220,7 @@ class Projector:
 
         # add intercept term if present
         if new_model.intercept_term:
-            term_names += ["Intercept"]
+            term_names.insert(0, "Intercept")
 
         # add the auxiliary parameters
         if self.priors:
