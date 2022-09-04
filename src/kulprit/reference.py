@@ -137,7 +137,7 @@ class ReferenceModel:
         )
 
         # return the path dictionary if specified
-        if return_path:
+        if return_path:  # pragma: no cover
             return self.path
 
     def loo_compare(

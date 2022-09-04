@@ -14,7 +14,7 @@ from tests import KulpritTest
 class TestProjector(KulpritTest):
     """Test projection methods in the procedure."""
 
-    NUM_DRAWS, NUM_CHAINS = 50, 2
+    NUM_DRAWS, NUM_CHAINS = 500, 4
 
     def test_idata_is_none(self, bambi_model):
         """Test that some inference data is automatically produced when None."""
@@ -46,6 +46,19 @@ class TestProjector(KulpritTest):
         with pytest.raises(NotImplementedError):
             # build a bad reference model object
             kpt.ReferenceModel(bad_model)
+
+    def test_unimplemented_family(self):
+        """Test that an error is raised when an unimplemented family is used."""
+
+        # define model data
+        data = bmb.load_data("my_data")
+        # define model
+        bad_model = bmb.Model("z ~ x + y", data, family="t")
+        bad_idata = bad_model.fit(draws=self.NUM_DRAWS, chains=self.NUM_CHAINS)
+
+        with pytest.raises(NotImplementedError):
+            # build a bad reference model object
+            kpt.ReferenceModel(bad_model, bad_idata)
 
     def test_different_variate_name(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
@@ -152,7 +165,9 @@ class TestProjector(KulpritTest):
         """Test that restricted model building works as expected."""
 
         # build restricted model which is the same as the reference model
-        solver = kpt.projection.solver.Solver(model=bambi_model, idata=bambi_model_idata)
+        solver = kpt.projection.projector.Projector(
+            model=bambi_model, idata=bambi_model_idata
+        )
         new_model = solver._build_restricted_model(["x", "y"])
 
         # perform checks
@@ -166,14 +181,3 @@ class TestProjector(KulpritTest):
         assert new_model.term_names == bambi_model.term_names
         assert set(new_model.common_terms.keys()) == set(bambi_model.common_terms.keys())
         assert new_model.response.name == bambi_model.response.name
-        assert new_model.built is True
-
-    def test_infmean(self, bambi_model, bambi_model_idata):
-        """Ensure that the Solver object's infmean method behaves well."""
-
-        # initialise solver object
-        solver = kpt.projection.solver.Solver(model=bambi_model, idata=bambi_model_idata)
-
-        # use `infmean` method with input array only containing infinite values
-        arr = np.array([np.inf])
-        assert np.isnan(solver._infmean(arr))

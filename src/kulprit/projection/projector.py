@@ -12,6 +12,7 @@ from scipy import stats
 import numpy as np
 
 from kulprit.data.submodel import SubModel
+from kulprit.projection.likelihood import LIKELIHOODS
 from kulprit.projection.solver import Solver
 
 
@@ -109,6 +110,7 @@ class Projector:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
+        # copy term names to avoid mutating the input
         term_names_ = term_names.copy()
 
         # if projecting onto the reference model, simply return it
@@ -130,7 +132,7 @@ class Projector:
 
             # Add offset columns to their own design matrix
             # Remove them from the common design matrix.
-            if hasattr(new_model, "offset_terms"):
+            if hasattr(new_model, "offset_terms"):  # pragma: no cover
                 for term in new_model.offset_terms:
                     term_slice = new_model._design.common.slices[term]
                     X = np.delete(X, term_slice, axis=1)

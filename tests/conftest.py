@@ -6,7 +6,7 @@ import bambi as bmb
 import pytest
 
 # define model fitting options
-NUM_DRAWS, NUM_CHAINS = 50, 2
+NUM_DRAWS, NUM_CHAINS = 500, 4
 
 
 @pytest.fixture(scope="session")

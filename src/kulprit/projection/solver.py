@@ -8,10 +8,7 @@ from kulprit.projection.likelihood import LIKELIHOODS
 import arviz as az
 import bambi as bmb
 
-import xarray as xr
-
 import numpy as np
-import numba as nb
 
 from scipy.optimize import minimize
 
@@ -38,8 +35,11 @@ class Solver:
         self.num_chain = self.ref_idata.posterior.dims["chain"]
         self.num_samples = self.num_chain * 100
 
-        # define the negative log likelihood function of the submodel
-        self.neg_log_likelihood = LIKELIHOODS[self.ref_family]
+        try:
+            # define the negative log likelihood function of the submodel
+            self.neg_log_likelihood = LIKELIHOODS[self.ref_family]
+        except KeyError:
+            raise NotImplementedError from None
 
     @property
     def pps(self):
@@ -77,7 +77,7 @@ class Solver:
         # Contribution due to common terms
         if X is not None:
 
-            if len(beta_x.shape) > 1:
+            if len(beta_x.shape) > 1:  # pragma: no cover
                 raise NotImplementedError(
                     "Currently this method only works for single samples."
                 )
@@ -115,16 +115,9 @@ class Solver:
         """
 
         # build bounds based on family
-        if self.ref_family in ["gaussian", "beta"]:
+        if self.ref_family in ["gaussian"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
-        elif self.ref_family == "t":
-            bounds = [(None, None)] * (init.size - 2) + [(0, None)] * 2
-        else:
-            return NotImplementedError(
-                f"The {self.ref_family} family has not yet been implemented."
-            )
-
         return bounds
 
     def objective(
@@ -155,10 +148,8 @@ class Solver:
         if self.ref_family == "gaussian":
             mu = self.linear_predict(beta_x=params[:-1], X=X)
             neg_llk = self.neg_log_likelihood(points=obs, mu=mu, sigma=params[-1])
-        else:
-            return NotImplementedError(
-                f"The {self.ref_family} family has not yet been implemented."
-            )
+
+        # TODO: implement more observation model likelihoods
         return neg_llk
 
     def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:

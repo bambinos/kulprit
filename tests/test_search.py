@@ -102,9 +102,14 @@ class TestSearch:
         assert type(ref_model_copy.searcher.__repr__()) == str
         assert type(path.__repr__()) == str
 
-    def test_plotting(self, ref_model):
+    def test_plot_comparison(self, ref_model):
         """Test the LOO compare plotting method."""
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
         ref_model_copy.loo_compare(plot=True, plot_kwargs={"insample_dev": False})
+
+    def test_plot_densities(self, ref_model):
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.search()
+        ref_model_copy.plot_densities()
