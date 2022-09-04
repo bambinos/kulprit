@@ -6,10 +6,8 @@ import pytest
 
 from kulprit.projection.likelihood import gaussian_neg_llk
 
-from tests import KulpritTest
 
-
-class TestLikelihood(KulpritTest):
+class TestLikelihood:
     """Test the likelihood mehtods implemented."""
 
     def test_gaussian_likelihood(self):
