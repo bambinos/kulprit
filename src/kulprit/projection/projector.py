@@ -179,9 +179,8 @@ class Projector:
 
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
-        obs = model.data[model.response.name].to_numpy()
-        response_dim = model.response.name + "_obs"
-        obs_array = xr.DataArray(obs, dims=response_dim)
+        response_dims = model.response.name + "_obs"
+        obs_array = xr.DataArray(model.data[model.response.name], dims=response_dims)
 
         # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
