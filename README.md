@@ -5,17 +5,14 @@ _(Pronounced: kuːl.prɪt)_
 [![PyPI](https://img.shields.io/pypi/v/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
 [![PyPI - License](https://img.shields.io/pypi/l/kulprit?style=flat-square)](https://pypi.python.org/pypi/kulprit/)
-[![Backend - PyTorch](https://img.shields.io/badge/backend-PyTorch-red?style=flat-square)](https://pytorch.org/)
 
 [Getting Started](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/docs/notebooks/quick-start.ipynb) | [Documentation](https://yannmclatchie.github.io/kulprit) | [Contributing](https://github.com/yannmclatchie/kulprit/blob/main/CONTRIBUTING.md)
 
 ---
 
-Kullback-Leibler projections for Bayesian model selection in Generalised Linear Models.
+Kullback-Leibler projections for Bayesian model selection in Python.
 
 ## Example workflow
-
-🚧 **WIP** 🚧
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yannmclatchie/kulprit/blob/main/docs/notebooks/quick-start.ipynb)
 
@@ -29,28 +26,32 @@ import kulprit as kpt
 import arviz as az
 import matplotlib.pyplot as plt
 
-# define model data
-data = data = bmb.load_data("my_data")
+# define the data
+x = np.random.normal(0, 0.25, 121)
+y = np.random.normal(0, 1, 121)
+z = np.random.normal(2 * x + 3, 0.1)
+data = pd.DataFrame({"x": x, "y": y, "z": z})
 
-# define and fit model with MCMC
-model = bmb.Model("y ~ x + z", data, family="gaussian")
-num_draws, num_chains = 2_000, 2
-idata = model.fit(draws=num_draws, chains=num_chains)
+# fit the reference model
+model = bmb.Model("z ~ x + y", data, family="gaussian")
+idata = model.fit()
 
 # build reference model object and perform the search procedure
 ref_model = kpt.ReferenceModel(model, idata)
 ref_model.search()
 
-# compare submodels found in the search
-# setting option `plot=True` will return a comparison plot axes object
-cmp, _ = ref_model.loo_compare()
+# compare the projected posterior densities of the submodels
+ax = ref_model.plot_densities();
+
+# compare submodels found in the search by LOO-CV ELPD
+cmp, ax = ref_model.loo_compare(plot=True);
 cmp
 
 # project the reference model onto a chosen submodel size
 submodel = ref_model.project(1)
 
 # visualise projected parameters
-az.plot_posterior(submodel.idata)
+ax = az.plot_posterior(submodel.idata, var_names=submodel.model.term_names);
 ```
 
 ## Installation

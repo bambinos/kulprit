@@ -17,13 +17,21 @@ class L1SearchPath(SearchPath):
         # log the projector object
         self.projector = projector
 
-        # log the model data object of the reference model
-        self.data = projector.data
+        # test whether the model includes categorical terms, and if so raise error
+        if (
+            sum(
+                [
+                    self.projector.model.terms[term].categorical
+                    for term in self.projector.model.terms.keys()
+                ]
+            )
+            > 0
+        ):
+            raise NotImplementedError("Group-lasso not yet implemented")
 
         # initialise search
         self.k_term_names = {}
         self.k_submodel = {}
-        self.k_dist = {}
 
         self.search_completed = True
 
@@ -31,7 +39,7 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.structure.term_names, submodel.dist_to_ref_model]
+            k: [submodel.term_names, submodel.loss]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -82,22 +90,21 @@ class L1SearchPath(SearchPath):
         """
 
         # extract reference model data and latent predictor
+        self.common_terms = list(self.projector.model.common_terms)
         X = np.column_stack(
-            [
-                self.data.structure.design.common[term]
-                for term in self.data.structure.common_terms
-            ]
+            [self.projector.model._design.common[term] for term in self.common_terms]
         )
-        eta = self.data.structure.link.link(self.data.structure.y.numpy())
+        eta = self.projector.model.family.link.link(
+            np.array(self.projector.model._design.response)
+        )
 
         # compute L1 path in the latent space
         _, coef_path, _ = lasso_path(X, eta)
         cov_order = self.first_non_zero_idx(coef_path)
-
         return cov_order
 
-    def search(self, max_terms: int) -> None:
-        """Perform L1 search through the parameter."""
+    def search(self, max_terms: int) -> dict:
+        """Perform L1 search through the parameter space."""
 
         # compute L1 path for each model size
         coef_path = self.compute_path()
@@ -106,16 +113,14 @@ class L1SearchPath(SearchPath):
         cov_lasso = {
             k: v for k, v in sorted(coef_path.items(), key=lambda item: item[1])
         }
-        sorted_covs = [self.data.structure.common_terms[k] for k in cov_lasso]
-        sorted_covs = [["Intercept"] + sorted_covs[:i] for i in range(max_terms + 1)]
+        sorted_covs = [self.common_terms[k] for k in cov_lasso]
 
         # produce submodels for each model size
-        self.k_term_names = {len(terms) - 1: terms for terms in sorted_covs}
+        self.k_term_names = {k: sorted_covs[:k] for k in range(max_terms + 1)}
 
         # project the reference model on each of the submodels
         for k, term_names in self.k_term_names.items():
-            self.k_submodel[k] = self.projector.project(term_names)
-            self.k_dist[k] = self.k_submodel[k].dist_to_ref_model
+            self.k_submodel[k] = self.projector.project(terms=term_names)
 
         # toggle indicator variable and return search path
         self.search_completed = True

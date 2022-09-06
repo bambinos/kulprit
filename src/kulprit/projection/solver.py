@@ -1,120 +1,202 @@
-"""Optimisation solver module."""
+"""Optimisation module."""
 
-from typing import Optional
+from typing import List, Optional
 
-import torch
+from kulprit.data.submodel import SubModel
+from kulprit.projection.likelihood import LIKELIHOODS
 
-from kulprit.data.data import ModelData
-from kulprit.families.family import Family
-from kulprit.projection.architecture import Architecture
-from kulprit.projection.losses.kld import KullbackLeiblerLoss
+import arviz as az
+import bambi as bmb
+
+import numpy as np
+
+from scipy.optimize import minimize
 
 
 class Solver:
+    """The primary solver class, used to perform the projection."""
+
     def __init__(
         self,
-        data: ModelData,
-        family: Family,
-        num_iters: Optional[int] = 400,
-        learning_rate: Optional[float] = 0.01,
-    ):
-        """Initialise solver object.
+        model: bmb.Model,
+        idata: az.InferenceData,
+    ) -> None:
+        """Initialise the main solver object."""
+
+        # log the reference model and inference data objects
+        self.ref_model = model
+        self.ref_idata = idata
+
+        # log the reference model's response name and family
+        self.response_name = self.ref_model.response.name
+        self.ref_family = self.ref_model.family.name
+
+        # define sampling options
+        self.num_chain = self.ref_idata.posterior.dims["chain"]
+        self.num_samples = self.num_chain * 100
+
+        try:
+            # define the negative log likelihood function of the submodel
+            self.neg_log_likelihood = LIKELIHOODS[self.ref_family]
+        except KeyError:
+            raise NotImplementedError from None
+
+    @property
+    def pps(self):
+        # make in-sample predictions with the reference model if not available
+        if "posterior_predictive" not in self.ref_idata.groups():
+            self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
+
+        pps = az.extract_dataset(
+            self.ref_idata,
+            group="posterior_predictive",
+            var_names=[self.response_name],
+            num_samples=self.num_samples,
+        )[self.response_name].values.T
+        return pps
+
+    def linear_predict(
+        self,
+        beta_x: np.ndarray,
+        X: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """Predict the latent predictor of the submodel.
 
         Args:
-            data (ModelData): The data object containing the model data of
-                the reference model
-            family (Family): The family object of the reference model
-            num_iters (int, optional): The number of iterations to run the
-                optimisation for, defaults to 200
-            learning_rate (float, optional): The learning rate for the optimisation
-                algorithm, defaults to 0.01
+            beta_x (np.ndarray): The model's projected posterior
+            X (np.ndarray): The model's common design matrix
+            x_offset (np.ndarray): Offset terms in the model is included
+
+        Return
+            np.ndarray: Point estimate of the latent predictor using the single draw
+                from the posterior and the model's design matrix
         """
 
-        # log reference model data and family
-        self.data = data
-        self.family = family
+        linear_predictor = np.zeros(shape=(X.shape[0],))
 
-        # log gradient descent parameters
-        self.num_iters = num_iters
-        self.learning_rate = learning_rate
+        # Contribution due to common terms
+        if X is not None:
 
-    def solve(self, submodel_structure: torch.tensor) -> tuple:
-        """Perform projection by gradient descent.
+            if len(beta_x.shape) > 1:  # pragma: no cover
+                raise NotImplementedError(
+                    "Currently this method only works for single samples."
+                )
+
+            # 'contribution' is of shape:
+            # * (obs_n, ) for univariate
+            contribution = np.dot(X, beta_x.T).T
+            linear_predictor += contribution
+
+        # return the latent predictor
+        return linear_predictor
+
+    def _init_optimisation(self, term_names: List[str]) -> List[float]:
+        """Initialise the optimisation with the reference posterior means."""
+        init = np.hstack(
+            [
+                self.ref_idata.posterior.mean(["chain", "draw"])[term].values
+                for term in term_names
+            ]
+        )
+        return init
+
+    def _build_bounds(self, init: List[float]) -> list:
+        """Build bounds for the parameters in the optimimsation.
+
+        This method is used to ensure that dispersion or other auxiliary
+        parameters present in certain families remain within their valid regions.
 
         Args:
-            submodel_structure (SubModelStructure): The structure of the submodel
-                being projected onto
+            init (List[float]): The list of initial parameter values
 
         Returns
-            tuple: A tuple of the projection solution along with the final loss
-                value of the gradient descent
+            List[Tuple(float)]: The upper and lower bounds for each initialised
+                parameter in the optimisation
         """
 
-        # build architecture and loss methods for gradient descent
-        self.architecture = Architecture(submodel_structure)
-        self.loss = KullbackLeiblerLoss()
+        # build bounds based on family
+        if self.ref_family in ["gaussian"]:
+            # account for the dispersion parameter
+            bounds = [(None, None)] * (init.size - 1) + [(0, None)]
+        return bounds
 
-        # extract submodel design matrix
-        X_perp = submodel_structure.X
+    def objective(
+        self,
+        params: np.ndarray,
+        obs: np.ndarray,
+        X: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """Variational projection predictive objective function.
 
-        # extract thinned reference model posterior predictive samples
-        y_ast = torch.from_numpy(
-            self.data.structure.predictions.stack(samples=("chain", "draw"))
-            .transpose(*("samples", f"{self.data.structure.response_name}_dim_0"))
-            .values
-        ).float()
-        y_ast = y_ast[self.data.structure.thinned_idx]
-
-        # project parameter samples and compute distance from reference model
-        theta_perp, final_loss = self.optimise(X_perp, y_ast)
-        return theta_perp, final_loss
-
-    def optimise(self, X_perp, y_ast):
-        """Optimisation loop in projection.
+        This is negative log-likelihood of the restricted model but evaluated
+        on samples of the posterior predictive distribution of the reference model.
+        Formally, this objective function implements Equation 1 of mean-field
+        projection predictive inference as defined [here](https://www.hackmd.io/
+        @yannmcl/H1CZPjE1i).
 
         Args:
-            X_perp (torch.tensor):
-            y_ast (torch.tensor):
+            params (list): The optimisation parameters mean values
+            obs (list): One sample from the posterior predictive distribution of
+                the reference model
 
         Returns:
-            Tuple[torch.tensor, torch.tensor]: A tuple of the projected
-                parameter draws as well as the final loss value (distance from
-                reference model)
+            float: The negative log-likelihood of the reference posterior
+                predictive under the restricted model
         """
 
-        # build optimisation framework
-        solver = self.architecture.architecture
-        solver.zero_grad()
-        optim = torch.optim.Adam(solver.parameters(), lr=self.learning_rate)
+        # Gaussian observation likelihood
+        if self.ref_family == "gaussian":
+            mu = self.linear_predict(beta_x=params[:-1], X=X)
+            neg_llk = self.neg_log_likelihood(points=obs, mu=mu, sigma=params[-1])
 
-        # run optimisation loop
-        for _ in range(self.num_iters):
-            optim.zero_grad()
-            y_perp = solver(X_perp)
-            loss = self.loss.forward(y_perp, y_ast)
-            loss.backward()
-            optim.step()
+        # TODO: implement more observation model likelihoods
+        return neg_llk
 
-        # extract projected parameters and final loss function value
-        theta_perp = list(solver.parameters())[0].data
-        final_loss = loss.item()
-        return theta_perp, final_loss
+    def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:
+        """The primary projection method in the procedure.
 
-    def solve_dispersion(
-        self, theta_perp: torch.tensor, X_perp: torch.tensor
-    ) -> torch.tensor:
-        """Analytic projection of the model dispersion parameters.
+        The projection is performed with a mean-field approximation rather than
+        concatenating posterior draw-wise optimisation solutions as is suggested
+        by Piironen (2018). For more information, kindly read [this tutorial](h
+        ttps://www.hackmd.io/@yannmcl/H1CZPjE1i).
 
         Args:
-            theta_perp (torch.tensor): A PyTorch tensor of the restricted
-                parameter draws
-            X_perp (np.ndarray): The design matrix of the restricted model we
-                are projecting onto
+            term_names (List[str]): The names of the terms to project onto in
+                the submodel
+            X (np.ndarray): The common term design matrix of the submodel
 
         Returns:
-            torch.tensor: The restricted projections of the dispersion parameters
+            SubModel: The projected submodel object
         """
 
-        # compute the solution and return
-        solution = self.family.solve_dispersion(theta_perp=theta_perp, X_perp=X_perp)
-        return solution
+        # initialise the optimisation
+        init = self._init_optimisation(term_names=term_names)
+
+        # build the optimisation parameter bounds
+        bounds = self._build_bounds(init)
+
+        # perform mean-field variational projection predictive inference
+        res_posterior = []
+        objectives = []
+        for obs in self.pps:
+            opt = minimize(
+                self.objective,
+                args=(obs, X),
+                x0=init,  # use reference model posterior as initial guess
+                bounds=bounds,  # apply bounds
+                method="powell",
+            )
+            res_posterior.append(opt.x)
+            objectives.append(opt.fun)
+
+        # compile the projected posterior
+        res_samples = np.vstack(res_posterior).T
+        posterior = {term: samples for term, samples in zip(term_names, res_samples)}
+        posterior.update(
+            (key, value.reshape(self.num_chain, 100)) for key, value in posterior.items()
+        )
+
+        # compute the average loss
+        loss = np.mean(objectives)
+
+        return posterior, loss
