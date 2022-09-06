@@ -136,6 +136,16 @@ class TestProjector(KulpritTest):
         submodel = ref_model_copy.project(terms=1)
         assert submodel.size == 1
 
+    def test_project_tuple(self, ref_model):
+        """Test that the projection method works for tuple input."""
+
+        # project the reference model to some parameter subset
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.search()
+        terms = tuple("x")
+        submodel = ref_model_copy.project(terms=terms)
+        assert submodel.size == 1
+
     def test_project_too_many_terms(self, ref_model):
         """Test that the projection method raises an error for too many terms."""
 
