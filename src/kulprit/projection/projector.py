@@ -1,6 +1,7 @@
 """Base projection class."""
 
-from typing import Optional, List, Union
+import copy
+from typing import Optional, List, Tuple, Union
 
 import arviz as az
 import bambi as bmb
@@ -57,14 +58,14 @@ class Projector:
 
     def project(
         self,
-        terms: Union[List[str], int],
+        terms: Union[List[str], Tuple[str], int],
     ) -> SubModel:
         """Wrapper function for projection method.
 
         Args:
-            terms (Union[List[str], int]): Either a list of strings containing
-                the names of the parameters to include in the submodel, or the
-                number of parameters to include in the submodel, **not**
+            terms (Union[List[str], Tuple[str], int]): Collection of strings
+                containing the names of the parameters to include the submodel,
+                or the number of parameters to include in the submodel, **not**
                 including the intercept term
 
         Returns:
@@ -72,7 +73,7 @@ class Projector:
         """
 
         # project terms by name
-        if isinstance(terms, list):
+        if isinstance(terms, (list, tuple)):
             # test `terms` input
             if not set(terms).issubset(set(self.model.common_terms)):
                 raise UserWarning(
@@ -83,7 +84,7 @@ class Projector:
             return self.project_names(term_names=terms)
 
         # project a number of terms
-        else:
+        elif isinstance(terms, int):
             # test `model_size` input
             if self.path is None or terms not in list(self.path.keys()):
                 raise UserWarning(
@@ -94,7 +95,11 @@ class Projector:
             # project onto the search path submodel with `terms` number of terms
             return self.path[terms]
 
-    def project_names(self, term_names: List[str]) -> SubModel:
+        # raise error
+        else:
+            raise UserWarning("Please pass either a list, tuple, or integer.")
+
+    def project_names(self, term_names: Union[List[str], Tuple[str]]) -> SubModel:
         """Primary projection method for GLM reference model.
 
         The projection is defined as the values of the submodel parameters
@@ -103,15 +108,15 @@ class Projector:
         Adam for the optimisation.
 
         Args:
-            term_names (List[str]): The names of parameters to project onto the
-                submodel
+            term_names (Union[List[str], Tuple[str], int]): The names of
+                parameters to project onto the submodel
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
         # copy term names to avoid mutating the input
-        term_names_ = term_names.copy()
+        term_names_ = copy.copy(term_names)
 
         # if projecting onto the reference model, simply return it
         if set(term_names_) == set(self.model.common_terms.keys()):
@@ -222,6 +227,9 @@ class Projector:
 
         # add intercept term if present
         if new_model.intercept_term:
+            # case tuple to list
+            if isinstance(term_names, tuple):
+                term_names = list(term_names)
             term_names.insert(0, "Intercept")
 
         # add the auxiliary parameters

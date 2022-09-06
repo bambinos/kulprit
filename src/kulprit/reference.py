@@ -74,14 +74,14 @@ class ReferenceModel:
 
     def project(
         self,
-        terms: Union[List[str], int],
+        terms: Union[List[str], Tuple[str], int],
     ) -> SubModel:
         """Projection the reference model onto a variable subset.
 
         Args:
-            terms (Union[List[str], int]): Either a list of strings containing
-                the names of the parameters to include the submodel, or the
-                number of parameters to include in the submodel, **not**
+            terms (Union[List[str], Tuple[str], int]): Collection of strings
+                containing the names of the parameters to include the submodel,
+                or the number of parameters to include in the submodel, **not**
                 including the intercept term
 
         Returns:
