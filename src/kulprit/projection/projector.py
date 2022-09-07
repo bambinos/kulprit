@@ -1,7 +1,8 @@
 """Base projection class."""
 
 import copy
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Union, Sequence
+import collections
 
 import arviz as az
 import bambi as bmb
@@ -58,22 +59,26 @@ class Projector:
 
     def project(
         self,
-        terms: Union[List[str], Tuple[str], int],
+        terms: Union[Sequence[str], int],
     ) -> SubModel:
         """Wrapper function for projection method.
 
         Args:
-            terms (Union[List[str], Tuple[str], int]): Collection of strings
-                containing the names of the parameters to include the submodel,
-                or the number of parameters to include in the submodel, **not**
-                including the intercept term
+            terms (Union[Sequence[str], int]): Collection of strings containing
+            the names of the parameters to include the submodel, or the number
+            of parameters to include in the submodel, **not** including the
+            intercept term
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
         # project terms by name
-        if isinstance(terms, (list, tuple)):
+        if isinstance(terms, collections.Sequence):
+            # if not a list, cast to list
+            if not isinstance(terms, list):
+                terms = list(terms)
+
             # test `terms` input
             if not set(terms).issubset(set(self.model.common_terms)):
                 raise UserWarning(
@@ -86,7 +91,7 @@ class Projector:
         # project a number of terms
         elif isinstance(terms, int):
             # test `model_size` input
-            if self.path is None or terms not in list(self.path.keys()):
+            if self.path is None or terms not in list(self.path):
                 raise UserWarning(
                     "In order to project onto an integer number of terms, please "
                     + "first complete a parameter search."
@@ -99,7 +104,7 @@ class Projector:
         else:
             raise UserWarning("Please pass either a list, tuple, or integer.")
 
-    def project_names(self, term_names: Union[List[str], Tuple[str]]) -> SubModel:
+    def project_names(self, term_names: Sequence[str]) -> SubModel:
         """Primary projection method for GLM reference model.
 
         The projection is defined as the values of the submodel parameters
@@ -108,8 +113,9 @@ class Projector:
         Adam for the optimisation.
 
         Args:
-            term_names (Union[List[str], Tuple[str], int]): The names of
-                parameters to project onto the submodel
+            term_names (Sequence[str]): Collection of strings containing the
+            names of the parameters to include the submodel **not** including
+            the intercept term
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
@@ -119,7 +125,7 @@ class Projector:
         term_names_ = copy.copy(term_names)
 
         # if projecting onto the reference model, simply return it
-        if set(term_names_) == set(self.model.common_terms.keys()):
+        if set(term_names_) == set(self.model.common_terms):
             return SubModel(
                 model=self.model,
                 idata=self.idata,
@@ -227,13 +233,10 @@ class Projector:
 
         # add intercept term if present
         if new_model.intercept_term:
-            # case tuple to list
-            if isinstance(term_names, tuple):
-                term_names = list(term_names)
             term_names.insert(0, "Intercept")
 
         # add the auxiliary parameters
         if self.priors:
-            aux_params = [f"{self.response_name}_{str(k)}" for k in self.priors.keys()]
+            aux_params = [f"{self.response_name}_{str(k)}" for k in self.priors]
             term_names += aux_params
         return term_names
