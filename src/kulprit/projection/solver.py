@@ -146,10 +146,21 @@ class Solver:
 
         # Gaussian observation likelihood
         if self.ref_family == "gaussian":
-            mu = self.linear_predict(beta_x=params[:-1], X=X)
-            neg_llk = self.neg_log_likelihood(points=obs, mu=mu, sigma=params[-1])
-
-        # TODO: implement more observation model likelihoods
+            linear_predictor = self.linear_predict(beta_x=params[:-1], X=X)
+            neg_llk = self.neg_log_likelihood(
+                points=obs, mean=linear_predictor, sigma=params[-1]
+            )
+        # Binomial observation likelihood
+        elif self.ref_family == "binomial":
+            trials = self.model.response.data[:, 1]
+            linear_predictor = self.linear_predict(beta_x=params, X=X)
+            mean = self.model.link.linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, mean=mean, trials=trials)
+        # Poisson observation likelihood
+        elif self.ref_family == "poisson":
+            linear_predictor = self.linear_predict(beta_x=params, X=X)
+            mean = self.model.link.linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, mean=mean)
         return neg_llk
 
     def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:
