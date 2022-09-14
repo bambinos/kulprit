@@ -209,9 +209,15 @@ def test_model_idata_compatability(model, idata):
         return False
 
     # test that the variate has the same dimensions in reference model and idata
-    if not (
+    if model._design.response.kind != "proportion" and (
         idata.observed_data[model.response.name].to_numpy().shape
-        == model.data[model.response.name].shape
+        != model.data[model.response.name].shape
+    ):
+        return False
+
+    if model._design.response.kind == "proportion" and (
+        idata.observed_data[model.response.name].to_numpy().shape
+        != model._design.response.evaluate_new_data(model.data).shape
     ):
         return False
 

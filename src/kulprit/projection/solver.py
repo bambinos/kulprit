@@ -118,6 +118,11 @@ class Solver:
         if self.ref_family in ["gaussian"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
+
+        # build bounds based on family
+        if self.ref_family in ["binomial"]:
+            # account for the dispersion parameter
+            bounds = [(None, None)] * (init.size)
         return bounds
 
     def objective(
@@ -152,14 +157,14 @@ class Solver:
             )
         # Binomial observation likelihood
         elif self.ref_family == "binomial":
-            trials = self.model.response.data[:, 1]
+            trials = self.ref_model.response.data[:, 1]
             linear_predictor = self.linear_predict(beta_x=params, X=X)
-            mean = self.model.link.linkinv(linear_predictor)
-            neg_llk = self.neg_log_likelihood(points=obs, mean=mean, trials=trials)
+            probs = self.ref_model.family.link.linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, probs=probs, trials=trials)
         # Poisson observation likelihood
         elif self.ref_family == "poisson":
             linear_predictor = self.linear_predict(beta_x=params, X=X)
-            mean = self.model.link.linkinv(linear_predictor)
+            mean = self.ref_model.family.link.linkinv(linear_predictor)
             neg_llk = self.neg_log_likelihood(points=obs, mean=mean)
         return neg_llk
 

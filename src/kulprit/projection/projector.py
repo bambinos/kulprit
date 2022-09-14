@@ -191,18 +191,28 @@ class Projector:
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
         response_dims = model.response.name + "_obs"
-        obs_array = xr.DataArray(model.data[model.response.name], dims=response_dims)
+        obs_array = xr.DataArray(
+            self.idata.observed_data[model.response.name].to_numpy(), dims=response_dims
+        )
 
         # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
             f"{model.response.name}_mean"
         ]
+        print(preds)
         linear_preds = model.family.link.link(preds)
 
         if model.family.name == "gaussian":
             # initialise probability distribution object
             dist = XrContinuousRV(
                 stats.norm, linear_preds, idata.posterior[f"{model.response.name}_sigma"]
+            )
+        elif model.family.name == "binomial":
+            # initialise probability distribution object
+            dist = XrContinuousRV(
+                stats.binom,
+                linear_preds,
+                idata.posterior[f"{model.response.name}_sigma"],
             )
 
         # compute log likelihood of model

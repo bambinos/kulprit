@@ -1,4 +1,6 @@
+import math
 import numpy as np
+
 import numba as nb
 
 
@@ -25,22 +27,20 @@ LOOKUP_TABLE = np.array(
         6402373705728000,
         121645100408832000,
         2432902008176640000,
-        51090942171709440000,
-        1124000727777607680000,
     ],
     dtype="int64",
 )
 
 
-@nb.jit
+@nb.njit
 def fast_factorial(n):  # pragma: no cover
     if n > 20:
-        raise ValueError
+        return math.gamma(n + 1)  # inexact but fast computation of the factorial
     return LOOKUP_TABLE[n]
 
 
-@nb.jit
-def combination(n, k):  # pragma: no cover
+@nb.njit
+def combination(n, k):
     return fast_factorial(n) / (fast_factorial(k) * fast_factorial(n - k))
 
 
@@ -58,15 +58,15 @@ def gaussian_neg_llk(points, mean, sigma):  # pragma: no cover
 
 
 @nb.njit
-def binomial_log_pdf(y, mean, trials):  # pragma: no cover
-    return np.log(combination(trials, y) * (mean**y) * ((1 - mean) ** (trials - y)))
+def binomial_log_pdf(y, prob, trials):  # pragma: no cover
+    return np.log(combination(trials, y) * (prob**y) * ((1 - prob) ** (trials - y)))
 
 
 @nb.njit
-def binomial_neg_llk(points, mean, trials):  # pragma: no cover
+def binomial_neg_llk(points, probs, trials):  # pragma: no cover
     llk = []
-    for y, m, t in zip(points, mean, trials):
-        llk.append(binomial_log_pdf(y, m, t))
+    for y, p, t in zip(points, probs, trials):
+        llk.append(binomial_log_pdf(y, p, t))
     return -sum(llk)
 
 
