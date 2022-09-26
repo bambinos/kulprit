@@ -191,10 +191,9 @@ class Projector:
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
         obs_array = self.idata.observed_data[model.response.name]
-        # response_dims = model.response.name + "_obs"
-        # obs_array = xr.DataArray(
-        #    self.idata.observed_data[model.response.name].to_numpy(), dims=response_dims
-        # )
+        obs_array = obs_array.rename(
+            {obs_array.coords.dims[0]: model.response.name + "_obs"}
+        )
 
         # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
@@ -208,13 +207,10 @@ class Projector:
                 stats.norm, linear_preds, idata.posterior[f"{model.response.name}_sigma"]
             )
         elif model.family.name == "binomial":
-            trials = model._design.response.evaluate_new_data(model.data)
-            if trials is None:
-                trials = model.response.data[:, 1]
             # initialise probability distribution object
             dist = XrDiscreteRV(
                 stats.binom,
-                n=trials,
+                n=model.response.data[:, 1],
                 p=linear_preds,
             )
 
