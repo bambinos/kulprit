@@ -7,7 +7,7 @@ import collections
 import arviz as az
 import bambi as bmb
 import xarray as xr
-from xarray_einstats.stats import XrContinuousRV
+from xarray_einstats.stats import XrContinuousRV, XrDiscreteRV
 
 from scipy import stats
 
@@ -190,17 +190,16 @@ class Projector:
 
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
-        response_dims = model.response.name + "_obs"
-        obs_array = xr.DataArray(
-            self.idata.observed_data[model.response.name].to_numpy(), dims=response_dims
+        obs_array = self.idata.observed_data[model.response.name]
+        obs_array = obs_array.rename(
+            {obs_array.coords.dims[0]: model.response.name + "_obs"}
         )
 
         # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
             f"{model.response.name}_mean"
         ]
-        print(preds)
-        linear_preds = model.family.link.link(preds)
+        linear_preds = model.family.link.linkinv(preds.values)
 
         if model.family.name == "gaussian":
             # initialise probability distribution object
@@ -209,14 +208,17 @@ class Projector:
             )
         elif model.family.name == "binomial":
             # initialise probability distribution object
-            dist = XrContinuousRV(
+            dist = XrDiscreteRV(
                 stats.binom,
-                linear_preds,
-                idata.posterior[f"{model.response.name}_sigma"],
+                n=model.response.data[:, 1],
+                p=linear_preds,
             )
 
         # compute log likelihood of model
-        log_likelihood = dist.logpdf(obs_array).transpose(*("chain", "draw", ...))
+        if isinstance(dist, XrContinuousRV):
+            log_likelihood = dist.logpdf(obs_array).transpose(*("chain", "draw", ...))
+        else:
+            log_likelihood = dist.logpmf(obs_array).transpose(*("chain", "draw", ...))
         return log_likelihood
 
     def _build_restricted_formula(self, term_names: List[str]) -> str:
