@@ -6,7 +6,6 @@ import collections
 
 import arviz as az
 import bambi as bmb
-import xarray as xr
 from xarray_einstats.stats import XrContinuousRV, XrDiscreteRV
 
 from scipy import stats
