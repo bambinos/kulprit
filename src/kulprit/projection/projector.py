@@ -193,6 +193,10 @@ class Projector:
         obs_array = obs_array.rename(
             {obs_array.coords.dims[0]: model.response.name + "_obs"}
         )
+        obs_array = obs_array.expand_dims(
+            chain=idata.posterior.dims["chain"],
+            draw=idata.posterior.dims["draw"],
+        )
 
         # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
