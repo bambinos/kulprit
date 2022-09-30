@@ -120,9 +120,10 @@ class Solver:
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
 
         # build bounds based on family
-        if self.ref_family in ["binomial"]:
+        if self.ref_family in ["binomial", "poisson"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size)
+
         return bounds
 
     def objective(
@@ -155,17 +156,19 @@ class Solver:
             neg_llk = self.neg_log_likelihood(
                 points=obs, mean=linear_predictor, sigma=params[-1]
             )
+
         # Binomial observation likelihood
         elif self.ref_family == "binomial":
             trials = self.ref_model.response.data[:, 1]
             linear_predictor = self.linear_predict(beta_x=params, X=X)
             probs = self.ref_model.family.link.linkinv(linear_predictor)
             neg_llk = self.neg_log_likelihood(points=obs, probs=probs, trials=trials)
+
         # Poisson observation likelihood
         elif self.ref_family == "poisson":
             linear_predictor = self.linear_predict(beta_x=params, X=X)
-            mean = self.ref_model.family.link.linkinv(linear_predictor)
-            neg_llk = self.neg_log_likelihood(points=obs, mean=mean)
+            lam = self.ref_model.family.link.linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, lam=lam)
         return neg_llk
 
     def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:

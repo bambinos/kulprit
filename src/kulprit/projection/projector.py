@@ -167,6 +167,7 @@ class Projector:
             posterior=projected_posterior,
             observed_data=observed_data,
         )
+        print(new_idata.posterior.dims, new_idata.observed_data.dims)
 
         # compute the log-likelihood of the new submodel and add to idata
         log_likelihood = self.compute_model_log_likelihood(
@@ -215,6 +216,18 @@ class Projector:
                 stats.binom,
                 n=model.response.data[:, 1],
                 p=linear_preds,
+            )
+        elif model.family.name == "poisson":
+            # initialise probability distribution object
+            dist = XrDiscreteRV(
+                stats.poisson,
+                mu=linear_preds,
+            )
+        else:
+            raise (
+                NotImplementedError(
+                    f"The {model.family.name} family is not yet implemented."
+                )
             )
 
         # compute log likelihood of model
