@@ -92,13 +92,13 @@ class Solver:
 
     def _init_optimisation(self, term_names: List[str]) -> List[float]:
         """Initialise the optimisation with the reference posterior means."""
-        init = np.hstack(
+
+        return np.hstack(
             [
                 self.ref_idata.posterior.mean(["chain", "draw"])[term].values
                 for term in term_names
             ]
         )
-        return init
 
     def _build_bounds(self, init: List[float]) -> list:
         """Build bounds for the parameters in the optimimsation.
@@ -118,12 +118,9 @@ class Solver:
         if self.ref_family in ["gaussian"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
-
-        # build bounds based on family
-        if self.ref_family in ["binomial", "poisson"]:
-            # account for the dispersion parameter
+        elif self.ref_family in ["binomial", "poisson"]:
+            # no dispersion parameter, so no bounds
             bounds = [(None, None)] * (init.size)
-
         return bounds
 
     def objective(
@@ -171,7 +168,7 @@ class Solver:
             neg_llk = self.neg_log_likelihood(points=obs, lam=lam)
         return neg_llk
 
-    def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:
+    def solve(self, term_names: List[str], X: np.ndarray, slices: dict) -> SubModel:
         """The primary projection method in the procedure.
 
         The projection is performed with a mean-field approximation rather than
@@ -183,6 +180,7 @@ class Solver:
             term_names (List[str]): The names of the terms to project onto in
                 the submodel
             X (np.ndarray): The common term design matrix of the submodel
+            slices (dictionary): Slices of the common term design matrix
 
         Returns:
             SubModel: The projected submodel object
@@ -209,13 +207,20 @@ class Solver:
             objectives.append(opt.fun)
 
         # compile the projected posterior
-        res_samples = np.vstack(res_posterior).T
-        posterior = {term: samples for term, samples in zip(term_names, res_samples)}
-        posterior.update(
-            (key, value.reshape(self.num_chain, 100)) for key, value in posterior.items()
-        )
+        res_samples = np.vstack(res_posterior)
+        assert res_samples.shape[1] == X.shape[1]
+        posterior = {term: res_samples[:, slices[term]] for term in term_names}
+
+        # reshape inline with reference model
+        for key, value in posterior.items():
+            new_dims = list(self.ref_idata.posterior[key].values.shape)
+            chain_idx = self.ref_idata.posterior[key].dims.index("chain")
+            draw_idx = self.ref_idata.posterior[key].dims.index("draw")
+            new_dims[chain_idx] = self.num_chain
+            new_dims[draw_idx] = 100
+            new_dims = tuple(new_dims)
+            posterior[key] = value.reshape(new_dims)
 
         # compute the average loss
         loss = np.mean(objectives)
-
         return posterior, loss

@@ -139,6 +139,7 @@ class Projector:
         # extract the design matrix from the model
         if new_model._design.common:
             X = new_model._design.common.design_matrix
+            slices = new_model._design.common.slices
 
             # Add offset columns to their own design matrix
             # Remove them from the common design matrix.
@@ -153,7 +154,9 @@ class Projector:
         )
 
         # compute projected posterior
-        projected_posterior, loss = self.solver.solve(term_names=term_names_, X=X)
+        projected_posterior, loss = self.solver.solve(
+            term_names=term_names_, X=X, slices=slices
+        )
 
         # add observed data component of projected idata
         observed_data = {
@@ -167,7 +170,6 @@ class Projector:
             posterior=projected_posterior,
             observed_data=observed_data,
         )
-        print(new_idata.posterior.dims, new_idata.observed_data.dims)
 
         # compute the log-likelihood of the new submodel and add to idata
         log_likelihood = self.compute_model_log_likelihood(
