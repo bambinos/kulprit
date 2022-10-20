@@ -170,6 +170,8 @@ class Projector:
             posterior=projected_posterior,
             observed_data=observed_data,
         )
+        print(self.idata.posterior.dims)
+        print(new_idata.posterior.dims)
 
         # compute the log-likelihood of the new submodel and add to idata
         log_likelihood = self.compute_model_log_likelihood(
