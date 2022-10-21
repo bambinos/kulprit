@@ -9,6 +9,7 @@ import arviz as az
 import bambi as bmb
 
 import numpy as np
+import xarray as xr
 
 from scipy.optimize import minimize
 
@@ -211,15 +212,30 @@ class Solver:
         assert res_samples.shape[1] == X.shape[1]
         posterior = {term: res_samples[:, slices[term]] for term in term_names}
 
+        # NOTE: See the draw number is hard-coded. It would be better if we could take it
+        # from a better source.
+        chain_n = len(self.ref_idata.posterior.coords.get("chain"))
+        draw_n = 100 # len(self.ref_idata.posterior.coords.get("draw"))
+
         # reshape inline with reference model
         for key, value in posterior.items():
-            new_dims = list(self.ref_idata.posterior[key].values.shape)
-            chain_idx = self.ref_idata.posterior[key].dims.index("chain")
-            draw_idx = self.ref_idata.posterior[key].dims.index("draw")
-            new_dims[chain_idx] = self.num_chain
-            new_dims[draw_idx] = 100
-            new_dims = tuple(new_dims)
-            posterior[key] = value.reshape(new_dims)
+            new_shape = [chain_n, draw_n]
+            coords_dict = {"chain": np.arange(chain_n), "draw": np.arange(draw_n)}
+                
+            parma_coords = self.ref_idata.posterior[key].coords
+            param_dims = self.ref_idata.posterior[key].dims
+            extra_dims = tuple(dim for dim in param_dims if dim not in ["chain", "draw"])
+
+            for dim in extra_dims:
+                param_coord = parma_coords.get(dim)
+                coords_dict[dim] = param_coord
+                new_shape.append(len(param_coord))
+
+            # NOTE I'm not sure if this is doing the right thing. We should double check it.
+            value = value.reshape(new_shape)
+            posterior[key] = xr.DataArray(value, coords=coords_dict)
+        
+        posterior = xr.Dataset(posterior)
 
         # compute the average loss
         loss = np.mean(objectives)
