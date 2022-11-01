@@ -158,8 +158,6 @@ class Projector:
             term_names=term_names_, X=X, slices=slices
         )
 
-        print(projected_posterior)
-
         # add observed data component of projected idata
         observed_data = {
             self.response_name: self.idata.observed_data.get(self.response_name)
@@ -167,16 +165,11 @@ class Projector:
             .get("data")
         }
 
-
-        # NOTE: I'm not sure if there's a better way to initialize an InferenceData from
-        # a dataset and from a dictionary. Maybe it's worth trying with "add_groups"
-        
         # build idata object for the projected model
-        new_idata = az.InferenceData(posterior=projected_posterior)
-        new_idata.extend(az.data.from_dict(observed_data=observed_data))
-
-        print(self.idata.posterior.dims)
-        print(new_idata.posterior.dims)
+        new_idata = az.InferenceData(
+            posterior=projected_posterior,
+            observed_data=az.convert_to_dataset(observed_data),
+        )
 
         # compute the log-likelihood of the new submodel and add to idata
         log_likelihood = self.compute_model_log_likelihood(

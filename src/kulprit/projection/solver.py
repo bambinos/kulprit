@@ -215,13 +215,13 @@ class Solver:
         # NOTE: See the draw number is hard-coded. It would be better if we could take it
         # from a better source.
         chain_n = len(self.ref_idata.posterior.coords.get("chain"))
-        draw_n = 100 # len(self.ref_idata.posterior.coords.get("draw"))
+        draw_n = 100  # len(self.ref_idata.posterior.coords.get("draw"))
 
         # reshape inline with reference model
         for key, value in posterior.items():
             new_shape = [chain_n, draw_n]
             coords_dict = {"chain": np.arange(chain_n), "draw": np.arange(draw_n)}
-                
+
             parma_coords = self.ref_idata.posterior[key].coords
             param_dims = self.ref_idata.posterior[key].dims
             extra_dims = tuple(dim for dim in param_dims if dim not in ["chain", "draw"])
@@ -234,7 +234,7 @@ class Solver:
             # NOTE I'm not sure if this is doing the right thing. We should double check it.
             value = value.reshape(new_shape)
             posterior[key] = xr.DataArray(value, coords=coords_dict)
-        
+
         posterior = xr.Dataset(posterior)
 
         # compute the average loss
