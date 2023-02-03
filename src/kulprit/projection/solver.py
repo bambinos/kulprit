@@ -209,7 +209,6 @@ class Solver:
 
         # compile the projected posterior
         res_samples = np.vstack(res_posterior)
-        # assert res_samples.shape[1] == X.shape[1]
         posterior = {term: res_samples[:, slices[term]] for term in term_names}
 
         # NOTE: See the draw number is hard-coded. It would be better if we could take it
