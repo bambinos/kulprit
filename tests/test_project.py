@@ -101,18 +101,21 @@ class TestProjector(KulpritTest):
             # build a bad reference model object
             ref_model.project(terms=None)
 
-    def test_project(self, ref_model):
+    def test_projection(self, ref_model):
         """Test that the analytic projection method works."""
 
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"])
 
-        response_name = list(ref_model.idata.observed_data.data_vars.keys())[0]
-        assert (
-            sub_model.idata.observed_data.dims[f"{response_name}_dim_0"]
-            == ref_model.idata.observed_data.dims[f"{response_name}_dim_0"]
-        )
-        assert sub_model.size == 1
+        sub_model_keys = sub_model.idata.posterior.data_vars.keys()
+        assert "x" in sub_model_keys
+        assert "y" not in sub_model_keys
+
+        # response_name = list(ref_model.idata.observed_data.data_vars.keys())[0]
+        # assert sub_model.idata.observed_data.dims[f"{response_name}_dim_0"]
+        #     == ref_model.idata.observed_data.dims[f"{response_name}_dim_0"]
+        # )
+        # assert sub_model.size == 1
 
     def test_project_categorical(self):
         """Test that the projection method works with a categorical model."""

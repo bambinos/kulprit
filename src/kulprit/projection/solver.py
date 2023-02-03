@@ -48,7 +48,7 @@ class Solver:
         if "posterior_predictive" not in self.ref_idata.groups():
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
-        pps = az.extract_dataset(
+        pps = az.extract(
             self.ref_idata,
             group="posterior_predictive",
             var_names=[self.response_name],
