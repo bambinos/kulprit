@@ -29,7 +29,7 @@ class Solver:
         self.ref_idata = idata
 
         # log the reference model's response name and family
-        self.response_name = self.ref_model.response.name
+        self.response_name = self.ref_model.response_name
         self.ref_family = self.ref_model.family.name
 
         # define sampling options

@@ -45,19 +45,19 @@ class ReferenceModel:
         """
 
         # test that the reference model has an intercept term
-        if model.intercept_term is None:
+        if model.response_component.intercept_term is None:
             raise UserWarning(
                 "The procedure currently requires reference models to have an"
                 + " intercept term."
             )
 
         # test that the reference model does not admit any hierarchical structure
-        if model.group_specific_terms:
+        if model.response_component.group_specific_terms:
             raise NotImplementedError("Hierarchical models currently not supported.")
 
         # build posterior if not provided
         if idata is None:
-            idata = model.fit()
+            idata = model.fit(idata_kwargs={"log_likelihood": True})
 
         # test compatibility between model and idata
         if not test_model_idata_compatability(model=model, idata=idata):
@@ -120,10 +120,10 @@ class ReferenceModel:
 
         # set default `max_terms` value
         if max_terms is None:
-            max_terms = len(self.model.common_terms)
+            max_terms = len(self.model.response_component.common_terms)
 
         # test `max_terms` input
-        if max_terms > len(self.model.common_terms):
+        if max_terms > len(self.model.response_component.common_terms):
             raise UserWarning(
                 "Please ensure that the maximum number to consider in the "
                 + "submodel search is between 1 and the number of terms in the "
@@ -177,7 +177,10 @@ class ReferenceModel:
 
         # set default variable names to the reference model terms
         if not var_names:
-            var_names = self.model.term_names
+            var_names = list(
+                set(self.model.response_component.terms.keys())
+                - set(self.model.response_name)
+            )
 
         axes = az.plot_density(
             data=[submodel.idata for submodel in self.path.values()],
@@ -205,19 +208,19 @@ def test_model_idata_compatability(model, idata):
     """
 
     # test that the variate's name is the same in reference model and idata
-    if not model.response.name == list(idata.observed_data.data_vars.variables)[0]:
+    if not model.response_name == list(idata.observed_data.data_vars.variables)[0]:
         return False
 
     # test that the variate has the same dimensions in reference model and idata
-    if model._design.response.kind != "proportion" and (
-        idata.observed_data[model.response.name].to_numpy().shape
-        != model.data[model.response.name].shape
+    if model.response_component.design.response.kind != "proportion" and (
+        idata.observed_data[model.response_name].to_numpy().shape
+        != model.data[model.response_name].shape
     ):
         return False
 
-    if model._design.response.kind == "proportion" and (
-        idata.observed_data[model.response.name].to_numpy().shape
-        != model._design.response.evaluate_new_data(model.data).shape
+    if model.response_component.design.response.kind == "proportion" and (
+        idata.observed_data[model.response_name].to_numpy().shape
+        != model.response_component.design.response.evaluate_new_data(model.data).shape
     ):
         return False
 

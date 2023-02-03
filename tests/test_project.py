@@ -184,13 +184,18 @@ class TestProjector(KulpritTest):
         new_model = solver._build_restricted_model(["x", "y"])
 
         # perform checks
-        assert new_model.formula == bambi_model.formula
+        assert new_model.formula.__str__() == bambi_model.formula.__str__()
         assert new_model.data.shape == bambi_model.data.shape
         assert np.all(
             new_model.data.loc[:, new_model.data.columns != solver.response_name]
             == bambi_model.data.loc[:, new_model.data.columns != solver.response_name]
         )
         assert new_model.family.name == bambi_model.family.name
-        assert new_model.term_names == bambi_model.term_names
-        assert set(new_model.common_terms.keys()) == set(bambi_model.common_terms.keys())
-        assert new_model.response.name == bambi_model.response.name
+        assert (
+            new_model.response_component.terms.keys()
+            == bambi_model.response_component.terms.keys()
+        )
+        assert set(new_model.response_component.common_terms.keys()) == set(
+            bambi_model.response_component.common_terms.keys()
+        )
+        assert new_model.response_name == bambi_model.response_name

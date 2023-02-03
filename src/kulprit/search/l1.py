@@ -21,8 +21,8 @@ class L1SearchPath(SearchPath):
         if (
             sum(
                 [
-                    self.projector.model.terms[term].categorical
-                    for term in self.projector.model.terms.keys()
+                    self.projector.model.response_component.terms[term].categorical
+                    for term in self.projector.model.response_component.terms.keys()
                 ]
             )
             > 0
@@ -39,7 +39,7 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [submodel.term_names, submodel.loss]
+            k: [list(submodel.model.response_component.terms.keys()), submodel.loss]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -90,12 +90,17 @@ class L1SearchPath(SearchPath):
         """
 
         # extract reference model data and latent predictor
-        self.common_terms = list(self.projector.model.common_terms)
+        self.common_terms = list(self.projector.model.response_component.common_terms)
         X = np.column_stack(
-            [self.projector.model._design.common[term] for term in self.common_terms]
+            [
+                self.projector.model.response_component.design.common[term]
+                for term in self.common_terms
+            ]
         )
-        eta = self.projector.model.family.link.link(
-            np.array(self.projector.model._design.response)
+        # XXX we need to make this more general
+        mean_param_name = list(self.projector.model.family.link.keys())[0]
+        eta = self.projector.model.family.link[mean_param_name].link(
+            np.array(self.projector.model.response_component.design.response)
         )
 
         # compute L1 path in the latent space

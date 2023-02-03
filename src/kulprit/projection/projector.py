@@ -45,9 +45,9 @@ class Projector:
         self.idata = idata
 
         # log properties of the reference model
-        self.response_name = self.model.response.name
+        self.response_name = self.model.response_name
         self.ref_family = self.model.family.name
-        self.priors = self.model.family.likelihood.priors
+        self.priors = self.model.constant_components
 
         # build solver
         self.solver = Solver(model=self.model, idata=self.idata)
@@ -78,7 +78,7 @@ class Projector:
                 terms = list(terms)
 
             # test `terms` input
-            if not set(terms).issubset(set(self.model.common_terms)):
+            if not set(terms).issubset(set(self.model.response_component.common_terms)):
                 raise UserWarning(
                     "Please ensure that all terms selected for projection exist in"
                     + " the reference model."
@@ -123,12 +123,12 @@ class Projector:
         term_names_ = copy.copy(term_names)
 
         # if projecting onto the reference model, simply return it
-        if set(term_names_) == set(self.model.common_terms):
+        if set(term_names_) == set(self.model.response_component.common_terms):
             return SubModel(
                 model=self.model,
                 idata=self.idata,
                 loss=0,
-                size=len(self.model.common_terms),
+                size=len(self.model.response_component.common_terms),
                 term_names=term_names_,
             )
 
@@ -136,15 +136,15 @@ class Projector:
         new_model = self._build_restricted_model(term_names=term_names_)
 
         # extract the design matrix from the model
-        if new_model._design.common:
-            X = new_model._design.common.design_matrix
-            slices = new_model._design.common.slices
+        if new_model.response_component.design.common:
+            X = new_model.response_component.design.common.design_matrix
+            slices = new_model.response_component.design.common.slices
 
             # Add offset columns to their own design matrix
             # Remove them from the common design matrix.
             if hasattr(new_model, "offset_terms"):  # pragma: no cover
                 for term in new_model.offset_terms:
-                    term_slice = new_model._design.common.slices[term]
+                    term_slice = new_model.response_component.design.common.slices[term]
                     X = np.delete(X, term_slice, axis=1)
 
         # build new term_names (add dispersion parameter if included)
@@ -186,16 +186,16 @@ class Projector:
             model=new_model,
             idata=new_idata,
             loss=loss,
-            size=len(new_model.common_terms),
+            size=len(new_model.response_component.common_terms),
             term_names=term_names,
         )
         return sub_model
 
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
-        obs_array = self.idata.observed_data[model.response.name]
+        obs_array = self.idata.observed_data[model.response_name]
         obs_array = obs_array.rename(
-            {obs_array.coords.dims[0]: model.response.name + "_obs"}
+            {obs_array.coords.dims[0]: model.response_name + "_obs"}
         )
         obs_array = obs_array.expand_dims(
             chain=idata.posterior.dims["chain"],
@@ -204,16 +204,17 @@ class Projector:
 
         # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
-            f"{model.response.name}_mean"
+            f"{model.response_name}_mean"
         ]
-        linear_preds = model.family.link.linkinv(preds.values)
-
         if model.family.name == "gaussian":
+            linear_preds = model.family.link["mu"].linkinv(preds.values)
             # initialise probability distribution object
             dist = XrContinuousRV(
-                stats.norm, linear_preds, idata.posterior[f"{model.response.name}_sigma"]
+                stats.norm, linear_preds, idata.posterior[f"{model.response_name}_sigma"]
             )
         elif model.family.name == "binomial":
+            linear_preds = model.family.link["p"].linkinv(preds.values)
+
             # initialise probability distribution object
             dist = XrDiscreteRV(
                 stats.binom,
@@ -221,6 +222,7 @@ class Projector:
                 p=linear_preds,
             )
         elif model.family.name == "poisson":
+            linear_preds = model.family.link["mu"].linkinv(preds.values)
             # initialise probability distribution object
             dist = XrDiscreteRV(
                 stats.poisson,
@@ -266,7 +268,7 @@ class Projector:
         """Extend the model term names to include dispersion terms."""
 
         # add intercept term if present
-        if new_model.intercept_term:
+        if new_model.response_component.intercept_term:
             term_names.insert(0, "Intercept")
 
         # add the auxiliary parameters
