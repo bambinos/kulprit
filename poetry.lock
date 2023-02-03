@@ -89,7 +89,7 @@ tests = ["pytest"]
 
 [[package]]
 name = "arviz"
-version = "0.12.1"
+version = "0.14.0"
 description = "Exploratory analysis of Bayesian models"
 category = "main"
 optional = false

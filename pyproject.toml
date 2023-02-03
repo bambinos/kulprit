@@ -30,7 +30,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-bambi = "0.9.0"
+bambi = "0.9.1"
 python = ">=3.7.2, <3.10"
 scikit-learn = "1.0.2"
 numba = "^0.56.0"
