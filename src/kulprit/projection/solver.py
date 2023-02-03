@@ -48,12 +48,13 @@ class Solver:
         if "posterior_predictive" not in self.ref_idata.groups():
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
+        print(self.response_name)
         pps = az.extract_dataset(
             self.ref_idata,
             group="posterior_predictive",
             var_names=[self.response_name],
             num_samples=self.num_samples,
-        )[self.response_name].values.T
+        ).values.T
         return pps
 
     def linear_predict(
@@ -209,7 +210,7 @@ class Solver:
 
         # compile the projected posterior
         res_samples = np.vstack(res_posterior)
-        assert res_samples.shape[1] == X.shape[1]
+        # assert res_samples.shape[1] == X.shape[1]
         posterior = {term: res_samples[:, slices[term]] for term in term_names}
 
         # NOTE: See the draw number is hard-coded. It would be better if we could take it

@@ -1,7 +1,7 @@
 """Base projection class."""
 
 import copy
-from typing import Optional, List, Union, Sequence
+from typing import Optional, List, Union, Sequence, Dict
 import collections
 
 import arviz as az
@@ -13,7 +13,6 @@ from scipy import stats
 import numpy as np
 
 from kulprit.data.submodel import SubModel
-from kulprit.projection.likelihood import LIKELIHOODS
 from kulprit.projection.solver import Solver
 
 
@@ -149,8 +148,10 @@ class Projector:
                     X = np.delete(X, term_slice, axis=1)
 
         # build new term_names (add dispersion parameter if included)
-        term_names_ = self._extend_term_names(
-            new_model=new_model, term_names=term_names_
+        term_names_, slices = self._extend_term_names(
+            new_model=new_model,
+            term_names=term_names_,
+            slices=slices,
         )
 
         # compute projected posterior
@@ -257,7 +258,10 @@ class Projector:
         return new_model
 
     def _extend_term_names(
-        self, new_model: bmb.Model, term_names: List[str]
+        self,
+        new_model: bmb.Model,
+        term_names: List[str],
+        slices: Dict[str, slice],
     ) -> List[str]:
         """Extend the model term names to include dispersion terms."""
 
@@ -269,4 +273,6 @@ class Projector:
         if self.priors:
             aux_params = [f"{self.response_name}_{str(k)}" for k in self.priors]
             term_names += aux_params
-        return term_names
+            # TODO generalize
+            slices[aux_params[0]] = slice(-1, None, None)
+        return term_names, slices
