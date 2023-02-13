@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions to the package are very welcome! We recommend using `pyenv` to install a Python version compatible with `bambi` (these are versions `python>=3.7.2`), and then `poetry` for dependency management and virtual environment creation for development.
+Contributions to the package are very welcome! We recommend using `pyenv` to install a Python version compatible with `bambi` (these are versions `python>=3.8`), and then `poetry` for dependency management and virtual environment creation for development.
 
 ## Development
 
