@@ -33,7 +33,7 @@ LOOKUP_TABLE = np.array(
 
 
 @nb.njit
-def fast_factorial(n):  # pragma: no cover
+def fast_factorial(n):
     if n > 20:
         return math.gamma(n + 1)  # inexact but fast computation of the factorial
     return LOOKUP_TABLE[n]
@@ -45,12 +45,12 @@ def combination(n, k):
 
 
 @nb.njit
-def gaussian_log_pdf(y, mean, sigma):  # pragma: no cover
+def gaussian_log_pdf(y, mean, sigma):
     return -np.log(sigma) - 0.5 * np.log(2 * np.pi) - 0.5 * ((y - mean) / sigma) ** 2
 
 
 @nb.njit
-def gaussian_neg_llk(points, mean, sigma):  # pragma: no cover
+def gaussian_neg_llk(points, mean, sigma):
     llk = []
     for y, m in zip(points, mean):
         llk.append(gaussian_log_pdf(y, m, sigma))
@@ -58,12 +58,12 @@ def gaussian_neg_llk(points, mean, sigma):  # pragma: no cover
 
 
 @nb.njit
-def binomial_log_pdf(y, prob, trials):  # pragma: no cover
+def binomial_log_pdf(y, prob, trials):
     return np.log(combination(trials, y) * (prob**y) * ((1 - prob) ** (trials - y)))
 
 
 @nb.njit
-def binomial_neg_llk(points, probs, trials):  # pragma: no cover
+def binomial_neg_llk(points, probs, trials):
     llk = []
     for y, p, t in zip(points, probs, trials):
         llk.append(binomial_log_pdf(y, p, t))
@@ -71,12 +71,12 @@ def binomial_neg_llk(points, probs, trials):  # pragma: no cover
 
 
 @nb.njit
-def poisson_log_pdf(y, lam):  # pragma: no cover
+def poisson_log_pdf(y, lam):
     return np.log((lam**y) * np.exp(-lam) / fast_factorial(y))
 
 
 @nb.njit
-def poisson_neg_llk(points, lam):  # pragma: no cover
+def poisson_neg_llk(points, lam):
     llk = []
     for y, l in zip(points, lam):
         llk.append(poisson_log_pdf(y, l))
