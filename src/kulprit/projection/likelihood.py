@@ -6,42 +6,41 @@ import numba as nb
 
 LOOKUP_TABLE = np.array(
     [
-        1,
-        1,
-        2,
-        6,
-        24,
-        120,
-        720,
-        5040,
-        40320,
-        362880,
-        3628800,
-        39916800,
-        479001600,
-        6227020800,
-        87178291200,
-        1307674368000,
-        20922789888000,
-        355687428096000,
-        6402373705728000,
-        121645100408832000,
-        2432902008176640000,
-    ],
-    dtype="int64",
+        0.0,
+        0.0,
+        0.69314718,
+        1.79175947,
+        3.17805383,
+        4.78749174,
+        6.57925121,
+        8.52516136,
+        10.6046029,
+        12.80182748,
+        15.10441257,
+        17.50230785,
+        19.9872145,
+        22.55216385,
+        25.19122118,
+        27.89927138,
+        30.67186011,
+        33.50507345,
+        36.39544521,
+        39.33988419,
+        42.33561646,
+    ]
 )
 
 
 @nb.njit
-def fast_factorial(n):
+def log_factorial(n):
     if n > 20:
-        return math.gamma(n + 1)  # inexact but fast computation of the factorial
+        return math.lgamma(n + 1)  # inexact but fast computation of the factorial
     return LOOKUP_TABLE[n]
 
 
 @nb.njit
-def combination(n, k):
-    return fast_factorial(n) / (fast_factorial(k) * fast_factorial(n - k))
+def log_binom_coeff(n, k):
+    return log_factorial(n) - log_factorial(k) + log_factorial(n - k)
 
 
 @nb.njit
@@ -59,28 +58,32 @@ def gaussian_neg_llk(points, mean, sigma):
 
 @nb.njit
 def binomial_log_pdf(y, prob, trials):
-    return np.log(combination(trials, y) * (prob**y) * ((1 - prob) ** (trials - y)))
+    if prob == 0 or prob == 1 or y > trials:
+        return -np.inf
+    else:
+        return (
+            log_binom_coeff(trials, y)
+            + y * np.log(prob)
+            + (trials - y) * np.log(1 - prob)
+        )
 
 
 @nb.njit
 def binomial_neg_llk(points, probs, trials):
-    llk = []
-    for y, p, t in zip(points, probs, trials):
-        llk.append(binomial_log_pdf(y, p, t))
-    return -sum(llk)
+    return -sum([binomial_log_pdf(y, p, t) for y, p, t in zip(points, probs, trials)])
 
 
 @nb.njit
 def poisson_log_pdf(y, lam):
-    return np.log((lam**y) * np.exp(-lam) / fast_factorial(y))
+    if lam == 0:
+        return -np.inf
+    else:
+        return y * np.log(lam) - lam - log_factorial(y)
 
 
 @nb.njit
 def poisson_neg_llk(points, lam):
-    llk = []
-    for y, l in zip(points, lam):
-        llk.append(poisson_log_pdf(y, l))
-    return -sum(llk)
+    return -sum([poisson_log_pdf(y, l) for y, l in zip(points, lam)])
 
 
 LIKELIHOODS = {

@@ -23,7 +23,7 @@ class TestLikelihood:
         sigma = 1.0
 
         # compute the log likelihood using scipy
-        scipy_llk = np.log(np.product(stats.norm.pdf(data, mus, sigma)))
+        scipy_llk = stats.norm(mus, sigma).logpdf(data).sum()
 
         # test that kulprit produces similar results
         assert -gaussian_neg_llk(data, mus, sigma) == pytest.approx(scipy_llk)
@@ -35,24 +35,22 @@ class TestLikelihood:
         # define the parameters of the Gaussian
         ns = list(np.random.randint(11, size=(10,)))
         probs = list(np.random.uniform(low=0, high=1, size=(10,)))
-        print(type(ns), type(probs))
-        print(ns, probs)
 
         # compute the log likelihood using scipy
-        scipy_llk = np.log(np.product(stats.binom.pmf(data, ns, probs)))
+        scipy_llk = stats.binom(ns, probs).logpmf(data).sum()
 
         # test that kulprit produces similar results
-        assert -binomial_neg_llk(data, ns, probs) == pytest.approx(scipy_llk)
+        assert -binomial_neg_llk(data, probs, ns) == pytest.approx(scipy_llk)
 
     def test_poisson_likelihood(self):
         # produce random samples
         data = list(np.random.randint(11, size=(10,)))
 
-        # define the parameters of the Gaussian
+        # define the parameters of the Poisson
         lambdas = list(np.random.randint(11, size=(10,)))
 
         # compute the log likelihood using scipy
-        scipy_llk = np.log(np.product(stats.poisson.pmf(data, lambdas)))
+        scipy_llk = stats.poisson(lambdas).logpmf(data).sum()
 
         # test that kulprit produces similar results
         assert -poisson_neg_llk(data, lambdas) == pytest.approx(scipy_llk)
