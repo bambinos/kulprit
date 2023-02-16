@@ -25,7 +25,9 @@ def bambi_model_idata(bambi_model):  # pragma: no cover
     """Return a bambi model fitted inference data."""
 
     # fit model with MCMC
-    idata = bambi_model.fit(draws=NUM_DRAWS, chains=NUM_CHAINS)
+    idata = bambi_model.fit(
+        draws=NUM_DRAWS, chains=NUM_CHAINS, idata_kwargs={"log_likelihood": True}
+    )
     return idata
 
 

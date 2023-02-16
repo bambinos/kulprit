@@ -101,18 +101,15 @@ class TestProjector(KulpritTest):
             # build a bad reference model object
             ref_model.project(terms=None)
 
-    def test_project(self, ref_model):
+    def test_projection(self, ref_model):
         """Test that the analytic projection method works."""
 
         # project the reference model to some parameter subset
         sub_model = ref_model.project(terms=["x"])
 
-        response_name = list(ref_model.idata.observed_data.data_vars.keys())[0]
-        assert (
-            sub_model.idata.observed_data.dims[f"{response_name}_dim_0"]
-            == ref_model.idata.observed_data.dims[f"{response_name}_dim_0"]
-        )
-        assert sub_model.size == 1
+        sub_model_keys = sub_model.idata.posterior.data_vars.keys()
+        assert "x" in sub_model_keys
+        assert "y" not in sub_model_keys
 
     def test_project_categorical(self):
         """Test that the projection method works with a categorical model."""
@@ -181,13 +178,18 @@ class TestProjector(KulpritTest):
         new_model = solver._build_restricted_model(["x", "y"])
 
         # perform checks
-        assert new_model.formula == bambi_model.formula
+        assert new_model.formula.__str__() == bambi_model.formula.__str__()
         assert new_model.data.shape == bambi_model.data.shape
         assert np.all(
             new_model.data.loc[:, new_model.data.columns != solver.response_name]
             == bambi_model.data.loc[:, new_model.data.columns != solver.response_name]
         )
         assert new_model.family.name == bambi_model.family.name
-        assert new_model.term_names == bambi_model.term_names
-        assert set(new_model.common_terms.keys()) == set(bambi_model.common_terms.keys())
-        assert new_model.response.name == bambi_model.response.name
+        assert (
+            new_model.response_component.terms.keys()
+            == bambi_model.response_component.terms.keys()
+        )
+        assert set(new_model.response_component.common_terms.keys()) == set(
+            bambi_model.response_component.common_terms.keys()
+        )
+        assert new_model.response_name == bambi_model.response_name

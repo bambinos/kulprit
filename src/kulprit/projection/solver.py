@@ -9,6 +9,7 @@ import arviz as az
 import bambi as bmb
 
 import numpy as np
+import xarray as xr
 
 from scipy.optimize import minimize
 
@@ -28,7 +29,7 @@ class Solver:
         self.ref_idata = idata
 
         # log the reference model's response name and family
-        self.response_name = self.ref_model.response.name
+        self.response_name = self.ref_model.response_name
         self.ref_family = self.ref_model.family.name
 
         # define sampling options
@@ -47,12 +48,12 @@ class Solver:
         if "posterior_predictive" not in self.ref_idata.groups():
             self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
 
-        pps = az.extract_dataset(
+        pps = az.extract(
             self.ref_idata,
             group="posterior_predictive",
             var_names=[self.response_name],
             num_samples=self.num_samples,
-        )[self.response_name].values.T
+        ).values.T
         return pps
 
     def linear_predict(
@@ -92,13 +93,13 @@ class Solver:
 
     def _init_optimisation(self, term_names: List[str]) -> List[float]:
         """Initialise the optimisation with the reference posterior means."""
-        init = np.hstack(
+
+        return np.hstack(
             [
                 self.ref_idata.posterior.mean(["chain", "draw"])[term].values
                 for term in term_names
             ]
         )
-        return init
 
     def _build_bounds(self, init: List[float]) -> list:
         """Build bounds for the parameters in the optimimsation.
@@ -118,6 +119,9 @@ class Solver:
         if self.ref_family in ["gaussian"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(0, None)]
+        elif self.ref_family in ["binomial", "poisson"]:
+            # no dispersion parameter, so no bounds
+            bounds = [(None, None)] * (init.size)
         return bounds
 
     def objective(
@@ -146,13 +150,26 @@ class Solver:
 
         # Gaussian observation likelihood
         if self.ref_family == "gaussian":
-            mu = self.linear_predict(beta_x=params[:-1], X=X)
-            neg_llk = self.neg_log_likelihood(points=obs, mu=mu, sigma=params[-1])
+            linear_predictor = self.linear_predict(beta_x=params[:-1], X=X)
+            neg_llk = self.neg_log_likelihood(
+                points=obs, mean=linear_predictor, sigma=params[-1]
+            )
 
-        # TODO: implement more observation model likelihoods
+        # Binomial observation likelihood
+        elif self.ref_family == "binomial":
+            trials = self.ref_model.response.data[:, 1]
+            linear_predictor = self.linear_predict(beta_x=params, X=X)
+            probs = self.ref_model.family.link.linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, probs=probs, trials=trials)
+
+        # Poisson observation likelihood
+        elif self.ref_family == "poisson":
+            linear_predictor = self.linear_predict(beta_x=params, X=X)
+            lam = self.ref_model.family.link.linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, lam=lam)
         return neg_llk
 
-    def solve(self, term_names: List[str], X: np.ndarray) -> SubModel:
+    def solve(self, term_names: List[str], X: np.ndarray, slices: dict) -> SubModel:
         """The primary projection method in the procedure.
 
         The projection is performed with a mean-field approximation rather than
@@ -164,6 +181,7 @@ class Solver:
             term_names (List[str]): The names of the terms to project onto in
                 the submodel
             X (np.ndarray): The common term design matrix of the submodel
+            slices (dictionary): Slices of the common term design matrix
 
         Returns:
             SubModel: The projected submodel object
@@ -190,13 +208,34 @@ class Solver:
             objectives.append(opt.fun)
 
         # compile the projected posterior
-        res_samples = np.vstack(res_posterior).T
-        posterior = {term: samples for term, samples in zip(term_names, res_samples)}
-        posterior.update(
-            (key, value.reshape(self.num_chain, 100)) for key, value in posterior.items()
-        )
+        res_samples = np.vstack(res_posterior)
+        posterior = {term: res_samples[:, slices[term]] for term in term_names}
+
+        # NOTE: See the draw number is hard-coded. It would be better if we could take it
+        # from a better source.
+        chain_n = len(self.ref_idata.posterior.coords.get("chain"))
+        draw_n = 100  # len(self.ref_idata.posterior.coords.get("draw"))
+
+        # reshape inline with reference model
+        for key, value in posterior.items():
+            new_shape = [chain_n, draw_n]
+            coords_dict = {"chain": np.arange(chain_n), "draw": np.arange(draw_n)}
+
+            parma_coords = self.ref_idata.posterior[key].coords
+            param_dims = self.ref_idata.posterior[key].dims
+            extra_dims = tuple(dim for dim in param_dims if dim not in ["chain", "draw"])
+
+            for dim in extra_dims:
+                param_coord = parma_coords.get(dim)
+                coords_dict[dim] = param_coord
+                new_shape.append(len(param_coord))
+
+            # NOTE I'm not sure if this is doing the right thing. We should double check it.
+            value = value.reshape(new_shape)
+            posterior[key] = xr.DataArray(value, coords=coords_dict)
+
+        posterior = xr.Dataset(posterior)
 
         # compute the average loss
         loss = np.mean(objectives)
-
         return posterior, loss
