@@ -26,12 +26,13 @@ nav:
   - Overview: 'index.md'
   - Quick start: notebooks/quick-start.ipynb
   - Tutorials:
-    - Introduction: notebooks/tutorials/intro.md
+    - Introduction: notebooks/tutorials/intro.ipynb
     - Logistic regression: notebooks/tutorials/logistic-regression.ipynb
   - api_docs.md
   - changelog.md
 
 markdown_extensions:
+  - footnotes
   - pymdownx.snippets:
       check_paths: true
   - pymdownx.arithmatex:
@@ -53,7 +54,7 @@ plugins:
         - src/kulprit
   - mknotebooks:
 
-copyright: Copyright &copy; 2022 Yann McLatchie
+copyright: Copyright &copy; 2023 Yann McLatchie
 
 extra:
   generator: false
