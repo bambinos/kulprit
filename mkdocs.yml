@@ -27,12 +27,12 @@ nav:
   - Quick start: notebooks/quick-start.ipynb
   - Tutorials:
     - Introduction: notebooks/tutorials/intro.ipynb
-    - Logistic regression: notebooks/tutorials/logistic-regression.ipynb
+    - Observational families: notebooks/tutorials/observational-families.ipynb
   - api_docs.md
   - changelog.md
 
 markdown_extensions:
-  - footnotes
+  - footnotes:
   - pymdownx.snippets:
       check_paths: true
   - pymdownx.arithmatex:
