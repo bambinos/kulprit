@@ -121,7 +121,8 @@ class Searcher:
 
         # plot the comparison if requested
         axes = None
+        comparison.sort_index(ascending=False, inplace=True)
         if plot:
-            axes = az.plot_compare(comparison, **plot_kwargs)
+            axes = az.plot_compare(comparison, order_by_rank=False, **plot_kwargs)
 
         return comparison, axes
