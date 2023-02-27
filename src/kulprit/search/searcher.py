@@ -124,5 +124,6 @@ class Searcher:
         comparison.sort_index(ascending=False, inplace=True)
         if plot:
             axes = az.plot_compare(comparison, order_by_rank=False, **plot_kwargs)
+            axes.set_ylabel("submodels")
 
         return comparison, axes
