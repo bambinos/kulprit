@@ -10,7 +10,7 @@ def load_adults_data() -> pd.DataFrame:
     Load and pre-process the adults dataset.
 
     Much of this code is taken from bambi tutorials to simplify the workflow in
-    kulprit tutorials.
+    kulprit tutorials. This dataset is used in Bernoulli family models.
 
     Returns:
         pd.DataFrame: The loaded and pre-processed adults dataset.
@@ -36,3 +36,24 @@ def load_adults_data() -> pd.DataFrame:
     data["hs_week2"] = data["hs_week"] ** 2
     data["hs_week3"] = data["hs_week"] ** 3
     return data
+
+
+def load_batting_data() -> pd.DataFrame:
+    """
+    Load and pre-process the batting dataset.
+
+    Much of this code is taken from bambi tutorials to simplify the workflow in
+    kulprit tutorials. This dataset is used in binomial family models.
+
+    Returns:
+        pd.DataFrame: The loaded and pre-processed batting dataset.
+    """
+
+    df = bmb.load_data("batting")
+    df["AB"] = df["AB"].replace(0, np.nan)
+    df = df.dropna()
+    df["batting_avg"] = df["H"] / df["AB"]
+    df = df.astype({"H": int, "AB": int})
+    df = df[df["yearID"] >= 2016]
+    df = df.iloc[0:15]
+    return df
