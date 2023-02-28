@@ -99,13 +99,6 @@ class Searcher:
 
         # make dictionary of inferencedata objects for each projection
         self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
-        self.idatas.update(
-            {
-                len(
-                    self.projector.model.response_component.common_terms
-                ): self.projector.idata
-            }
-        )
 
         # compare the submodels by some criterion
         comparison = az.compare(
@@ -121,7 +114,9 @@ class Searcher:
 
         # plot the comparison if requested
         axes = None
+        comparison.sort_index(ascending=False, inplace=True)
         if plot:
-            axes = az.plot_compare(comparison, **plot_kwargs)
+            axes = az.plot_compare(comparison, order_by_rank=False, **plot_kwargs)
+            axes.set_ylabel("Model size")
 
         return comparison, axes

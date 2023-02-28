@@ -72,6 +72,19 @@ class ReferenceModel:
         self.searcher = Searcher(self.projector)
         self.path = None
 
+        # test if reference model idata includes the log-likelihood
+        if "log_likelihood" not in idata.groups():
+            # if not, then compute it
+            ref_log_likelihood = self.projector.compute_model_log_likelihood(
+                model=self.model, idata=self.idata
+            )
+            self.idata.add_groups(
+                log_likelihood={self.model.response_name: ref_log_likelihood},
+                dims={self.model.response_name: [f"{self.model.response_name}_dim_0"]},
+            )
+        # extract the elpd point estimate from the reference model and log it
+        self.ref_loo_elpd = az.loo(idata).elpd_loo
+
     def project(
         self,
         terms: Union[List[str], Tuple[str], int],
