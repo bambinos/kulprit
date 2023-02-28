@@ -72,19 +72,6 @@ class ReferenceModel:
         self.searcher = Searcher(self.projector)
         self.path = None
 
-        # # test if reference model idata includes the log-likelihood
-        # if "log_likelihood" not in idata.groups():
-        #     # if not, then compute it
-        #     ref_log_likelihood = self.projector.compute_model_log_likelihood(
-        #         model=self.model, idata=self.idata
-        #     )
-        #     self.idata.add_groups(
-        #         log_likelihood={self.model.response_name: ref_log_likelihood},
-        #         dims={self.model.response_name: [f"{self.model.response_name}_dim_0"]},
-        #     )
-        # # extract the elpd point estimate from the reference model and log it
-        # self.ref_loo_elpd = az.loo(idata).elpd_loo
-
     def project(
         self,
         terms: Union[List[str], Tuple[str], int],
@@ -169,35 +156,40 @@ class ReferenceModel:
             legend : bool, default True
                 Add legend to figure.
             title : bool
-                Show a tittle with a description of how to interpret the plot. Defaults to True.
+                Show a tittle with a description of how to interpret the plot.
+                Defaults to True.
             figsize : (float, float), optional
                 If None, size is (10, num of submodels) inches
             plot_kwargs : dict, optional
-                Optional arguments for plot elements. Currently accepts 'color_elpd', 'marker_elpd',
-                'marker_fc_elpd', 'color_dse' 'marker_dse', 'ls_reference' 'color_ls_reference'.
+                Optional arguments for plot elements. Currently accepts 'color_elpd',
+                'marker_elpd', 'marker_fc_elpd', 'color_dse' 'marker_dse',
+                'ls_reference' 'color_ls_reference'.
 
         Returns:
             A DataFrame, ordered from largest to smaller model. The columns are:
                 rank: The rank-order of the models. 0 is the best.
                 elpd: ELPD estimated either using (PSIS-LOO-CV).
-                    Higher ELPD indicates higher out-of-sample predictive fit ("better" model).
+                    Higher ELPD indicates higher out-of-sample predictive fit
+                    ("better" model).
                 pIC: Estimated effective number of parameters.
                 elpd_diff: The difference in ELPD between two models.
                     The difference is computed relative to the reference model
                 weight: Relative weight for each model.
-                    This can be loosely interpreted as the probability of each model (among the compared model) given the data.
+                    This can be loosely interpreted as the probability of each model
+                    (among the compared model) given the data.
                 SE: Standard error of the ELPD estimate.
-                dSE: Standard error of the difference in ELPD between each model and the top-ranked model.
-                    It's always 0 for the reference model.
-                warning: A value of 1 indicates that the computation of the ELPD may not be reliable.
-                    This could be indication of PSIS-LOO-CV starting to fail see
-                    http://arxiv.org/abs/1507.04544 for details.
+                dSE: Standard error of the difference in ELPD between each model and
+                    the top-ranked model. It's always 0 for the reference model.
+                warning: A value of 1 indicates that the computation of the ELPD may
+                    not be reliable. This could be indication of PSIS-LOO-CV starting
+                    to fail see http://arxiv.org/abs/1507.04544 for details.
                 scale: Scale used for the ELPD. This is always the log scale
             axes : matplotlib_axes or bokeh_figure
         """
         if "log_likelihood" not in self.idata.groups():
             raise UserWarning(
-                "Please run Bambi's fit method with the option idata_kwargs={'log_likelihood': True}"
+                """Please run Bambi's fit method with the option
+                idata_kwargs={'log_likelihood': True}"""
             )
 
         comparison, axes = self.searcher.loo_compare(
