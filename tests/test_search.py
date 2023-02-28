@@ -72,7 +72,7 @@ class TestSearch:
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
         cmp, _ = ref_model_copy.loo_compare()
-        all(cmp.index == [0, 1, 2])
+        all(cmp.index == [0, 1, 2, 3])
 
     def test_loo_with_no_search_path(self, ref_model):
         """Test that an error is raised when no search path is found."""
@@ -107,7 +107,7 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        ref_model_copy.loo_compare(plot=True, plot_kwargs={"insample_dev": False})
+        ref_model_copy.loo_compare(plot=True, figsize=(10, 5))
 
     def test_plot_densities(self, ref_model):
         ref_model_copy = copy.copy(ref_model)
