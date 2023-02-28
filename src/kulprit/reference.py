@@ -82,7 +82,7 @@ class ReferenceModel:
                 log_likelihood={self.model.response_name: ref_log_likelihood},
                 dims={self.model.response_name: [f"{self.model.response_name}_dim_0"]},
             )
-        # extract the elpd point estiamte from the reference model and log it
+        # extract the elpd point estimate from the reference model and log it
         self.ref_loo_elpd = az.loo(idata).elpd_loo
 
     def project(
