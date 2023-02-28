@@ -107,8 +107,7 @@ class Projector:
 
         The projection is defined as the values of the submodel parameters
         minimising the Kullback-Leibler divergence between the submodel
-        and the reference model. This is perform numerically using PyTorch and
-        Adam for the optimisation.
+        and the reference model.
 
         Args:
             term_names (Sequence[str]): Collection of strings containing the
