@@ -107,8 +107,7 @@ class Projector:
 
         The projection is defined as the values of the submodel parameters
         minimising the Kullback-Leibler divergence between the submodel
-        and the reference model. This is perform numerically using PyTorch and
-        Adam for the optimisation.
+        and the reference model.
 
         Args:
             term_names (Sequence[str]): Collection of strings containing the
@@ -121,16 +120,6 @@ class Projector:
 
         # copy term names to avoid mutating the input
         term_names_ = copy.copy(term_names)
-
-        # if projecting onto the reference model, simply return it
-        if set(term_names_) == set(self.model.response_component.common_terms):
-            return SubModel(
-                model=self.model,
-                idata=self.idata,
-                loss=0,
-                size=len(self.model.response_component.common_terms),
-                term_names=term_names_,
-            )
 
         # build restricted bambi model
         new_model = self._build_restricted_model(term_names=term_names_)
