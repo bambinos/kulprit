@@ -54,7 +54,11 @@ class TestProjector(KulpritTest):
         data = bmb.load_data("my_data")
         # define model
         bad_model = bmb.Model("z ~ x + y", data, family="t")
-        bad_idata = bad_model.fit(draws=self.NUM_DRAWS, chains=self.NUM_CHAINS)
+        bad_idata = bad_model.fit(
+            draws=self.NUM_DRAWS,
+            chains=self.NUM_CHAINS,
+            idata_kwargs={"log_likelihood": True},
+        )
 
         with pytest.raises(NotImplementedError):
             # build a bad reference model object
@@ -119,7 +123,12 @@ class TestProjector(KulpritTest):
         model_cat = bmb.Model(
             "claimcst0 ~ C(agecat) + gender + area", data, family="gaussian"
         )
-        fitted_cat = model_cat.fit(draws=100, tune=2000, target_accept=0.9)
+        fitted_cat = model_cat.fit(
+            draws=100,
+            tune=2000,
+            target_accept=0.9,
+            idata_kwargs={"log_likelihood": True},
+        )
         ref_model = kpt.ReferenceModel(model=model_cat, idata=fitted_cat)
         sub_model = ref_model.project(terms=["gender"])
         assert sub_model.size == 1

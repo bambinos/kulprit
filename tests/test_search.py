@@ -45,7 +45,12 @@ class TestSearch:
         model_cat = bmb.Model(
             "claimcst0 ~ C(agecat) + gender + area", data, family="gaussian"
         )
-        fitted_cat = model_cat.fit(draws=100, tune=2000, target_accept=0.9)
+        fitted_cat = model_cat.fit(
+            draws=100,
+            tune=2000,
+            target_accept=0.9,
+            idata_kwargs={"log_likelihood": True},
+        )
 
         with pytest.raises(NotImplementedError):
             ref_model = kpt.ReferenceModel(model=model_cat, idata=fitted_cat)
