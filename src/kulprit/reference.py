@@ -72,6 +72,18 @@ class ReferenceModel:
         self.searcher = Searcher(self.projector)
         self.path = None
 
+        # test if reference model idata includes the log-likelihood
+        if "log_likelihood" in idata.groups():
+            del idata.log_likelihood
+        # project reference model onto itself
+        ref_log_likelihood = self.projector.compute_model_log_likelihood(
+            model=self.model, idata=self.idata
+        )
+        self.idata.add_groups(
+            log_likelihood={self.model.response_name: ref_log_likelihood},
+            dims={self.model.response_name: [f"{self.model.response_name}_dim_0"]},
+        )
+
     def project(
         self,
         terms: Union[List[str], Tuple[str], int],
@@ -186,12 +198,6 @@ class ReferenceModel:
                 scale: Scale used for the ELPD. This is always the log scale
             axes : matplotlib_axes or bokeh_figure
         """
-        if "log_likelihood" not in self.idata.groups():
-            raise UserWarning(
-                """Please run Bambi's fit method with the option
-                idata_kwargs={'log_likelihood': True}"""
-            )
-
         comparison, axes = self.searcher.loo_compare(
             plot=plot,
             legend=legend,
