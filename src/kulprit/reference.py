@@ -23,7 +23,7 @@ class ReferenceModel:
     def __init__(
         self,
         model: bmb.models.Model,
-        idata: Optional[az.InferenceData] = None,
+        idata: az.InferenceData,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -39,10 +39,12 @@ class ReferenceModel:
             model (bmb.models.Model): The referemce GLM model to project
             idata (az.InferenceData): The ArviZ InferenceData object
                 of the fitted reference model
-            num_iters (int): Number of iterations over which to run backprop
-            learning_rate (float): The backprop optimiser's learning rate
-            num_thinned_samples (int): The number of draws to use in optimisation
         """
+        if "log_likelihood" not in idata.groups():
+            raise UserWarning(
+                """Please run Bambi's fit method with the option
+                idata_kwargs={'log_likelihood': True}"""
+            )
 
         # test that the reference model has an intercept term
         if model.response_component.intercept_term is None:
@@ -54,10 +56,6 @@ class ReferenceModel:
         # test that the reference model does not admit any hierarchical structure
         if model.response_component.group_specific_terms:
             raise NotImplementedError("Hierarchical models currently not supported.")
-
-        # build posterior if not provided
-        if idata is None:
-            idata = model.fit(idata_kwargs={"log_likelihood": True})
 
         # test compatibility between model and idata
         if not test_model_idata_compatability(model=model, idata=idata):
@@ -71,18 +69,6 @@ class ReferenceModel:
         self.projector = Projector(model=self.model, idata=self.idata)
         self.searcher = Searcher(self.projector)
         self.path = None
-
-        # test if reference model idata includes the log-likelihood
-        if "log_likelihood" in idata.groups():
-            del idata.log_likelihood
-        # project reference model onto itself
-        ref_log_likelihood = self.projector.compute_model_log_likelihood(
-            model=self.model, idata=self.idata
-        )
-        self.idata.add_groups(
-            log_likelihood={self.model.response_name: ref_log_likelihood},
-            dims={self.model.response_name: [f"{self.model.response_name}_dim_0"]},
-        )
 
     def project(
         self,
