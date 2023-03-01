@@ -1,1 +1,1 @@
-"""Top-level projection module."""
+"""Top-level plotting module."""
