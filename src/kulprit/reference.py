@@ -23,7 +23,7 @@ class ReferenceModel:
     def __init__(
         self,
         model: bmb.models.Model,
-        idata: az.InferenceData,
+        idata: Optional[az.InferenceData] = None,
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
@@ -40,12 +40,6 @@ class ReferenceModel:
             idata (az.InferenceData): The ArviZ InferenceData object
                 of the fitted reference model
         """
-        if "log_likelihood" not in idata.groups():
-            raise UserWarning(
-                """Please run Bambi's fit method with the option
-                idata_kwargs={'log_likelihood': True}"""
-            )
-
         # test that the reference model has an intercept term
         if model.response_component.intercept_term is None:
             raise UserWarning(
@@ -56,6 +50,15 @@ class ReferenceModel:
         # test that the reference model does not admit any hierarchical structure
         if model.response_component.group_specific_terms:
             raise NotImplementedError("Hierarchical models currently not supported.")
+
+        # build posterior if not provided
+        if idata is None:
+            idata = model.fit(idata_kwargs={"log_likelihood": True})
+        elif "log_likelihood" not in idata.groups():
+            raise UserWarning(
+                """Please run Bambi's fit method with the option
+                idata_kwargs={'log_likelihood': True}"""
+            )
 
         # test compatibility between model and idata
         if not test_model_idata_compatability(model=model, idata=idata):
