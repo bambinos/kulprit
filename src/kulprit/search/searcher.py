@@ -7,6 +7,7 @@ import pandas as pd
 import arviz as az
 
 from kulprit.projection.projector import Projector
+from kulprit.plots.plots import plot_compare
 from kulprit.search.forward import ForwardSearchPath
 from kulprit.search.l1 import L1SearchPath
 
@@ -77,18 +78,12 @@ class Searcher:
 
     def loo_compare(
         self,
-        ic: Optional[Literal["loo", "waic"]] = None,
         plot: Optional[bool] = False,
-        method: Literal["stacking", "BB-pseudo-BMA", "pseudo-MA"] = "stacking",
-        b_samples: int = 1000,
-        alpha: float = 1,
-        seed=None,
-        scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
-        var_name: Optional[str] = None,
+        legend: Optional[bool] = True,
+        title: Optional[bool] = True,
+        figsize: Optional[tuple] = None,
         plot_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
-        """Compare the ELPD of the projected models along the search path."""
-
         # test that search has been previously run
         if self.search_completed is False:
             raise UserWarning("Please run search before comparing submodels.")
@@ -98,25 +93,18 @@ class Searcher:
             plot_kwargs = {}
 
         # make dictionary of inferencedata objects for each projection
-        self.idatas = {k: submodel.idata for k, submodel in self.path.k_submodel.items()}
+        self.idatas = {}
+        for k, submodel in self.path.k_submodel.items():
+            self.idatas[k] = submodel.idata
+        self.idatas[k + 1] = self.projector.idata
 
         # compare the submodels by some criterion
-        comparison = az.compare(
-            self.idatas,
-            ic=ic,
-            method=method,
-            b_samples=b_samples,
-            alpha=alpha,
-            seed=seed,
-            scale=scale,
-            var_name=var_name,
-        )
+        comparison = az.compare(self.idatas)
+        comparison.sort_index(ascending=False, inplace=True)
 
         # plot the comparison if requested
         axes = None
-        comparison.sort_index(ascending=False, inplace=True)
         if plot:
-            axes = az.plot_compare(comparison, order_by_rank=False, **plot_kwargs)
-            axes.set_ylabel("Model size")
+            axes = plot_compare(comparison, legend, title, figsize, **plot_kwargs)
 
         return comparison, axes

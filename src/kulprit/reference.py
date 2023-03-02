@@ -39,11 +39,7 @@ class ReferenceModel:
             model (bmb.models.Model): The referemce GLM model to project
             idata (az.InferenceData): The ArviZ InferenceData object
                 of the fitted reference model
-            num_iters (int): Number of iterations over which to run backprop
-            learning_rate (float): The backprop optimiser's learning rate
-            num_thinned_samples (int): The number of draws to use in optimisation
         """
-
         # test that the reference model has an intercept term
         if model.response_component.intercept_term is None:
             raise UserWarning(
@@ -58,6 +54,11 @@ class ReferenceModel:
         # build posterior if not provided
         if idata is None:
             idata = model.fit(idata_kwargs={"log_likelihood": True})
+        elif "log_likelihood" not in idata.groups():
+            raise UserWarning(
+                """Please run Bambi's fit method with the option
+                idata_kwargs={'log_likelihood': True}"""
+            )
 
         # test compatibility between model and idata
         if not test_model_idata_compatability(model=model, idata=idata):
@@ -71,19 +72,6 @@ class ReferenceModel:
         self.projector = Projector(model=self.model, idata=self.idata)
         self.searcher = Searcher(self.projector)
         self.path = None
-
-        # test if reference model idata includes the log-likelihood
-        if "log_likelihood" not in idata.groups():
-            # if not, then compute it
-            ref_log_likelihood = self.projector.compute_model_log_likelihood(
-                model=self.model, idata=self.idata
-            )
-            self.idata.add_groups(
-                log_likelihood={self.model.response_name: ref_log_likelihood},
-                dims={self.model.response_name: [f"{self.model.response_name}_dim_0"]},
-            )
-        # extract the elpd point estimate from the reference model and log it
-        self.ref_loo_elpd = az.loo(idata).elpd_loo
 
     def project(
         self,
@@ -155,27 +143,55 @@ class ReferenceModel:
 
     def loo_compare(
         self,
-        ic: Optional[Literal["loo", "waic"]] = None,
         plot: Optional[bool] = False,
-        method: Literal["stacking", "BB-pseudo-BMA", "pseudo-MA"] = "stacking",
-        b_samples: int = 1000,
-        alpha: float = 1,
-        seed=None,
-        scale: Optional[Literal["log", "negative_log", "deviance"]] = None,
-        var_name: Optional[str] = None,
+        legend: Optional[bool] = True,
+        title: Optional[bool] = True,
+        figsize: Optional[tuple] = None,
         plot_kwargs: Optional[dict] = None,
     ) -> Tuple[pd.DataFrame, matplotlib.axes.Axes]:
+        """Compare the ELPD of the projected models along the search path.
 
-        # perform pair-wise predictive performance comparison with LOO
+        Args:
+            plot : bool, default False
+                Plot the results of the comparison.
+            legend : bool, default True
+                Add legend to figure.
+            title : bool
+                Show a tittle with a description of how to interpret the plot.
+                Defaults to True.
+            figsize : (float, float), optional
+                If None, size is (10, num of submodels) inches
+            plot_kwargs : dict, optional
+                Optional arguments for plot elements. Currently accepts 'color_elpd',
+                'marker_elpd', 'marker_fc_elpd', 'color_dse' 'marker_dse',
+                'ls_reference' 'color_ls_reference'.
+
+        Returns:
+            A DataFrame, ordered from largest to smaller model. The columns are:
+                rank: The rank-order of the models. 0 is the best.
+                elpd: ELPD estimated either using (PSIS-LOO-CV).
+                    Higher ELPD indicates higher out-of-sample predictive fit
+                    ("better" model).
+                pIC: Estimated effective number of parameters.
+                elpd_diff: The difference in ELPD between two models.
+                    The difference is computed relative to the reference model
+                weight: Relative weight for each model.
+                    This can be loosely interpreted as the probability of each model
+                    (among the compared model) given the data.
+                SE: Standard error of the ELPD estimate.
+                dSE: Standard error of the difference in ELPD between each model and
+                    the top-ranked model. It's always 0 for the reference model.
+                warning: A value of 1 indicates that the computation of the ELPD may
+                    not be reliable. This could be indication of PSIS-LOO-CV starting
+                    to fail see http://arxiv.org/abs/1507.04544 for details.
+                scale: Scale used for the ELPD. This is always the log scale
+            axes : matplotlib_axes or bokeh_figure
+        """
         comparison, axes = self.searcher.loo_compare(
-            ic=ic,
             plot=plot,
-            method=method,
-            b_samples=b_samples,
-            alpha=alpha,
-            seed=seed,
-            scale=scale,
-            var_name=var_name,
+            legend=legend,
+            title=title,
+            figsize=figsize,
             plot_kwargs=plot_kwargs,
         )
         return comparison, axes
