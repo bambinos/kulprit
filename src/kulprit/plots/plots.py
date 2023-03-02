@@ -65,7 +65,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
 
     if title:
         ax.set_title(
-            "Model comparison\nhigher is better",
+            "Model comparison\n(higher is better)",
             fontsize=ax_labelsize,
         )
 
