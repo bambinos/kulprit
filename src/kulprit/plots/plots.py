@@ -23,7 +23,10 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     xticks_labels[0] = labels[0]
     xticks_labels[2::2] = labels[1:]
 
-    _, ax = plt.subplots(1, figsize=figsize)
+    fig, ax = plt.subplots(1, figsize=figsize)
+
+    # double axes
+    ax2 = ax.twinx()
 
     ax.errorbar(
         y=cmp_df["elpd_loo"][1:],
@@ -37,8 +40,8 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
         lw=linewidth,
         markersize=4,
     )
-    ax.errorbar(
-        y=cmp_df["elpd_loo"].iloc[1:],
+    ax2.errorbar(
+        y=cmp_df["elpd_diff"].iloc[1:],
         x=xticks_pos[1::2],
         yerr=cmp_df.dse[1:],
         label="ELPD difference\n(to reference model)",
@@ -58,7 +61,8 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     )
 
     if legend:
-        ax.legend(
+        fig.legend(
+            bbox_to_anchor=(0.9, 0.1),
             loc="lower right",
             ncol=1,
             fontsize=ax_labelsize * 0.6,
@@ -80,5 +84,8 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     ax.set_xticklabels(xticks_labels)
     ax.set_xlim(-1 + step, 0 - step)
     ax.tick_params(labelsize=xt_labelsize * 0.6)
+    ax2.set_ylabel("ELPD difference", fontsize=ax_labelsize * 0.6, color="grey")
+    ax2.set_ylim(ax2.get_ylim()[::-1])
+    ax2.tick_params(axis="y", colors="grey")
 
     return ax
