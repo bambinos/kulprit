@@ -23,12 +23,12 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     xticks_labels[0] = labels[0]
     xticks_labels[2::2] = labels[1:]
 
-    fig, ax = plt.subplots(1, figsize=figsize)
+    fig, ax1 = plt.subplots(1, figsize=figsize)
 
     # double axes
-    ax2 = ax.twinx()
+    ax2 = ax1.twinx()
 
-    ax.errorbar(
+    ax1.errorbar(
         y=cmp_df["elpd_loo"][1:],
         x=xticks_pos[::2],
         yerr=cmp_df.se[1:],
@@ -52,7 +52,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
         markersize=4,
     )
 
-    ax.axhline(
+    ax1.axhline(
         cmp_df["elpd_loo"].iloc[0],
         ls=plot_kwargs.get("ls_reference", "--"),
         color=plot_kwargs.get("color_ls_reference", "grey"),
@@ -69,7 +69,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
         )
 
     if title:
-        ax.set_title(
+        ax1.set_title(
             "Model comparison",
             fontsize=ax_labelsize * 0.6,
         )
@@ -78,14 +78,25 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     xticks_pos, xticks_labels = xticks_pos[::2], xticks_labels[::2]
 
     # set axes
-    ax.set_xticks(xticks_pos)
-    ax.set_ylabel("ELPD", fontsize=ax_labelsize * 0.6)
-    ax.set_xlabel("Submodel size", fontsize=ax_labelsize * 0.6)
-    ax.set_xticklabels(xticks_labels)
-    ax.set_xlim(-1 + step, 0 - step)
-    ax.tick_params(labelsize=xt_labelsize * 0.6)
+    ax1.set_xticks(xticks_pos)
+    ax1.set_ylabel("ELPD", fontsize=ax_labelsize * 0.6)
+    ax1.set_xlabel("Submodel size", fontsize=ax_labelsize * 0.6)
+    ax1.set_xticklabels(xticks_labels)
+    ax1.set_xlim(-1 + step, 0 - step)
+    ax1.tick_params(labelsize=xt_labelsize * 0.6)
     ax2.set_ylabel("ELPD difference", fontsize=ax_labelsize * 0.6, color="grey")
     ax2.set_ylim(ax2.get_ylim()[::-1])
     ax2.tick_params(axis="y", colors="grey")
+    align_yaxis(ax1, cmp_df["elpd_loo"].iloc[0], ax2, 0)
 
-    return ax
+    return ax1
+
+
+def align_yaxis(ax1, v1, ax2, v2):
+    """adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1"""
+    _, y1 = ax1.transData.transform((0, v1))
+    _, y2 = ax2.transData.transform((0, v2))
+    inv = ax2.transData.inverted()
+    _, dy = inv.transform((0, 0)) - inv.transform((0, y1 - y2))
+    miny, maxy = ax2.get_ylim()
+    ax2.set_ylim(miny + dy, maxy + dy)
