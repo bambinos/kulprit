@@ -1,0 +1,847 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-theme="light">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>kulprit: Kullback-Leibler projections for Bayesian model selection in Python &#8212; Kulprir 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../../../_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../../../../../../_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="../../../../../../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/custom.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../../../_static/jquery.js"></script>
+    <script src="../../../../../../../_static/underscore.js"></script>
+    <script src="../../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../../../_static/copybutton.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'jupyter_execute/jupyter_execute/jupyter_execute/jupyter_execute/jupyter_execute/examples/tutorials/intro';</script>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs..."
+         aria-label="Search the docs..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="../../../../../../../index.html">
+  
+  
+  
+  
+    
+    
+    
+    <img src="../../../../../../../_static/kulprit_flat.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="../../../../../../../_static/kulprit_flat_white.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../../../../examples/quick-start.html">
+                        Quick Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../../../../api_reference.html">
+                        API Reference
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bambinos/kulprit" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../../../../examples/quick-start.html">
+                        Quick Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../../../../../../api_reference.html">
+                        API Reference
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bambinos/kulprit" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">kulprit: Kullback-Leibler projections for Bayesian model selection in Python</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="kulprit-kullback-leibler-projections-for-bayesian-model-selection-in-python">
+<h1>kulprit: Kullback-Leibler projections for Bayesian model selection in Python<a class="headerlink" href="#kulprit-kullback-leibler-projections-for-bayesian-model-selection-in-python" title="Permalink to this heading">#</a></h1>
+<section id="introduction-to-projection-predictive-model-selection">
+<h2>Introduction to projection predictive model selection<a class="headerlink" href="#introduction-to-projection-predictive-model-selection" title="Permalink to this heading">#</a></h2>
+<p>The Bayesian community has recently witnessed a rapid growth in theoretical and applied contributions to building and selecting predictive models. Projection predictive inference, based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003), in particular has shown promise in doing so, finding application in medical statistics and deep learning. It is less prone to over-fitting than naïve selection based purely on cross-validated performance metrics, and has been known to out-perform the maximum <em>a posteriori</em> model in terms of predictive performance.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">wishart</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s1">&#39;display.max_columns&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">bambi</span> <span class="k">as</span> <span class="nn">bmb</span>
+<span class="kn">import</span> <span class="nn">arviz</span> <span class="k">as</span> <span class="nn">az</span>
+
+<span class="kn">import</span> <span class="nn">kulprit</span> <span class="k">as</span> <span class="nn">kpt</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="data">
+<h2>Data<a class="headerlink" href="#data" title="Permalink to this heading">#</a></h2>
+<p>For this tutorial we will use some simple simulated data following a Gaussian observation model. We simulate $n = 100$ samples from $p = 10$ covariates of which $5$ are informative using <code class="docutils literal notranslate"><span class="pre">sklearn</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># generate the data</span>
+<span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">xi</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mf">0.59</span><span class="p">,</span> <span class="mi">1</span>
+<span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span> 
+                <span class="p">[</span><span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span>
+                <span class="p">[</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span>
+                <span class="p">[</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span>
+                <span class="p">[</span><span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="n">cor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">p</span> <span class="o">/</span> <span class="n">block_size</span><span class="p">)),</span> <span class="n">arr</span><span class="p">)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">cor</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+<span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+    <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">block_size</span><span class="p">),</span> 
+        <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">xi</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">block_size</span><span class="p">),</span> 
+        <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">xi</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">,</span> <span class="n">block_size</span><span class="p">),</span> 
+        <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">p</span> <span class="o">-</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">block_size</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">X</span> <span class="o">@</span> <span class="n">beta</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">covnames</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;x</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">covnames</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">])</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>x0</th>
+      <th>x1</th>
+      <th>x2</th>
+      <th>...</th>
+      <th>x98</th>
+      <th>x99</th>
+      <th>y</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-2.169237</td>
+      <td>-2.093321</td>
+      <td>-2.164986</td>
+      <td>...</td>
+      <td>-0.814788</td>
+      <td>-1.016381</td>
+      <td>-8.949746</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.461913</td>
+      <td>-0.378206</td>
+      <td>-0.296709</td>
+      <td>...</td>
+      <td>0.695487</td>
+      <td>0.775949</td>
+      <td>0.031366</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-1.169529</td>
+      <td>-0.264146</td>
+      <td>-0.920321</td>
+      <td>...</td>
+      <td>-1.306152</td>
+      <td>-1.105857</td>
+      <td>-3.177319</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>-0.046576</td>
+      <td>-0.030755</td>
+      <td>0.068914</td>
+      <td>...</td>
+      <td>0.615996</td>
+      <td>0.657675</td>
+      <td>-0.078952</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1.724572</td>
+      <td>2.114190</td>
+      <td>1.319470</td>
+      <td>...</td>
+      <td>0.008281</td>
+      <td>-0.478100</td>
+      <td>4.327655</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 101 columns</p>
+</div></div></div>
+</div>
+</section>
+<section id="reference-model">
+<h2>Reference model<a class="headerlink" href="#reference-model" title="Permalink to this heading">#</a></h2>
+<p>First, we have to construct a reference model for the projection predictive variable selection. This model is considered as the best (“reference”) solution to the prediction task. The aim of the projection predictive variable selection is to find a subset of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.</p>
+<p>The rich reference model is a model we consider to be good in terms of predictive performance, and one we would be happy using as-is. Model selection then becomes applicable when we</p>
+<ol class="arabic simple">
+<li><p>have a predictive rich model, but would like to reduce computational burden, or</p></li>
+<li><p>would like to gain a better understanding of important correlation structures.</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">kulprit</span></code> requires the <code class="docutils literal notranslate"><span class="pre">arviz.InferenceData</span></code> object associated with a fitted <code class="docutils literal notranslate"><span class="pre">bambi</span></code> reference model, as well as the <code class="docutils literal notranslate"><span class="pre">bambi.Model</span></code> object. This <code class="docutils literal notranslate"><span class="pre">Model</span></code> will define the search space in the projection predictive model selection procedure, and the <code class="docutils literal notranslate"><span class="pre">InferenceData</span></code> provides the posterior predictive distribution to emulate. In general, the <code class="docutils literal notranslate"><span class="pre">InferenceData</span></code> need not come from the <code class="docutils literal notranslate"><span class="pre">Model</span></code> object. In other words, <code class="docutils literal notranslate"><span class="pre">kulprit</span></code> naturally allows for the reference model to be different from the search space, affording the statistician the possibility to fit a non-parametric reference model but search through an interpretable space. For the sake of this demonstration, we will only consider nested submodels of the reference model.</p>
+<p>In this case study, we will fit a simple linear regression with independent standard Gaussian priors over the parameters</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fit the reference model</span>
+<span class="c1">#priors = {cov: bmb.Prior(&quot;Normal&quot;, mu=0.0, sigma=1.0) for cov in covnames}</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">bmb</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;y ~ 1 + </span><span class="si">{</span><span class="s1">&#39; + &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">covnames</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">&quot;gaussian&quot;</span><span class="p">)</span>
+<span class="n">idata</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">draws</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">chains</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">idata_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;log_likelihood&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Auto-assigning NUTS sampler...
+Initializing NUTS using jitter+adapt_diag...
+Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [y_sigma, Intercept, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30, x31, x32, x33, x34, x35, x36, x37, x38, x39, x40, x41, x42, x43, x44, x45, x46, x47, x48, x49, x50, x51, x52, x53, x54, x55, x56, x57, x58, x59, x60, x61, x62, x63, x64, x65, x66, x67, x68, x69, x70, x71, x72, x73, x74, x75, x76, x77, x78, x79, x80, x81, x82, x83, x84, x85, x86, x87, x88, x89, x90, x91, x92, x93, x94, x95, x96, x97, x98, x99]
+</pre></div>
+</div>
+<div class="output text_html">
+<style>
+    /* Turns off some styling */
+    progress {
+        /* gets rid of default border in Firefox and Opera. */
+        border: none;
+        /* Needs to be in here for Safari polyfill so background images work as expected. */
+        background-size: auto;
+    }
+    progress:not([value]), progress:not([value])::-webkit-progress-bar {
+        background: repeating-linear-gradient(45deg, #7e7e7e, #7e7e7e 10px, #5c5c5c 10px, #5c5c5c 20px);
+    }
+    .progress-bar-interrupted, .progress-bar-interrupted::-webkit-progress-bar {
+        background: #F44336;
+    }
+</style>
+</div><div class="output text_html">
+    <div>
+      <progress value='8000' class='' max='8000' style='width:300px; height:20px; vertical-align: middle;'></progress>
+      100.00% [8000/8000 22:33&lt;00:00 Sampling 4 chains, 93 divergences]
+    </div>
+    </div><div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sampling 4 chains for 1_000 tune and 1_000 draw iterations (4_000 + 4_000 draws total) took 1353 seconds.
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that for model selection, <strong>we require the <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> argument to add the log-likelihood of the reference model to its <code class="docutils literal notranslate"><span class="pre">idata</span></code></strong>!!!</p>
+<p>We combine these object into a <code class="docutils literal notranslate"><span class="pre">kulprit.ReferenceModel</span></code> object as follows:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># intiate reference model</span>
+<span class="n">ref_model</span> <span class="o">=</span> <span class="n">kpt</span><span class="o">.</span><span class="n">ReferenceModel</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">idata</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="model-selection">
+<h2>Model selection<a class="headerlink" href="#model-selection" title="Permalink to this heading">#</a></h2>
+<p>Model selection in our case broadly consists of two components: the <em>search</em> component and the <em>projection</em> component.</p>
+<section id="projection">
+<h3>Projection<a class="headerlink" href="#projection" title="Permalink to this heading">#</a></h3>
+<p>In essence, the “projection” stage of our model selection procued is achieved by fitting to the fit of the reference model.</p>
+<p>Denote $\theta$ the parameters of the reference model, and $\theta_\perp$ those of some submodel. We are primarily interested in inferring submodel parameter values that optimise for prediction. In the original formulation by Goutis and Robert (1998), one looks to replace some reference model’s posterior, denoted $p(\theta\mid \mathcal{D})$ herein, with some restricted posterior $q(\theta_\perp)$ such that their induced posterior predictive distributions, $p(\tilde{y} \mid \theta, \mathcal{D})$ and $q(\tilde{y}\mid\theta_\perp)$, are as similar as possible. This similarity is quantified by Kullback-Leibler distance (KL; Kullback and Leibler, 1951). Formally, we aim to produce this restricted posterior $q(\theta_\perp)$ such that</p>
+<p>$$
+q(\theta_\perp) = {\arg,\min}_{q\in\mathscr{Q}(\Theta)} \mathbb{KL}{p(\tilde{y}\mid\theta, \mathcal{D}) \mid q(\tilde{y})}.
+$$</p>
+</section>
+<section id="search">
+<h3>Search<a class="headerlink" href="#search" title="Permalink to this heading">#</a></h3>
+<p>We currently account for two main methods of search: forward search, and Lasso-type search ($L_1$ search). We recommend that users favour forward search over $L_1$ search when searching up to $40$ covariates as it broadly produces “better” solution paths (by which we mean less selection-induced over-fitting).</p>
+<p>In forward search, we begin by projecting the reference model onto the “empty” (intercept-only) model, which acts as the root of our search tree. We then project the reference model onto all models with one predictor and the intercept term, and select the single-predictor model whose posterior predictive distribution is closest to the reference model’s posterior predictive distribution (possibly coarsened by clustering or thinning the posterior draws) in KL divergence sense and as defined in Section~\ref{sec:projpred}. Denote this first predictor to be selected $x^{(1)}$. Following this, we fit all size-two models including the intercept and $x^{(1)}$ (``size-two’’ does not count the intercept here), and once more select the one closest to the reference model in terms of KL divergence of their posterior predictive distributions. Denote this second predictor to be selected $x^{(2)}$. This is repeated until either all predictors are selected, or some pre-defined limit on the model size is reached. Our solution path is then the list of predictors ordered by the stage at which they were selected: in our example $(\text{Intercept}, x^{(1)},x^{(2)},\dotsc)$.</p>
+<p>Tangentially, $L_1$ search can reduce computational cost by fitting a model with Lasso penalty to the in-sample predictions made by the reference model (thus, the $L_1$ search solves an $L_1$-penalised projection problem, whereas the forward search solves the original projection problem) and investigating the order in which the predictors enter the Lasso model.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ref_model</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span> <span class="n">max_terms</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="model-size-selection">
+<h3>Model size selection<a class="headerlink" href="#model-size-selection" title="Permalink to this heading">#</a></h3>
+<p>We now do not reason directly on the submodels, but rather their sizes. That is to say that we presently look to select the smallest submodel size, say $k$, such that</p>
+<p>$$
+k = {\arg,\min}<em>{k=1,\dotsc,p</em>\text{max}} \left{  \right}
+$$</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># compare submodels found in the search by LOO-CV ELPD</span>
+<span class="n">cmp</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ref_model</span><span class="o">.</span><span class="n">loo_compare</span><span class="p">(</span><span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+<span class="n">cmp</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/Users/yannmclatchie/Desktop/kulprit/.venv/lib/python3.9/site-packages/arviz/stats/stats.py:803: UserWarning: Estimated shape parameter of Pareto distribution is greater than 0.7 for one or more samples. You should consider using a more robust model, this is because importance sampling is less likely to work well if the marginal posterior and LOO posterior are very different. This is more likely to happen with a non-robust model and highly influential observations.
+  warnings.warn(
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>rank</th>
+      <th>elpd_loo</th>
+      <th>p_loo</th>
+      <th>...</th>
+      <th>dse</th>
+      <th>warning</th>
+      <th>scale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>11</th>
+      <td>8</td>
+      <td>-180.450049</td>
+      <td>91.443710</td>
+      <td>...</td>
+      <td>5.369430</td>
+      <td>True</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>1</td>
+      <td>-157.628455</td>
+      <td>8.473267</td>
+      <td>...</td>
+      <td>1.140132</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>0</td>
+      <td>-157.226891</td>
+      <td>7.510851</td>
+      <td>...</td>
+      <td>0.000000</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>2</td>
+      <td>-157.733012</td>
+      <td>7.002288</td>
+      <td>...</td>
+      <td>1.122730</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>3</td>
+      <td>-158.390146</td>
+      <td>7.060681</td>
+      <td>...</td>
+      <td>1.213802</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>4</td>
+      <td>-159.374995</td>
+      <td>5.374228</td>
+      <td>...</td>
+      <td>2.181088</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>5</td>
+      <td>-165.621043</td>
+      <td>5.705184</td>
+      <td>...</td>
+      <td>2.870787</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>6</td>
+      <td>-169.985058</td>
+      <td>4.547884</td>
+      <td>...</td>
+      <td>3.646857</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>7</td>
+      <td>-180.322770</td>
+      <td>3.848573</td>
+      <td>...</td>
+      <td>4.215328</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>9</td>
+      <td>-191.668349</td>
+      <td>2.667150</td>
+      <td>...</td>
+      <td>4.890330</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>10</td>
+      <td>-226.394663</td>
+      <td>1.450588</td>
+      <td>...</td>
+      <td>7.173283</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>11</td>
+      <td>-277.907868</td>
+      <td>0.424175</td>
+      <td>...</td>
+      <td>8.644691</td>
+      <td>False</td>
+      <td>log</td>
+    </tr>
+  </tbody>
+</table>
+<p>12 rows × 9 columns</p>
+</div></div><img alt="../../../../../../../_images/a5f26af8c591a4b8a86203c85c87a0d386382b63b4e796467c66afa762c7e483.png" src="../../../../../../../_images/a5f26af8c591a4b8a86203c85c87a0d386382b63b4e796467c66afa762c7e483.png" />
+</div>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction-to-projection-predictive-model-selection">Introduction to projection predictive model selection</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data">Data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reference-model">Reference model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-selection">Model selection</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#projection">Projection</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#search">Search</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#model-size-selection">Model size selection</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div class="tocsection sourcelink">
+    <a href="../../../../../../../_sources/jupyter_execute/jupyter_execute/jupyter_execute/jupyter_execute/jupyter_execute/examples/tutorials/intro.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../../../../../_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Bambinos.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,674 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-theme="light">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>kulprit.reference &#8212; Kulprir 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/kulprit/reference';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="light">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs..."
+         aria-label="Search the docs..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+    
+    
+    
+    <img src="../../_static/kulprit_flat.png" class="logo__image only-light" alt="Logo image"/>
+    <script>document.write(`<img src="../../_static/kulprit_flat_white.png" class="logo__image only-dark" alt="Logo image"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../examples/quick-start.html">
+                        Quick Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../api_reference.html">
+                        API Reference
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bambinos/kulprit" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../examples/quick-start.html">
+                        Quick Start
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../api_reference.html">
+                        API Reference
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/bambinos/kulprit" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-github"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">kulprit.reference</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <h1>Source code for kulprit.reference</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Core reference model class.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+
+<span class="kn">import</span> <span class="nn">arviz</span> <span class="k">as</span> <span class="nn">az</span>
+<span class="kn">import</span> <span class="nn">bambi</span> <span class="k">as</span> <span class="nn">bmb</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">kulprit.data.submodel</span> <span class="kn">import</span> <span class="n">SubModel</span>
+<span class="kn">from</span> <span class="nn">kulprit.projection.projector</span> <span class="kn">import</span> <span class="n">Projector</span>
+<span class="kn">from</span> <span class="nn">kulprit.search.searcher</span> <span class="kn">import</span> <span class="n">Searcher</span>
+
+
+<div class="viewcode-block" id="ReferenceModel"><a class="viewcode-back" href="../../api_reference.html#kulprit.ReferenceModel">[docs]</a><span class="k">class</span> <span class="nc">ReferenceModel</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reference model class from which we perform the model selection procedure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">bmb</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span>
+        <span class="n">idata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">az</span><span class="o">.</span><span class="n">InferenceData</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Reference model builder for projection predictive model selection.</span>
+
+<span class="sd">        This object initialises the reference model and handles the core</span>
+<span class="sd">        projection and variable search methods of the model selection procedure.</span>
+
+<span class="sd">        Note that throughout the procedure, variables with names of the form</span>
+<span class="sd">        ``*_ast`` belong to the reference model while variables with names like</span>
+<span class="sd">        ``*_perp`` belong to the restricted model. This is to preserve notation</span>
+<span class="sd">        choices from previous papers on the topic.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (bmb.models.Model): The referemce GLM model to project</span>
+<span class="sd">            idata (az.InferenceData): The ArviZ InferenceData object</span>
+<span class="sd">                of the fitted reference model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># test that the reference model has an intercept term</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">intercept_term</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">UserWarning</span><span class="p">(</span>
+                <span class="s2">&quot;The procedure currently requires reference models to have an&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot; intercept term.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># test that the reference model does not admit any hierarchical structure</span>
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">group_specific_terms</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Hierarchical models currently not supported.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># build posterior if not provided</span>
+        <span class="k">if</span> <span class="n">idata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">idata</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">idata_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;log_likelihood&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="k">elif</span> <span class="s2">&quot;log_likelihood&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">idata</span><span class="o">.</span><span class="n">groups</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">UserWarning</span><span class="p">(</span>
+                <span class="sd">&quot;&quot;&quot;Please run Bambi&#39;s fit method with the option</span>
+<span class="sd">                idata_kwargs={&#39;log_likelihood&#39;: True}&quot;&quot;&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># test compatibility between model and idata</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">test_model_idata_compatability</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">idata</span><span class="o">=</span><span class="n">idata</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">UserWarning</span><span class="p">(</span><span class="s2">&quot;Incompatible model and inference data.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># log reference model and inference data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idata</span> <span class="o">=</span> <span class="n">idata</span>
+
+        <span class="c1"># instantiate projector, search, and search path classes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projector</span> <span class="o">=</span> <span class="n">Projector</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">idata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">idata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">searcher</span> <span class="o">=</span> <span class="n">Searcher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projector</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ReferenceModel.project"><a class="viewcode-back" href="../../api_reference.html#kulprit.ReferenceModel.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">terms</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubModel</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Projection the reference model onto a variable subset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            terms (Union[List[str], Tuple[str], int]): Collection of strings</span>
+<span class="sd">                containing the names of the parameters to include the submodel,</span>
+<span class="sd">                or the number of parameters to include in the submodel, **not**</span>
+<span class="sd">                including the intercept term</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            kulprit.data.SubModel: Projected submodel object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># project the reference model onto a subset of covariates</span>
+        <span class="n">sub_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">projector</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">terms</span><span class="o">=</span><span class="n">terms</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sub_model</span></div>
+
+<div class="viewcode-block" id="ReferenceModel.search"><a class="viewcode-back" href="../../api_reference.html#kulprit.ReferenceModel.search">[docs]</a>    <span class="k">def</span> <span class="nf">search</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">max_terms</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;forward&quot;</span><span class="p">,</span> <span class="s2">&quot;l1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;forward&quot;</span><span class="p">,</span>
+        <span class="n">return_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Model search method through parameter space.</span>
+
+<span class="sd">        If ``max_terms`` is not provided, then the search path runs from the</span>
+<span class="sd">        intercept-only model up to but not including the full model, in other</span>
+<span class="sd">        words we set ``max_terms = data.num_terms - 1``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_terms (int): The number of parameters of the largest submodel in</span>
+<span class="sd">                the search path, **not** including the intercept term</span>
+<span class="sd">            method (str): The search method to employ, either &quot;forward&quot; to</span>
+<span class="sd">                employ a forward search heuristic through the space, or &quot;l1&quot; to</span>
+<span class="sd">                use the L1-regularised search path</span>
+<span class="sd">            return_path (bool): Whether or not to return the search path as a</span>
+<span class="sd">                dictionary object to the user</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: The model selection procedure search path, containing the</span>
+<span class="sd">                submodels along the search path, keyed by their model size</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># set default `max_terms` value</span>
+        <span class="k">if</span> <span class="n">max_terms</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_terms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">common_terms</span><span class="p">)</span>
+
+        <span class="c1"># test `max_terms` input</span>
+        <span class="k">if</span> <span class="n">max_terms</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">common_terms</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">UserWarning</span><span class="p">(</span>
+                <span class="s2">&quot;Please ensure that the maximum number to consider in the &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;submodel search is between 1 and the number of terms in the &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;reference model.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># perform search through the parameter space</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">searcher</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+            <span class="n">max_terms</span><span class="o">=</span><span class="n">max_terms</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># return the path dictionary if specified</span>
+        <span class="k">if</span> <span class="n">return_path</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span></div>
+
+<div class="viewcode-block" id="ReferenceModel.loo_compare"><a class="viewcode-back" href="../../api_reference.html#kulprit.ReferenceModel.loo_compare">[docs]</a>    <span class="k">def</span> <span class="nf">loo_compare</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">plot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">legend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">plot_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the ELPD of the projected models along the search path.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            plot : bool, default False</span>
+<span class="sd">                Plot the results of the comparison.</span>
+<span class="sd">            legend : bool, default True</span>
+<span class="sd">                Add legend to figure.</span>
+<span class="sd">            title : bool</span>
+<span class="sd">                Show a tittle with a description of how to interpret the plot.</span>
+<span class="sd">                Defaults to True.</span>
+<span class="sd">            figsize : (float, float), optional</span>
+<span class="sd">                If None, size is (10, num of submodels) inches</span>
+<span class="sd">            plot_kwargs : dict, optional</span>
+<span class="sd">                Optional arguments for plot elements. Currently accepts &#39;color_elpd&#39;,</span>
+<span class="sd">                &#39;marker_elpd&#39;, &#39;marker_fc_elpd&#39;, &#39;color_dse&#39; &#39;marker_dse&#39;,</span>
+<span class="sd">                &#39;ls_reference&#39; &#39;color_ls_reference&#39;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A DataFrame, ordered from largest to smaller model. The columns are:</span>
+<span class="sd">                rank: The rank-order of the models. 0 is the best.</span>
+<span class="sd">                elpd: ELPD estimated either using (PSIS-LOO-CV).</span>
+<span class="sd">                    Higher ELPD indicates higher out-of-sample predictive fit</span>
+<span class="sd">                    (&quot;better&quot; model).</span>
+<span class="sd">                pIC: Estimated effective number of parameters.</span>
+<span class="sd">                elpd_diff: The difference in ELPD between two models.</span>
+<span class="sd">                    The difference is computed relative to the reference model</span>
+<span class="sd">                weight: Relative weight for each model.</span>
+<span class="sd">                    This can be loosely interpreted as the probability of each model</span>
+<span class="sd">                    (among the compared model) given the data.</span>
+<span class="sd">                SE: Standard error of the ELPD estimate.</span>
+<span class="sd">                dSE: Standard error of the difference in ELPD between each model and</span>
+<span class="sd">                    the top-ranked model. It&#39;s always 0 for the reference model.</span>
+<span class="sd">                warning: A value of 1 indicates that the computation of the ELPD may</span>
+<span class="sd">                    not be reliable. This could be indication of PSIS-LOO-CV starting</span>
+<span class="sd">                    to fail see http://arxiv.org/abs/1507.04544 for details.</span>
+<span class="sd">                scale: Scale used for the ELPD. This is always the log scale</span>
+<span class="sd">            axes : matplotlib_axes or bokeh_figure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">comparison</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">searcher</span><span class="o">.</span><span class="n">loo_compare</span><span class="p">(</span>
+            <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span>
+            <span class="n">legend</span><span class="o">=</span><span class="n">legend</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span>
+            <span class="n">plot_kwargs</span><span class="o">=</span><span class="n">plot_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">comparison</span><span class="p">,</span> <span class="n">axes</span></div>
+
+<div class="viewcode-block" id="ReferenceModel.plot_densities"><a class="viewcode-back" href="../../api_reference.html#kulprit.ReferenceModel.plot_densities">[docs]</a>    <span class="k">def</span> <span class="nf">plot_densities</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">var_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">outline</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">shade</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compare the projected posterior densities of the submodels&quot;&quot;&quot;</span>
+
+        <span class="c1"># set default variable names to the reference model terms</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var_names</span><span class="p">:</span>
+            <span class="n">var_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">terms</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">response_name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">az</span><span class="o">.</span><span class="n">plot_density</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">submodel</span><span class="o">.</span><span class="n">idata</span> <span class="k">for</span> <span class="n">submodel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+            <span class="n">group</span><span class="o">=</span><span class="s2">&quot;posterior&quot;</span><span class="p">,</span>
+            <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span>
+            <span class="n">outline</span><span class="o">=</span><span class="n">outline</span><span class="p">,</span>
+            <span class="n">shade</span><span class="o">=</span><span class="n">shade</span><span class="p">,</span>
+            <span class="n">data_labels</span><span class="o">=</span><span class="p">[</span><span class="n">submodel</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">formula</span> <span class="k">for</span> <span class="n">submodel</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">axes</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">test_model_idata_compatability</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">idata</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Test that the Bambi model and idata are compatible with vanilla procedure.</span>
+
+<span class="sd">    In the future, this will be extended to allow for different structures and</span>
+<span class="sd">    covariates, testing instead only that the observation data are the same.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model (bmb.models.Model): The reference Bambi model object</span>
+<span class="sd">        idata (az.InferenceData): The reference model fitted inference data obejct</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: Indicator of whether the two objects are compatible</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># test that the variate&#39;s name is the same in reference model and idata</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="o">.</span><span class="n">response_name</span> <span class="o">==</span> <span class="nb">list</span><span class="p">(</span><span class="n">idata</span><span class="o">.</span><span class="n">observed_data</span><span class="o">.</span><span class="n">data_vars</span><span class="o">.</span><span class="n">variables</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># test that the variate has the same dimensions in reference model and idata</span>
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">design</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">&quot;proportion&quot;</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">idata</span><span class="o">.</span><span class="n">observed_data</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">response_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span>
+        <span class="o">!=</span> <span class="n">model</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">response_name</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">design</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;proportion&quot;</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">idata</span><span class="o">.</span><span class="n">observed_data</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">response_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span>
+        <span class="o">!=</span> <span class="n">model</span><span class="o">.</span><span class="n">response_component</span><span class="o">.</span><span class="n">design</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">evaluate_new_data</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># return default truth</span>
+    <span class="k">return</span> <span class="kc">True</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+                <footer class="bd-footer-article">
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
+<div class="prev-next-area">
+</div></div>
+  
+</div>
+
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Bambinos.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
