@@ -64,9 +64,9 @@ class Searcher:
             raise UserWarning("Please either select either forward search or L1 search.")
 
         # initialise search path
-        self.path = self.method_dict[method](
+        self.path = self.method_dict[method](  # pylint: disable=attribute-defined-outside-init
             self.projector
-        )  # pylint: disable=attribute-defined-outside-init
+        )
 
         # perform the search according to the chosen heuristic
         k_submodels = self.path.search(max_terms=max_terms)
