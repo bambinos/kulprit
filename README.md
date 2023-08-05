@@ -14,7 +14,7 @@ $ pip install git+https://github.com/bambinos/kulprit.git
 
 ## Documentation
 
-The Kulprit documentation can be found in the [official docs](https://bambinos.github.io/kulprit/index.html)
+The Kulprit documentation can be found in the [official docs](https://kulprit.readthedocs.io/en/latest/)
 
 
 ## Development
