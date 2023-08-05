@@ -1,13 +1,13 @@
+# pylint: disable=no-self-use
+import copy
+import pytest
+
 import numpy as np
 import pandas as pd
 import bambi as bmb
 
 import kulprit as kpt
 from kulprit import ReferenceModel
-
-import pytest
-import copy
-
 from tests import KulpritTest
 
 
@@ -68,10 +68,13 @@ class TestProjector(KulpritTest):
         """Test that an error is raised when model and idata aren't compatible."""
 
         # define model data
-        a = np.array([1.6907, 1.7242, 1.7552, 1.7842, 1.8113, 1.8369, 1.8610, 1.8839])
-        b = np.array([59, 60, 62, 56, 63, 59, 62, 60])
-        y = np.array([6, 13, 18, 28, 52, 53, 61, 60])
-        data = pd.DataFrame({"a": a, "b": b, "y": y})
+        data = pd.DataFrame(
+            {
+                "a": np.array([1.6907, 1.7242, 1.7552, 1.7842, 1.8113, 1.8369, 1.8610, 1.8839]),
+                "b": np.array([59, 60, 62, 56, 63, 59, 62, 60]),
+                "y": np.array([6, 13, 18, 28, 52, 53, 61, 60]),
+            }
+        )
 
         # define model
         formula = "y ~ a + b"
@@ -85,10 +88,13 @@ class TestProjector(KulpritTest):
         """Test that an error is raised when model and idata aren't compatible."""
 
         # define model data
-        z = np.array([1.6907, 1.7242, 1.7552, 1.7842, 1.8113, 1.8369, 1.8610, 1.8839])
-        x = np.array([59, 60, 62, 56, 63, 59, 62, 60])
-        y = np.array([6, 13, 18, 28, 52, 53, 61, 60])
-        data = pd.DataFrame({"z": z, "x": x, "y": y})
+        data = pd.DataFrame(
+            {
+                "z": np.array([1.6907, 1.7242, 1.7552, 1.7842, 1.8113, 1.8369, 1.8610, 1.8839]),
+                "x": np.array([59, 60, 62, 56, 63, 59, 62, 60]),
+                "y": np.array([6, 13, 18, 28, 52, 53, 61, 60]),
+            }
+        )
 
         # define model
         formula = "z ~ x + y"
@@ -118,11 +124,8 @@ class TestProjector(KulpritTest):
     def test_project_categorical(self):
         """Test that the projection method works with a categorical model."""
 
-        data = bmb.load_data("carclaims")
-        data = data[data["claimcst0"] > 0]
-        model_cat = bmb.Model(
-            "claimcst0 ~ C(agecat) + gender + area", data, family="gaussian"
-        )
+        data = bmb.load_data("carclaims")[::50]
+        model_cat = bmb.Model("claimcst0 ~ C(agecat) + gender + area", data, family="gaussian")
         fitted_cat = model_cat.fit(
             draws=100,
             tune=2000,
@@ -181,10 +184,8 @@ class TestProjector(KulpritTest):
         """Test that restricted model building works as expected."""
 
         # build restricted model which is the same as the reference model
-        solver = kpt.projection.projector.Projector(
-            model=bambi_model, idata=bambi_model_idata
-        )
-        new_model = solver._build_restricted_model(["x", "y"])
+        solver = kpt.projection.projector.Projector(model=bambi_model, idata=bambi_model_idata)
+        new_model = solver._build_restricted_model(["x", "y"])  # pylint: disable=protected-access
 
         # perform checks
         assert new_model.formula.__str__() == bambi_model.formula.__str__()
@@ -195,8 +196,7 @@ class TestProjector(KulpritTest):
         )
         assert new_model.family.name == bambi_model.family.name
         assert (
-            new_model.response_component.terms.keys()
-            == bambi_model.response_component.terms.keys()
+            new_model.response_component.terms.keys() == bambi_model.response_component.terms.keys()
         )
         assert set(new_model.response_component.common_terms.keys()) == set(
             bambi_model.response_component.common_terms.keys()

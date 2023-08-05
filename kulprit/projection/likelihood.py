@@ -1,3 +1,4 @@
+# pylint: disable=consider-using-generator
 import math
 import numpy as np
 
@@ -66,7 +67,7 @@ def binomial_log_pdf(y, prob, trials):
 
 @nb.njit
 def binomial_neg_llk(points, probs, trials):
-    return -sum((binomial_log_pdf(y, p, t) for y, p, t in zip(points, probs, trials)))
+    return -sum([binomial_log_pdf(y, p, t) for y, p, t in zip(points, probs, trials)])
 
 
 @nb.njit
@@ -79,7 +80,7 @@ def poisson_log_pdf(y, lam):
 
 @nb.njit
 def poisson_neg_llk(points, lam):
-    return -sum((poisson_log_pdf(y, l) for y, l in zip(points, lam)))
+    return -sum([poisson_log_pdf(y, l) for y, l in zip(points, lam)])
 
 
 LIKELIHOODS = {
