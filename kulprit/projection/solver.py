@@ -2,16 +2,15 @@
 
 from typing import List, Optional
 
-from kulprit.data.submodel import SubModel
-from kulprit.projection.likelihood import LIKELIHOODS
-
 import arviz as az
 import bambi as bmb
-
 import numpy as np
 import xarray as xr
 
 from scipy.optimize import minimize
+
+from kulprit.data.submodel import SubModel
+from kulprit.projection.likelihood import LIKELIHOODS
 
 
 class Solver:
@@ -63,14 +62,17 @@ class Solver:
     ) -> np.ndarray:
         """Predict the latent predictor of the submodel.
 
-        Args:
-            beta_x (np.ndarray): The model's projected posterior
-            X (np.ndarray): The model's common design matrix
-            x_offset (np.ndarray): Offset terms in the model is included
+        Parameters:
+        ----------
+        beta_x : np.ndarray
+            The model's projected posterior
+        X : np.ndarray
+            The model's common design matrix
 
-        Return
-            np.ndarray: Point estimate of the latent predictor using the single draw
-                from the posterior and the model's design matrix
+        Returns
+        -------
+        np.ndarray: Point estimate of the latent predictor using the single draw from the
+        posterior and the model's design matrix
         """
 
         linear_predictor = np.zeros(shape=(X.shape[0],))
@@ -79,9 +81,7 @@ class Solver:
         if X is not None:
 
             if len(beta_x.shape) > 1:  # pragma: no cover
-                raise NotImplementedError(
-                    "Currently this method only works for single samples."
-                )
+                raise NotImplementedError("Currently this method only works for single samples.")
 
             # 'contribution' is of shape:
             # * (obs_n, ) for univariate
@@ -92,27 +92,27 @@ class Solver:
         return linear_predictor
 
     def _init_optimisation(self, term_names: List[str]) -> List[float]:
-        """Initialise the optimisation with the reference posterior means."""
+        """Initialise the optimization with the reference posterior means."""
 
         return np.hstack(
-            [
-                self.ref_idata.posterior.mean(["chain", "draw"])[term].values
-                for term in term_names
-            ]
+            [self.ref_idata.posterior.mean(["chain", "draw"])[term].values for term in term_names]
         )
 
     def _build_bounds(self, init: List[float]) -> list:
-        """Build bounds for the parameters in the optimimsation.
+        """Build bounds for the parameters in the optimization.
 
         This method is used to ensure that dispersion or other auxiliary
         parameters present in certain families remain within their valid regions.
 
-        Args:
-            init (List[float]): The list of initial parameter values
+        Parameters:
+        ----------
+        init : (List[float])
+            The list of initial parameter values
 
-        Returns
-            List[Tuple(float)]: The upper and lower bounds for each initialised
-                parameter in the optimisation
+        Returns:
+        -------
+        List : [Tuple(float)]The upper and lower bounds for each initialized parameter in
+        the optimization
         """
 
         # build bounds based on family
@@ -132,28 +132,29 @@ class Solver:
     ) -> np.ndarray:
         """Variational projection predictive objective function.
 
-        This is negative log-likelihood of the restricted model but evaluated
-        on samples of the posterior predictive distribution of the reference model.
-        Formally, this objective function implements Equation 1 of mean-field
-        projection predictive inference as defined [here](https://www.hackmd.io/
-        @yannmcl/H1CZPjE1i).
+        This is negative log-likelihood of the restricted model but evaluated on samples of the
+        posterior predictive distribution of the reference model.
+        Formally, this objective function implements Equation 1 of mean-field projection predictive
+        inference as defined [here](https://www.hackmd.io/@yannmcl/H1CZPjE1i).
 
-        Args:
-            params (list): The optimisation parameters mean values
-            obs (list): One sample from the posterior predictive distribution of
-                the reference model
+        Parameters:
+        ----------
+        params : array_like
+            The optimisation parameters mean values
+        obs : array_like
+            One sample from the posterior predictive distribution of the reference model
+        X : array_like
+            The common term design matrix of the submodel
 
         Returns:
-            float: The negative log-likelihood of the reference posterior
-                predictive under the restricted model
+            float: The negative log-likelihood of the reference posterior predictive under the
+        restricted model
         """
 
         # Gaussian observation likelihood
         if self.ref_family == "gaussian":
             linear_predictor = self.linear_predict(beta_x=params[:-1], X=X)
-            neg_llk = self.neg_log_likelihood(
-                points=obs, mean=linear_predictor, sigma=params[-1]
-            )
+            neg_llk = self.neg_log_likelihood(points=obs, mean=linear_predictor, sigma=params[-1])
 
         # Binomial observation likelihood
         elif self.ref_family == "binomial":
@@ -172,18 +173,21 @@ class Solver:
     def solve(self, term_names: List[str], X: np.ndarray, slices: dict) -> SubModel:
         """The primary projection method in the procedure.
 
-        The projection is performed with a mean-field approximation rather than
-        concatenating posterior draw-wise optimisation solutions as is suggested
-        by Piironen (2018). For more information, kindly read [this tutorial](h
-        ttps://www.hackmd.io/@yannmcl/H1CZPjE1i).
+        The projection is performed with a mean-field approximation rather than concatenating
+        posterior draw-wise optimization solutions as is suggested by Piironen (2018).
+        For more information, kindly read https://www.hackmd.io/@yannmcl/H1CZPjE1i.
 
-        Args:
-            term_names (List[str]): The names of the terms to project onto in
-                the submodel
-            X (np.ndarray): The common term design matrix of the submodel
-            slices (dictionary): Slices of the common term design matrix
+        Parameters:
+        ----------
+        term_names : List[str]
+            The names of the terms to project onto in the submodel
+        X : array_like
+            The common term design matrix of the submodel
+        slices : dict
+            Slices of the common term design matrix
 
         Returns:
+        -------
             SubModel: The projected submodel object
         """
 

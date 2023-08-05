@@ -20,10 +20,10 @@ class L1SearchPath(SearchPath):
         # test whether the model includes categorical terms, and if so raise error
         if (
             sum(
-                [
+                (
                     self.projector.model.response_component.terms[term].categorical
                     for term in self.projector.model.response_component.terms.keys()
-                ]
+                )
             )
             > 0
         ):
@@ -46,18 +46,22 @@ class L1SearchPath(SearchPath):
             path_dict, orient="index", columns=["Terms", "Distance from reference model"]
         )
         df.index.name = "Model size"
-        string = df.to_string()
-        return string
+        return repr(df)
 
     def first_non_zero_idx(self, arr):
         """Find the index of the first non-zero element in each row of a matrix.
 
-        Args:
-            arr (np.ndarray): A matrix.
+        Parameters:
+        ----------
+
+        arr : np.ndarray
+            A matrix.
 
         Returns:
-            dict: Dictionary keyed by the row number where each value is the index
-                of the first non-zero element in that row."""
+        -------
+        dict: Dictionary keyed by the row number where each value is the index of the first
+        non-zero element in that row.
+        """
 
         # initialise dictionary of indices
         idx_dict = {}
@@ -79,25 +83,27 @@ class L1SearchPath(SearchPath):
     def compute_path(self) -> None:
         """Compute the L1 search path.
 
-        We compute the L1 search path for a given data object in the latent space
-        and return the coefficients for each model size. This use of the latent
-        space is a bit of a hack, but Catalina et al. (2021) show that this
-        space remains informative in terms of model selection and results in
-        faster computation. We use ``sklearn`` to compute the L1 path.
+        We compute the L1 search path for a given data object in the latent space and return the
+        coefficients for each model size. This use of the latent space is a bit of a hack,
+        but Catalina et al. (2021) show that this space remains informative in terms of model
+        selection and results in faster computation. We use ``sklearn`` to compute the L1 path.
 
         Returns:
-            np.ndarray: The coefficients for each model size
+        -------
+        np.ndarray: The coefficients for each model size
         """
 
         # extract reference model data and latent predictor
-        self.common_terms = list(self.projector.model.response_component.common_terms)
+        self.common_terms = list(  # pylint: disable=attribute-defined-outside-init
+            self.projector.model.response_component.common_terms
+        )
         X = np.column_stack(
             [
                 self.projector.model.response_component.design.common[term]
                 for term in self.common_terms
             ]
         )
-        # XXX we need to make this more general
+        # XXX we need to make this more general  # pylint: disable=fixme
         mean_param_name = list(self.projector.model.family.link.keys())[0]
         eta = self.projector.model.family.link[mean_param_name].link(
             np.array(self.projector.model.response_component.design.response)
@@ -109,15 +115,23 @@ class L1SearchPath(SearchPath):
         return cov_order
 
     def search(self, max_terms: int) -> dict:
-        """Perform L1 search through the parameter space."""
+        """Perform L1 search through the parameter space.
+
+        Parameters:
+        ----------
+        max_terms : int
+            Number of terms to perform the forward search up to.
+
+        Returns:
+        -------
+        dict: A dictionary of submodels, keyed by the number of terms in the submodel.
+        """
 
         # compute L1 path for each model size
         coef_path = self.compute_path()
 
         # sort the covariates according to their L1 ordering
-        cov_lasso = {
-            k: v for k, v in sorted(coef_path.items(), key=lambda item: item[1])
-        }
+        cov_lasso = dict(sorted(coef_path.items(), key=lambda item: item[1]))
         sorted_covs = [self.common_terms[k] for k in cov_lasso]
 
         # produce submodels for each model size

@@ -16,13 +16,15 @@ class Searcher:
     def __init__(self, projector: Projector) -> None:
         """Initialise forward search class.
 
-        Args:
-            projector (Projector): Projector object.
+        Parameters:
+        ----------
+        projector : Projector
+            A projector object.
 
-        Raises:
+        Raises
+        ------
             UserWarning: If method is not "forward" or "l1".
         """
-
         # initialise projector for the search procedure
         self.projector = projector
 
@@ -40,21 +42,21 @@ class Searcher:
 
         return self.path.__repr__()
 
-    def search(
-        self, max_terms: int, method: Literal["forward", "l1"] = "forward"
-    ) -> dict:
+    def search(self, max_terms: int, method: Literal["forward", "l1"] = "forward") -> dict:
         """Primary search method of the procedure.
 
         Performs forward search through the parameter space.
 
-        Args:
-            max_terms (int): Number of terms to perform the forward search
-                up to.
-            method (str): Method to use for search.
+        Parameters:
+        ----------
+        max_terms : int
+            Number of terms to perform the forward search up to.
+        method : str
+            Method to use for search.
 
         Returns:
-            dict: A dictionary of submodels, keyed by the number of terms in the
-                submodel.
+        -------
+        dict: A dictionary of submodels, keyed by the number of terms in the submodel.
         """
 
         # test valid solution method
@@ -62,7 +64,9 @@ class Searcher:
             raise UserWarning("Please either select either forward search or L1 search.")
 
         # initialise search path
-        self.path = self.method_dict[method](self.projector)
+        self.path = self.method_dict[method](  # pylint: disable=attribute-defined-outside-init
+            self.projector
+        )
 
         # perform the search according to the chosen heuristic
         k_submodels = self.path.search(max_terms=max_terms)
@@ -84,6 +88,27 @@ class Searcher:
         figsize: Optional[tuple] = None,
         plot_kwargs: Optional[dict] = None,
     ) -> pd.DataFrame:
+        """
+        Rank submodels by ELPD and plot the comparison.
+
+        Parameters:
+        ----------
+        plot : bool
+            Whether or not to plot the comparison.
+        legend : bool
+            Whether or not to include a legend in the plot.
+        title : bool
+            Whether or not to include a title in the plot.
+        figsize : tuple
+            Figure size for the plot.
+        plot_kwargs : dict
+            Keyword arguments for the plot.
+
+        Returns:
+        -------
+        pd.DataFrame: A dataframe of the comparison results.
+        axes: A tuple of matplotlib axes objects.
+        """
         # test that search has been previously run
         if self.search_completed is False:
             raise UserWarning("Please run search before comparing submodels.")
@@ -92,11 +117,12 @@ class Searcher:
         if plot_kwargs is None:
             plot_kwargs = {}
 
+        self.idatas = {}  # pylint: disable=attribute-defined-outside-init
+
         # make dictionary of inferencedata objects for each projection
-        self.idatas = {}
         for k, submodel in self.path.k_submodel.items():
             self.idatas[k] = submodel.idata
-        self.idatas[k + 1] = self.projector.idata
+        self.idatas[k + 1] = self.projector.idata  # pylint: disable=undefined-loop-variable
 
         # compare the submodels by some criterion
         comparison = az.compare(self.idatas)

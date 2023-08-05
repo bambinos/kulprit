@@ -4,6 +4,23 @@ import numpy as np
 
 
 def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None):
+    """
+    Plot model comparison.
+
+    Parameters
+    ----------
+    cmp_df : pd.DataFrame
+        Dataframe containing the comparison data. Should have columns
+        `elpd_loo` and `elpd_diff` containing the ELPD values and the
+        differences to the reference model.
+    legend : bool
+        Flag for plotting the legend, default True.
+    title : bool
+        Flag for plotting the title, default True.
+    figsize : tuple
+        Figure size. If None it will be defined automatically.
+    plot_kwargs : dict
+    """
 
     if plot_kwargs is None:
         plot_kwargs = {}
@@ -11,9 +28,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     if figsize is None:
         figsize = (len(cmp_df) - 1, 10)
 
-    figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(
-        figsize, None, 1, 1
-    )
+    figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(figsize, None, 1, 1)
 
     xticks_pos, step = np.linspace(0, -1, ((cmp_df.shape[0]) * 2) - 2, retstep=True)
     xticks_pos[1::2] = xticks_pos[1::2] - step * 1.5
@@ -92,11 +107,11 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     return ax1
 
 
-def align_yaxis(ax1, v1, ax2, v2):
+def align_yaxis(ax1, v_1, ax2, v_2):
     """adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1"""
-    _, y1 = ax1.transData.transform((0, v1))
-    _, y2 = ax2.transData.transform((0, v2))
+    _, y_1 = ax1.transData.transform((0, v_1))
+    _, y_2 = ax2.transData.transform((0, v_2))
     inv = ax2.transData.inverted()
-    _, dy = inv.transform((0, 0)) - inv.transform((0, y1 - y2))
+    _, d_y = inv.transform((0, 0)) - inv.transform((0, y_1 - y_2))
     miny, maxy = ax2.get_ylim()
-    ax2.set_ylim(miny + dy, maxy + dy)
+    ax2.set_ylim(miny + d_y, maxy + d_y)

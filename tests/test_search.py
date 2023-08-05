@@ -1,11 +1,12 @@
-import bambi as bmb
-import kulprit as kpt
-from kulprit.search.l1 import L1SearchPath
-
-import numpy as np
-
+# pylint: disable=no-self-use
 import copy
 import pytest
+
+import bambi as bmb
+import numpy as np
+
+import kulprit as kpt
+from kulprit.search.l1 import L1SearchPath
 
 
 class TestSearch:
@@ -32,23 +33,17 @@ class TestSearch:
 
         proj = ref_model.projector
         searcher = L1SearchPath(proj)
-        arr = np.array(
-            [[0.0, 1.0, 2.0, 3.0], [0.0, 0.0, -1.0, 2.0], [0.0, 0.0, 0.0, 0.0]]
-        )
+        arr = np.array([[0.0, 1.0, 2.0, 3.0], [0.0, 0.0, -1.0, 2.0], [0.0, 0.0, 0.0, 0.0]])
         assert searcher.first_non_zero_idx(arr) == {0: 1, 1: 2, 2: np.inf}
 
     def test_l1_categorical_error(self):
         """Test that an error is raised when no search path is found."""
 
-        data = bmb.load_data("carclaims")
-        data = data[data["claimcst0"] > 0]
-        model_cat = bmb.Model(
-            "claimcst0 ~ C(agecat) + gender + area", data, family="gaussian"
-        )
+        data = bmb.load_data("carclaims")[::50]
+        model_cat = bmb.Model("claimcst0 ~ C(agecat) + gender + area", data, family="gaussian")
         fitted_cat = model_cat.fit(
             draws=100,
-            tune=2000,
-            target_accept=0.9,
+            tune=100,
             idata_kwargs={"log_likelihood": True},
         )
 
@@ -96,16 +91,16 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         path = ref_model_copy.search(method="forward")
-        assert type(ref_model_copy.searcher.__repr__()) == str
-        assert type(path.__repr__()) == str
+        assert isinstance(ref_model_copy.searcher.__repr__(), str)
+        assert isinstance(path.__repr__(), str)
 
     def test_l1_repr(self, ref_model):
         """Test the string representation of the L1 search path."""
 
         ref_model_copy = copy.copy(ref_model)
         path = ref_model_copy.search(method="l1")
-        assert type(ref_model_copy.searcher.__repr__()) == str
-        assert type(path.__repr__()) == str
+        assert isinstance(ref_model_copy.searcher.__repr__(), str)
+        assert isinstance(path.__repr__(), str)
 
     def test_plot_comparison(self, ref_model):
         """Test the LOO compare plotting method."""

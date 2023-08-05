@@ -1,3 +1,4 @@
+# pylint: disable=consider-using-generator
 import math
 import numpy as np
 
@@ -61,11 +62,7 @@ def binomial_log_pdf(y, prob, trials):
     if prob == 0 or prob == 1 or y > trials:
         return -np.inf
     else:
-        return (
-            log_binom_coeff(trials, y)
-            + y * np.log(prob)
-            + (trials - y) * np.log(1 - prob)
-        )
+        return log_binom_coeff(trials, y) + y * np.log(prob) + (trials - y) * np.log(1 - prob)
 
 
 @nb.njit

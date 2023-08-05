@@ -25,19 +25,20 @@ class Projector:
     ) -> None:
         """Reference model builder for projection predictive model selection.
 
-        This class handles the core projection methods of the model selection
-        procedure. Note that throughout the procedure, variables with names of
-        the form ``*_ast`` belong to the reference model while variables with
-        names like ``*_perp`` belong to the restricted model. This is to
-        preserve notation choices from previous papers on the topic.
+        This class handles the core projection methods of the model selection procedure.
+        Note that throughout the procedure, variables with names of the form ``*_ast`` belong to
+        the reference model while variables with names like ``*_perp`` belong to the restricted
+        model. This is to preserve notation choices from previous papers on the topic.
 
-        Args:
-            data (kulprit.data.ModelData): Reference model dataclass object
-            path (dict): An optional search path dictionary, initialised to None
-                and assigned by the ReferenceModel parent object following a
-                search for efficient submodel retrieval
-            num_steps (int): Number of iterations to run VI for
-            obj_n_mc (int):
+        Parameters:
+        -----------
+        model : bambi model
+            The reference model to be projected.
+        idata : InferenceData
+            The inference data object corresponding to the reference model.
+        path : dict
+            An optional search path dictionary, initialized to None and assigned by the
+        ReferenceModel parent object following a search for efficient submodel retrieval.
         """
 
         # log reference model and reference inference data object
@@ -61,18 +62,18 @@ class Projector:
     ) -> SubModel:
         """Wrapper function for projection method.
 
-        Args:
-            terms (Union[Sequence[str], int]): Collection of strings containing
-            the names of the parameters to include the submodel, or the number
-            of parameters to include in the submodel, **not** including the
-            intercept term
+        Parameters:
+        -----------
+        terms : (Union[Sequence[str], int])
+            Collection of strings containing the names of the parameters to include the submodel,
+        or the number of parameters to include in the submodel, not including the intercept term
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
         # project terms by name
-        if isinstance(terms, collections.Sequence):
+        if isinstance(terms, collections.abc.Sequence):
             # if not a list, cast to list
             if not isinstance(terms, list):
                 terms = list(terms)
@@ -105,14 +106,14 @@ class Projector:
     def project_names(self, term_names: Sequence[str]) -> SubModel:
         """Primary projection method for GLM reference model.
 
-        The projection is defined as the values of the submodel parameters
-        minimising the Kullback-Leibler divergence between the submodel
-        and the reference model.
+        The projection is defined as the values of the submodel parameters minimizing the
+        Kullback-Leibler divergence between the submodel and the reference model.
 
-        Args:
-            term_names (Sequence[str]): Collection of strings containing the
-            names of the parameters to include the submodel **not** including
-            the intercept term
+        Parameters:
+        -----------
+        term_names : Sequence[str]
+            Collection of strings containing the names of the parameters to include the submodel,
+            not including the intercept term
 
         Returns:
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
@@ -144,9 +145,7 @@ class Projector:
         )
 
         # compute projected posterior
-        projected_posterior, loss = self.solver.solve(
-            term_names=term_names_, X=X, slices=slices
-        )
+        projected_posterior, loss = self.solver.solve(term_names=term_names_, X=X, slices=slices)
 
         # add observed data component of projected idata
         observed_data = {
@@ -162,9 +161,7 @@ class Projector:
         )
 
         # compute the log-likelihood of the new submodel and add to idata
-        log_likelihood = self.compute_model_log_likelihood(
-            model=new_model, idata=new_idata
-        )
+        log_likelihood = self.compute_model_log_likelihood(model=new_model, idata=new_idata)
         new_idata.add_groups(
             log_likelihood={self.response_name: log_likelihood},
             dims={self.response_name: [f"{self.response_name}_dim_0"]},
@@ -183,15 +180,11 @@ class Projector:
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
         obs_array = self.idata.observed_data[model.response_name]
-        obs_array = obs_array.rename(
-            {obs_array.coords.dims[0]: model.response_name + "_obs"}
-        )
         obs_array = obs_array.expand_dims(
             chain=idata.posterior.dims["chain"],
             draw=idata.posterior.dims["draw"],
         )
 
-        # make insample latent predictions
         preds = model.predict(idata, kind="mean", inplace=False).posterior[
             f"{model.response_name}_mean"
         ]
@@ -218,17 +211,17 @@ class Projector:
                 mu=linear_preds,
             )
         else:
-            raise (
-                NotImplementedError(
-                    f"The {model.family.name} family is not yet implemented."
-                )
-            )
+            raise NotImplementedError(f"The {model.family.name} family is not yet implemented.")
 
         # compute log likelihood of model
         if isinstance(dist, XrContinuousRV):
-            log_likelihood = dist.logpdf(obs_array).transpose(*("chain", "draw", ...))
+            log_likelihood = dist.logpdf(obs_array).transpose(  # pylint: disable=no-member
+                *("chain", "draw", ...)
+            )
         else:
-            log_likelihood = dist.logpmf(obs_array).transpose(*("chain", "draw", ...))
+            log_likelihood = dist.logpmf(obs_array).transpose(  # pylint: disable=no-member
+                *("chain", "draw", ...)
+            )
         return log_likelihood
 
     def _build_restricted_formula(self, term_names: List[str]) -> str:
@@ -264,6 +257,6 @@ class Projector:
         if self.priors:
             aux_params = [f"{self.response_name}_{str(k)}" for k in self.priors]
             term_names += aux_params
-            # TODO generalize
+            # TODO generalize  #pylint: disable=fixme
             slices[aux_params[0]] = slice(-1, None, None)
         return term_names, slices

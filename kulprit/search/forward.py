@@ -23,6 +23,7 @@ class ForwardSearchPath(SearchPath):
         self.k_term_names = {}
         self.k_submodel = {}
         self.k_loss = {}
+        self.search_completed = False
 
     def __repr__(self) -> str:
         """String representation of the search path."""
@@ -35,8 +36,7 @@ class ForwardSearchPath(SearchPath):
             path_dict, orient="index", columns=["Terms", "Distance from reference model"]
         )
         df.index.name = "Model size"
-        string = df.to_string()
-        return string
+        return repr(df)
 
     def add_submodel(
         self,
@@ -105,9 +105,7 @@ class ForwardSearchPath(SearchPath):
             # get list of candidate submodels, project onto them, and compute
             # their distances
             k_candidates = self.get_candidates(k=k)
-            k_projections = [
-                self.projector.project(terms=candidate) for candidate in k_candidates
-            ]
+            k_projections = [self.projector.project(terms=candidate) for candidate in k_candidates]
 
             # identify the best candidate by loss (equivalent to KL min)
             best_submodel = min(k_projections, key=lambda projection: projection.loss)

@@ -1,103 +1,55 @@
-[tool.poetry]
-name = "kulprit"
-version = "0.0.1"
-description = "Kullback-Leibler projections for Bayesian model selection"
-authors = [
-    "Yann McLatchie <Your email address (eq. you@example.com)>",
-]
-license = "MIT"
-readme = "README.md"
-
-documentation = "https://yannmclatchie.github.io/kulprit"
-homepage = "https://yannmclatchie.github.io/kulprit"
-repository = "https://github.com/yannmclatchie/kulprit"
-
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Typing :: Typed",
-]
-
-packages = [
-    { include = "kulprit", from = "src" }
-]
-
-[tool.poetry.dependencies]
-bambi = { git = "https://github.com/bambinos/bambi.git", branch = "main" }
-pymc =  ">=5.0.0"
-python = ">=3.8, <3.10"
-scikit-learn = "1.0.2"
-numba = "^0.56.0"
-
-[tool.poetry.dev-dependencies]
-autoflake = "^1.4"
-black = "^22.3.0"
-flake8 = "^3.9.2"
-flake8-bugbear = "^22.4.25"
-flake8-builtins = "^1.5.3"
-flake8-comprehensions = "^3.10.0"
-flake8-debugger = "^4.1.2"
-flake8-eradicate = "^1.2.1"
-flake8-logging-format = "^0.6.0"
-isort = "^5.10.1"
-jupyter = "1.0.0"
-mknotebooks = "^0.7.1"
-mkdocstrings = "0.18.1"
-mkdocs-material = "^8.3.3"
-mypy = "^0.961"
-nbconvert = "^6.5.2"
-pep8-naming = "^0.13.0"
-pre-commit = "^2.19.0"
-pymdown-extensions = "^9.5"
-pytest = "^7.1.2"
-pytest-cov = "^3.0.0"
-pyupgrade = "^2.34.0"
-tryceratops = "^0.1"
-pylint = "^2.13.8"
-notebook = "^6.5.1"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "preliz"
+readme = "README.md"
+maintainers = [
+    { name = "Osvaldo Martin", email = "aloctavodia@gmail.com" },
+    { name = "Tomás Capretto", email = "tomicapretto@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dynamic = ["version"]
+description = "Kullback-Leibler projections for Bayesian model selection."
+dependencies = [
+    "bambi>=0.12.0",
+    "scikit-learn>=1.0.2",
+    "numba>=0.56.0",
+]
+
+[tool.flit.module]
+name = "kulprit"
+
+[project.urls]
+source = "https://github.com/bambinos/kulprit"
+tracker = "https://github.com/bambinos/kulprit/issues"
+
+[tool.black]
+line-length = 100
 
 [tool.isort]
 profile = "black"
-src_paths = ["src", "tests"]
+include_trailing_comma = true
+use_parentheses = true
+multi_line_output = 3
+line_length = 100
 
-[tool.black]
-line-length = 89
-target-version = ['py36', 'py37', 'py38']
-include = '\.pyi?$'
+[tool.pydocstyle]
+convention = "numpy"
 
 [tool.pytest.ini_options]
-addopts = """\
-    --cov kulprit \
-    --cov tests \
-    --cov-report term-missing \
-    --no-cov-on-fail \
-"""
-
-[tool.coverage.report]
-fail_under = 90
-exclude_lines = [
-    'if TYPE_CHECKING:',
-    'pragma: no cover'
+testpaths = [
+    "tests",
 ]
-
-[tool.mypy]
-disallow_any_unimported = true
-disallow_untyped_defs = true
-no_implicit_optional = true
-strict_equality = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_return_any = true
-check_untyped_defs = true
-show_error_codes = true

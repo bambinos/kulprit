@@ -43,8 +43,7 @@ class ReferenceModel:
         # test that the reference model has an intercept term
         if model.response_component.intercept_term is None:
             raise UserWarning(
-                "The procedure currently requires reference models to have an"
-                + " intercept term."
+                "The procedure currently requires reference models to have an" + " intercept term."
             )
 
         # test that the reference model does not admit any hierarchical structure
@@ -138,8 +137,10 @@ class ReferenceModel:
         )
 
         # return the path dictionary if specified
-        if return_path:  # pragma: no cover
+        if return_path:
             return self.path
+        else:
+            return None
 
     def loo_compare(
         self,
@@ -207,8 +208,7 @@ class ReferenceModel:
         # set default variable names to the reference model terms
         if not var_names:
             var_names = list(
-                set(self.model.response_component.terms.keys())
-                - set(self.model.response_name)
+                set(self.model.response_component.terms.keys()) - set(self.model.response_name)
             )
 
         axes = az.plot_density(

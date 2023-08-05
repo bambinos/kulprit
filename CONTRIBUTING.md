@@ -1,82 +1,81 @@
 # Contributing
 
-Contributions to the package are very welcome! We recommend using `pyenv` to install a Python version compatible with `bambi` (these are versions `python>=3.8`), and then `poetry` for dependency management and virtual environment creation for development.
+Contributions to the package are very welcome! 
 
-## Development
 
-### Python version
 
-For those using Mac, `pyenv` can be installed via homebrew with
-```bash
-$ brew install pyenv
-```
-and a new version of Python installed and applied in your local repo with
-```bash
-$ cd ~path/to/kulprit
-$ pyenv install 3.7.2
-$ pyenv local 3.7.2
-$ eval "$(pyenv init --path)"
-$ python --version # check that new version is being used
-```
+## Pull request step-by-step
 
-### Dependency managament
+The preferred workflow for contributing to Kulprit is to fork the GitHub [repository](https://github.com/bambinos/kulprit), clone it to your local machine, and develop on a feature branch.
 
-`poetry` can be installed with
-```bash
-$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-```
-and simply locking and installing the `pyproject.toml` file given in the repo with
-```bash
-$ cd ~path/to/kulprit
-$ poetry config virtualenvs.in-project true
-$ poetry env use $(which python)
-$ poetry lock
-$ poetry install
-```
-will spawn a virtual environment within the repo with all the necessary development tools and package requirements. Activate and work within this virtual environment by running
-```bash
-$ poetry shell
-```
+### Steps
 
-More information on the two tools can be found at the following links:
-- [`poetry` documentation](https://python-poetry.org/)
-- [`pyenv` documentation and repo](https://github.com/pyenv/pyenv)
+1. Fork the [project repository](https://github.com/bambinos/kulprit/) by clicking on the 'Fork' button near the top right of the main repository page. This creates a copy of the code under your GitHub user account.
 
-### Testing
+1. Clone your fork of the Kulprit repo from your GitHub account to your local disk, and add the base repository as a remote:
 
-Tests (whose scripts are located within the `kulprit/tests/` directory) can be run locally using `pytest` with the command
-```sh
-$ poetry run pytest
-```
+   ```bash
+   git clone git@github.com:<your GitHub handle>/kulprit.git
+   cd pymc
+   git remote add upstream git@github.com:bambinos/kulprit.git
+   ```
 
-### Pre-commit checks
+1. Create a ``feature`` branch to hold your development changes:
 
-We use pre-commit hooks to automate formatting, linting, and quality checks. When developing locally, please initialise the pre-commit hooks with the command
-```sh
-$ poetry run pre-commit install
-```
-This will run the hooks with each commit. If you would like them to run only for each push:
-```sh
-$ pre-commit install -t pre-push
-```
-If you would like to run the hooks outwith a commit, then you can do so with
-```sh
-$ poetry run pre-commit run --all-files
-```
+   ```bash
+   git checkout -b my-feature
+   ```
 
-### Documentation
+   Always use a ``feature`` branch. It's good practice to never routinely work on the ``main`` branch of any repository.
 
-The documentation is automatically generated from the content of the [docs directory](./docs) and from the docstrings of the public signatures of the source code. The documentation is updated and published as a [Github project page
- ](https://pages.github.com/) automatically as part each release.
+1. Project requirements are in ``requirements.txt``, and libraries used for development are in ``requirements-dev.txt``.
+   The easiest (and recommended) way to set up a development environment is via [miniconda](https://docs.conda.io/en/latest/miniconda.html):
 
-One can also serve the docs locally by running
-```bash
-$ poetry run mkdocs serve
-```
-from the root directory.
+   ```bash
+   conda create --name kulprit-dev
+   ```
 
-## Releasing
+   ```bash
+   conda activate kulprit-dev
+   pip install -e .
+   pip install -r requirements-dev.txt
+   ```
 
-Trigger the [Draft release workflow](https://github.com/yannmclatchie/kulprit/actions/workflows/draft_release.yml) (press _Run workflow_). This will update the changelog & version and create a GitHub release which is in _Draft_ state.
 
-Find the draft release from the [GitHub releases](https://github.com/yannmclatchie/kulprit/releases) and publish it. When a release is published, it'll trigger [release](https://github.com/yannmclatchie/kulprit/blob/main/.github/workflows/release.yml) workflow which creates PyPI release and deploys updated documentation.
+1. Develop the feature on your feature branch.
+
+   ```bash
+   git checkout my-feature   # no -b flag because the branch is already created
+   ```
+
+1. Before committing, run `pre-commit` checks.
+
+   ```bash
+   pip install pre-commit
+   pre-commit install
+   ```
+
+1. Add changed files using ``git add`` and then ``git commit`` files:
+
+   ```bash
+   $ git add modified_files
+   $ git commit
+   ```
+
+   to record your changes locally.
+
+1. After committing, it is a good idea to sync with the base repository in case there have been any changes:
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+   Then push the changes to the fork in your GitHub account with:
+
+   ```bash
+   git push -u origin my-feature
+   ```
+
+1. Go to the GitHub web page of your fork of the PyMC repo.
+   Click the 'Pull request' button to send your changes to the project's maintainers for review.
+   This will send a notification to the committers.

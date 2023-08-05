@@ -1,4 +1,4 @@
-name: Tests
+name: Run tests
 
 on:
   push:
@@ -7,45 +7,52 @@ on:
   pull_request:
 
 jobs:
-  actionlint:
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download actionlint
-        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-        shell: bash
-      - name: Check workflow files
-        run: ./actionlint -color
-        shell: bash
-
-  lint-cruft:
-    name: Check if automatic project update was successful
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Fail if .rej files exist as structure update was not successful
-        run: test -z "$(find . -iname '*.rej')"
-
-  pre-commit:
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/python-poetry-env
-      - run: poetry run pre-commit run --all-files
-
   test:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
     strategy:
-      fail-fast: false
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.9", "3.10", "3.11"]
+
+    name: Set up Python ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/python-poetry-env
         with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          channels: conda-forge, defaults
+          channel-priority: true
           python-version: ${{ matrix.python-version }}
-      - run: poetry run pytest
+          auto-update-conda: true
+
+      - name: Install kulprit
+        shell: bash -l {0}
+        run: |
+          conda install pip
+          pip install -r requirements-dev.txt
+          pip install .
+          python --version
+          conda list
+          pip freeze
+      - name: Run linters
+        shell: bash -l {0}
+        run: |
+          python -m black kulprit --check
+          echo "Success!"
+          echo "Checking code style with pylint..."
+          python -m pylint kulprit/
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          python -m pytest -vv --cov=kulprit --cov-report=term --cov-report=xml tests
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: false
