@@ -9,7 +9,7 @@ Kullback-Leibler projections for Bayesian model selection in Python.
 
 Currently, this package is only available for download directly from GitHub with the command
 ```bash
-$ pip install git+https://github.com/bambinos/kulprit.git
+pip install git+https://github.com/bambinos/kulprit.git
 ```
 
 ## Documentation
