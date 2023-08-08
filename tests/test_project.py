@@ -7,7 +7,7 @@ import pandas as pd
 import bambi as bmb
 
 import kulprit as kpt
-from kulprit import ReferenceModel
+from kulprit import ProjectionPredictive
 from tests import KulpritTest
 
 
@@ -19,7 +19,7 @@ class TestProjector(KulpritTest):
     def test_idata_is_none(self, bambi_model):
         """Test that some inference data is automatically produced when None."""
 
-        no_idata_ref_model = ReferenceModel(bambi_model)
+        no_idata_ref_model = ProjectionPredictive(bambi_model)
         assert no_idata_ref_model.idata is not None
 
     def test_no_intercept_error(self):
@@ -33,7 +33,7 @@ class TestProjector(KulpritTest):
 
         with pytest.raises(UserWarning):
             # build a bad reference model object
-            kpt.ReferenceModel(bad_model, bad_idata)
+            kpt.ProjectionPredictive(bad_model, bad_idata)
 
     def test_hierarchical_error(self):
         """Test that an error is raised when model is hierarchical."""
@@ -45,7 +45,7 @@ class TestProjector(KulpritTest):
 
         with pytest.raises(NotImplementedError):
             # build a bad reference model object
-            kpt.ReferenceModel(bad_model)
+            kpt.ProjectionPredictive(bad_model)
 
     def test_unimplemented_family(self):
         """Test that an error is raised when an unimplemented family is used."""
@@ -62,7 +62,7 @@ class TestProjector(KulpritTest):
 
         with pytest.raises(NotImplementedError):
             # build a bad reference model object
-            kpt.ReferenceModel(bad_model, bad_idata)
+            kpt.ProjectionPredictive(bad_model, bad_idata)
 
     def test_different_variate_name(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
@@ -82,7 +82,7 @@ class TestProjector(KulpritTest):
 
         with pytest.raises(UserWarning):
             # build a bad reference model object
-            kpt.ReferenceModel(bad_model, bambi_model_idata)
+            kpt.ProjectionPredictive(bad_model, bambi_model_idata)
 
     def test_different_variate_dim(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
@@ -102,7 +102,7 @@ class TestProjector(KulpritTest):
 
         with pytest.raises(UserWarning):
             # build a bad reference model object
-            kpt.ReferenceModel(bad_model, bambi_model_idata)
+            kpt.ProjectionPredictive(bad_model, bambi_model_idata)
 
     def test_no_term_names_error(self, ref_model):
         """Test that an error is raised when no term names are provided."""
@@ -132,7 +132,7 @@ class TestProjector(KulpritTest):
             target_accept=0.9,
             idata_kwargs={"log_likelihood": True},
         )
-        ref_model = kpt.ReferenceModel(model=model_cat, idata=fitted_cat)
+        ref_model = kpt.ProjectionPredictive(model=model_cat, idata=fitted_cat)
         sub_model = ref_model.project(terms=["gender"])
         assert sub_model.size == 1
 

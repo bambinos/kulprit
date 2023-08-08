@@ -54,13 +54,15 @@ class ForwardSearchPath(SearchPath):
     def get_candidates(self, k: int) -> List[List]:
         """Method for extracting a list of all candidate submodels.
 
-        Args:
-            k (int): The number of terms in the previous submodel, from which we
-                wish to find all possible candidate submodels
+        Parameters:
+        ----------
+            k : int
+        The number of terms in the previous submodel, from which we wish to find all
+        possible candidate submodels.
 
         Returns:
-            List[List]: A list of lists, each containing the terms of all candidate
-                submodels
+        -------
+            List: A list of lists, each containing the terms of all candidate submodels
         """
 
         prev_subset = self.k_term_names[k - 1]
@@ -74,13 +76,14 @@ class ForwardSearchPath(SearchPath):
     ) -> dict:
         """Forward search through the parameter space.
 
-        Args:
-            max_terms (int): Number of terms to perform the forward search
-                up to.
+        Parameters:
+        ----------
+            max_terms : int
+            Number of terms to perform the forward search up to.
 
         Returns:
-            dict: A dictionary of submodels, keyed by the number of terms in the
-                submodel.
+        -------
+            dict: A dictionary of submodels, keyed by the number of terms in the submodel.
         """
 
         # initial intercept-only subset
