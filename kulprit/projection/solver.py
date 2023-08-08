@@ -1,6 +1,7 @@
-"""Optimisation module."""
+"""optimization module."""
 
 from typing import List, Optional
+import warnings
 
 import arviz as az
 import bambi as bmb
@@ -55,43 +56,7 @@ class Solver:
         ).values.T
         return pps
 
-    def linear_predict(
-        self,
-        beta_x: np.ndarray,
-        X: Optional[np.ndarray] = None,
-    ) -> np.ndarray:
-        """Predict the latent predictor of the submodel.
-
-        Parameters:
-        ----------
-        beta_x : np.ndarray
-            The model's projected posterior
-        X : np.ndarray
-            The model's common design matrix
-
-        Returns
-        -------
-        np.ndarray: Point estimate of the latent predictor using the single draw from the
-        posterior and the model's design matrix
-        """
-
-        linear_predictor = np.zeros(shape=(X.shape[0],))
-
-        # Contribution due to common terms
-        if X is not None:
-
-            if len(beta_x.shape) > 1:  # pragma: no cover
-                raise NotImplementedError("Currently this method only works for single samples.")
-
-            # 'contribution' is of shape:
-            # * (obs_n, ) for univariate
-            contribution = np.dot(X, beta_x.T).T
-            linear_predictor += contribution
-
-        # return the latent predictor
-        return linear_predictor
-
-    def _init_optimisation(self, term_names: List[str]) -> List[float]:
+    def _init_optimization(self, term_names: List[str]) -> List[float]:
         """Initialise the optimization with the reference posterior means."""
 
         return np.hstack(
@@ -101,24 +66,26 @@ class Solver:
     def _build_bounds(self, init: List[float]) -> list:
         """Build bounds for the parameters in the optimization.
 
-        This method is used to ensure that dispersion or other auxiliary
-        parameters present in certain families remain within their valid regions.
+        This method is used to ensure that dispersion or other auxiliary parameters present
+        in certain families remain within their valid regions.
 
         Parameters:
         ----------
-        init : (List[float])
+        init : List[float]
             The list of initial parameter values
 
         Returns:
         -------
-        List : [Tuple(float)]The upper and lower bounds for each initialized parameter in
-        the optimization
+        List : [Tuple(float)]
+            The upper and lower bounds for each initialized parameter in the optimization
         """
+        eps = np.finfo(np.float64).eps
 
-        # build bounds based on family
+        # build bounds based on family, we are assuming that the last parameter is the dispersion
+        # and that the other parameters are unbounded (like when using Gaussian priors)
         if self.ref_family in ["gaussian"]:
             # account for the dispersion parameter
-            bounds = [(None, None)] * (init.size - 1) + [(0, None)]
+            bounds = [(None, None)] * (init.size - 1) + [(eps, None)]
         elif self.ref_family in ["binomial", "poisson"]:
             # no dispersion parameter, so no bounds
             bounds = [(None, None)] * (init.size)
@@ -140,7 +107,7 @@ class Solver:
         Parameters:
         ----------
         params : array_like
-            The optimisation parameters mean values
+            The optimization parameters mean values
         obs : array_like
             One sample from the posterior predictive distribution of the reference model
         X : array_like
@@ -153,19 +120,19 @@ class Solver:
 
         # Gaussian observation likelihood
         if self.ref_family == "gaussian":
-            linear_predictor = self.linear_predict(beta_x=params[:-1], X=X)
+            linear_predictor = _linear_predict(beta_x=params[:-1], X=X)
             neg_llk = self.neg_log_likelihood(points=obs, mean=linear_predictor, sigma=params[-1])
 
         # Binomial observation likelihood
         elif self.ref_family == "binomial":
             trials = self.ref_model.response.data[:, 1]
-            linear_predictor = self.linear_predict(beta_x=params, X=X)
+            linear_predictor = _linear_predict(beta_x=params, X=X)
             probs = self.ref_model.family.link.linkinv(linear_predictor)
             neg_llk = self.neg_log_likelihood(points=obs, probs=probs, trials=trials)
 
         # Poisson observation likelihood
         elif self.ref_family == "poisson":
-            linear_predictor = self.linear_predict(beta_x=params, X=X)
+            linear_predictor = _linear_predict(beta_x=params, X=X)
             lam = self.ref_model.family.link.linkinv(linear_predictor)
             neg_llk = self.neg_log_likelihood(points=obs, lam=lam)
         return neg_llk
@@ -191,25 +158,29 @@ class Solver:
             SubModel: The projected submodel object
         """
 
-        # initialise the optimisation
-        init = self._init_optimisation(term_names=term_names)
+        # use reference model posterior as initial guess
+        init = self._init_optimization(term_names=term_names)
 
-        # build the optimisation parameter bounds
+        # build the optimization parameter bounds
         bounds = self._build_bounds(init)
 
         # perform mean-field variational projection predictive inference
         res_posterior = []
         objectives = []
-        for obs in self.pps:
-            opt = minimize(
-                self.objective,
-                args=(obs, X),
-                x0=init,  # use reference model posterior as initial guess
-                bounds=bounds,  # apply bounds
-                method="powell",
-            )
-            res_posterior.append(opt.x)
-            objectives.append(opt.fun)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Values in x were outside bounds")
+            for obs in self.pps:
+                opt = minimize(
+                    self.objective,
+                    args=(obs, X),
+                    x0=init,
+                    tol=0.0001,
+                    bounds=bounds,
+                    # This is the fastest method and the projected posterior looks Gaussian-like
+                    method="SLSQP",
+                )
+                res_posterior.append(opt.x)
+                objectives.append(opt.fun)
 
         # compile the projected posterior
         res_samples = np.vstack(res_posterior)
@@ -243,3 +214,38 @@ class Solver:
         # compute the average loss
         loss = np.mean(objectives)
         return posterior, loss
+
+
+def _linear_predict(
+    beta_x: np.ndarray,
+    X: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """Predict the latent predictor of the submodel.
+
+    Parameters:
+    ----------
+    beta_x : np.ndarray
+        The model's projected posterior
+    X : np.ndarray
+        The model's common design matrix
+
+    Returns
+    -------
+    np.ndarray: Point estimate of the latent predictor using the single draw from the
+    posterior and the model's design matrix
+    """
+
+    linear_predictor = np.zeros(shape=(X.shape[0],))
+
+    # Contribution due to common terms
+    if X is not None:
+
+        if len(beta_x.shape) > 1:
+            raise NotImplementedError("Currently this method only works for single samples.")
+
+        # 'contribution' is of shape * (obs_n, ) for univariate
+        contribution = np.dot(X, beta_x.T).T
+        linear_predictor += contribution
+
+    # return the latent predictor
+    return linear_predictor

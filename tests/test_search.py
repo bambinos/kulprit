@@ -48,7 +48,7 @@ class TestSearch:
         )
 
         with pytest.raises(NotImplementedError):
-            ref_model = kpt.ReferenceModel(model=model_cat, idata=fitted_cat)
+            ref_model = kpt.ProjectionPredictive(model=model_cat, idata=fitted_cat)
             ref_model.search(method="l1")
 
     def test_bad_search_method(self, ref_model):
@@ -71,7 +71,7 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        cmp, _ = ref_model_copy.loo_compare()
+        cmp, _ = ref_model_copy.plot_compare()
         all(cmp.index == [0, 1, 2, 3])
 
     def test_loo_with_no_search_path(self, ref_model):
@@ -83,8 +83,8 @@ class TestSearch:
             # define and fit model with MCMC
             bambi_model = bmb.Model("z ~ x + y", data, family="gaussian")
             idata = bambi_model.fit(draws=self.NUM_DRAWS, chains=self.NUM_CHAINS)
-            ref_model = kpt.ReferenceModel(model=bambi_model, idata=idata)
-            ref_model.loo_compare()
+            ref_model = kpt.ProjectionPredictive(model=bambi_model, idata=idata)
+            ref_model.plot_compare()
 
     def test_forward_repr(self, ref_model):
         """Test the string representation of the forward search path."""
@@ -107,7 +107,7 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        ref_model_copy.loo_compare(plot=True, figsize=(10, 5))
+        ref_model_copy.plot_compare(plot=True, figsize=(10, 5))
 
     def test_plot_densities(self, ref_model):
         ref_model_copy = copy.copy(ref_model)

@@ -1,9 +1,10 @@
 """Module for storing fixtures used in kulprit tests."""
+# pylint: disable=redefined-outer-name
+import pytest
 
-import kulprit as kpt
 import bambi as bmb
 
-import pytest
+import kulprit as kpt
 
 # define model fitting options
 NUM_DRAWS, NUM_CHAINS = 500, 4
@@ -36,7 +37,7 @@ def ref_model(bambi_model, bambi_model_idata):  # pragma: no cover
     """Initialise a Gaussian reference model for use in later tests."""
 
     # build and return reference model object
-    return kpt.ReferenceModel(bambi_model, bambi_model_idata)
+    return kpt.ProjectionPredictive(bambi_model, bambi_model_idata)
 
 
 @pytest.fixture(scope="session")

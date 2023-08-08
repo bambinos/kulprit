@@ -38,7 +38,7 @@ class Projector:
             The inference data object corresponding to the reference model.
         path : dict
             An optional search path dictionary, initialized to None and assigned by the
-        ReferenceModel parent object following a search for efficient submodel retrieval.
+        ProjectionPredictive parent object following a search for efficient submodel retrieval.
         """
 
         # log reference model and reference inference data object
