@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../"))
 
 # -- Project information -----------------------------------------------------
 
-project = "Kulprir"
+project = "Kulprit"
 author = "Bambinos"
 copyright = f"2023, {author}"
 
@@ -48,8 +48,8 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx_copybutton",
     "myst_nb",
-    "matplotlib.sphinxext.plot_directive",
 ]
+
 
 # -- Extension configuration -------------------------------------------------
 nb_execution_mode = "off"

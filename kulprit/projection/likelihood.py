@@ -51,10 +51,10 @@ def gaussian_log_pdf(y, mean, sigma):
 
 @nb.njit
 def gaussian_neg_llk(points, mean, sigma):
-    llk = []
+    llk = 0
     for y, m in zip(points, mean):
-        llk.append(gaussian_log_pdf(y, m, sigma))
-    return -sum(llk)
+        llk -= gaussian_log_pdf(y, m, sigma)
+    return llk
 
 
 @nb.njit
@@ -67,7 +67,10 @@ def binomial_log_pdf(y, prob, trials):
 
 @nb.njit
 def binomial_neg_llk(points, probs, trials):
-    return -sum([binomial_log_pdf(y, p, t) for y, p, t in zip(points, probs, trials)])
+    llk = 0
+    for y, p, t in zip(points, probs, trials):
+        llk -= binomial_log_pdf(y, p, t)
+    return llk
 
 
 @nb.njit
@@ -80,7 +83,10 @@ def poisson_log_pdf(y, lam):
 
 @nb.njit
 def poisson_neg_llk(points, lam):
-    return -sum([poisson_log_pdf(y, l) for y, l in zip(points, lam)])
+    llk = 0
+    for y, l in zip(points, lam):
+        llk -= poisson_log_pdf(y, l)
+    return llk
 
 
 LIKELIHOODS = {

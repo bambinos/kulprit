@@ -31,7 +31,7 @@ class Projector:
         model. This is to preserve notation choices from previous papers on the topic.
 
         Parameters:
-        -----------
+        ----------
         model : bambi model
             The reference model to be projected.
         idata : InferenceData
@@ -63,12 +63,13 @@ class Projector:
         """Wrapper function for projection method.
 
         Parameters:
-        -----------
+        ----------
         terms : (Union[Sequence[str], int])
             Collection of strings containing the names of the parameters to include the submodel,
         or the number of parameters to include in the submodel, not including the intercept term
 
         Returns:
+        -------
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
@@ -110,12 +111,13 @@ class Projector:
         Kullback-Leibler divergence between the submodel and the reference model.
 
         Parameters:
-        -----------
+        ----------
         term_names : Sequence[str]
             Collection of strings containing the names of the parameters to include the submodel,
             not including the intercept term
 
         Returns:
+        -------
             kulprit.data.ModelData: Projected submodel ``ModelData`` object
         """
 
