@@ -7,8 +7,8 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     """
     Plot model comparison.
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     cmp_df : pd.DataFrame
         Dataframe containing the comparison data. Should have columns
         `elpd_loo` and `elpd_diff` containing the ELPD values and the

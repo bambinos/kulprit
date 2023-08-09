@@ -114,6 +114,7 @@ class Solver:
             The common term design matrix of the submodel
 
         Returns:
+        -------
             float: The negative log-likelihood of the reference posterior predictive under the
         restricted model
         """
@@ -229,7 +230,7 @@ def _linear_predict(
     X : np.ndarray
         The model's common design matrix
 
-    Returns
+    Returns:
     -------
     np.ndarray: Point estimate of the latent predictor using the single draw from the
     posterior and the model's design matrix

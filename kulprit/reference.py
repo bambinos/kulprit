@@ -84,7 +84,7 @@ class ProjectionPredictive:
         # otherwise return the formulas for the submodels
         else:
             str_of_submodels = "\n".join(
-                f"{idx:>3}"
+                f"{idx:>3} "
                 f"{', '.join([value.model.formula.main] + list(value.model.formula.additionals))}"
                 for idx, value in enumerate(self.path.values())
             )
@@ -125,15 +125,15 @@ class ProjectionPredictive:
         -----------
         max_terms : int
             The number of parameters of the largest submodel in the search path, not including the
-        intercept term.
+            intercept term.
         method : str
             The search method to employ, either "forward" to employ a forward search heuristic
             through the space, or "l1" to use the L1-regularized search path.
 
         Returns:
         --------
-            dict: The model selection procedure search path, containing the submodels along the
-        search path, keyed by their model size.
+        dict: The model selection procedure search path, containing the submodels along the
+            search path, keyed by their model size.
         """
 
         # set default `max_terms` value
@@ -164,6 +164,7 @@ class ProjectionPredictive:
     ) -> Tuple[pd.DataFrame, matplotlib.axes.Axes]:
         """Compare the ELPD of the projected models along the search path.
 
+
         Parameters:
         -----------
         plot : bool
@@ -176,28 +177,29 @@ class ProjectionPredictive:
             If None, size is (10, num of submodels) inches
         plot_kwargs : dict
             Optional arguments for plot elements. Currently accepts 'color_elpd', 'marker_elpd',
-        'marker_fc_elpd', 'color_dse' 'marker_dse', 'ls_reference' 'color_ls_reference'.
+        'marker_fc_elpd', 'color_dse', 'marker_dse', 'ls_reference', 'color_ls_reference'.
 
         Returns:
         --------
-        A DataFrame, ordered from largest to smaller model. The columns are:
-            rank: The rank-order of the models. 0 is the best.
-            elpd: ELPD estimated either using (PSIS-LOO-CV).
-                Higher ELPD indicates higher out-of-sample predictive fit
-                ("better" model).
-            pIC: Estimated effective number of parameters.
-            elpd_diff: The difference in ELPD between two models.
-                The difference is computed relative to the reference model
-            weight: Relative weight for each model.
-                This can be loosely interpreted as the probability of each model
-                (among the compared model) given the data.
-            SE: Standard error of the ELPD estimate.
-            dSE: Standard error of the difference in ELPD between each model and
-                the top-ranked model. It's always 0 for the reference model.
-            warning: A value of 1 indicates that the computation of the ELPD may
-                not be reliable. This could be indication of PSIS-LOO-CV starting
-                to fail see http://arxiv.org/abs/1507.04544 for details.
-            scale: Scale used for the ELPD. This is always the log scale
+        cmp : DataFrame
+            ordered from largest to smaller model. The columns are:
+
+        - rank: The rank-order of the models. 0 is the best.
+        - elpd: ELPD estimated either using (PSIS-LOO-CV). Higher ELPD indicates higher
+            out-of-sample predictive fit ("better" model).
+        - pIC: Estimated effective number of parameters.
+        - elpd_diff: The difference in ELPD between two models.
+            The difference is computed relative to the reference model
+        - weight: Relative weight for each model. This can be loosely interpreted as the probability
+            of each model (among the compared model) given the data.
+        - SE: Standard error of the ELPD estimate.
+        - dSE: Standard error of the difference in ELPD between each model and the top-ranked model.
+            It's always 0 for the reference model.
+        - warning: A value of 1 indicates that the computation of the ELPD may not be reliable.
+            This could be indication of PSIS-LOO-CV starting to fail see
+            http://arxiv.org/abs/1507.04544 for details.
+        - scale: Scale used for the ELPD. This is always the log scale
+
         axes : matplotlib_axes or bokeh_figure
         """
 
