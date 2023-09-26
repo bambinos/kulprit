@@ -8,6 +8,7 @@ import pytest
 from kulprit.projection.likelihood import (
     gaussian_neg_llk,
     binomial_neg_llk,
+    bernoulli_neg_llk,
     poisson_neg_llk,
 )
 
@@ -42,6 +43,19 @@ class TestLikelihood:
 
         # test that kulprit produces similar results
         assert -binomial_neg_llk(data, probs, ns_) == pytest.approx(scipy_llk)
+
+    def test_bernoulli_likelihood(self):
+        # produce random samples
+        data = np.random.randint(2, size=10)
+
+        # define the parameters of the Bernoulli
+        probs = np.random.uniform(low=0, high=1, size=10)
+
+        # compute the log likelihood using scipy
+        scipy_llk = stats.bernoulli(probs).logpmf(data).sum()
+
+        # test that kulprit produces similar results
+        assert -bernoulli_neg_llk(data, probs) == pytest.approx(scipy_llk)
 
     def test_poisson_likelihood(self):
         # produce random samples
