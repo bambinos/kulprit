@@ -86,7 +86,7 @@ class Solver:
         if self.ref_family in ["gaussian"]:
             # account for the dispersion parameter
             bounds = [(None, None)] * (init.size - 1) + [(eps, None)]
-        elif self.ref_family in ["binomial", "poisson"]:
+        elif self.ref_family in ["binomial", "poisson", "bernoulli"]:
             # no dispersion parameter, so no bounds
             bounds = [(None, None)] * (init.size)
         return bounds
@@ -128,13 +128,19 @@ class Solver:
         elif self.ref_family == "binomial":
             trials = self.ref_model.response.data[:, 1]
             linear_predictor = _linear_predict(beta_x=params, X=X)
-            probs = self.ref_model.family.link.linkinv(linear_predictor)
+            probs = self.ref_model.family.link["p"].linkinv(linear_predictor)
             neg_llk = self.neg_log_likelihood(points=obs, probs=probs, trials=trials)
+
+        # Bernoulli observation likelihood
+        elif self.ref_family == "bernoulli":
+            linear_predictor = _linear_predict(beta_x=params, X=X)
+            probs = self.ref_model.family.link["p"].linkinv(linear_predictor)
+            neg_llk = self.neg_log_likelihood(points=obs, probs=probs)
 
         # Poisson observation likelihood
         elif self.ref_family == "poisson":
             linear_predictor = _linear_predict(beta_x=params, X=X)
-            lam = self.ref_model.family.link.linkinv(linear_predictor)
+            lam = self.ref_model.family.link["mu"].linkinv(np.float64(linear_predictor))
             neg_llk = self.neg_log_likelihood(points=obs, lam=lam)
         return neg_llk
 

@@ -74,6 +74,25 @@ def binomial_neg_llk(points, probs, trials):
 
 
 @nb.njit
+def bernoulli_log_pdf(y, prob):
+    if prob in (0, 1):
+        return -np.inf
+    else:
+        return y * np.log(prob) + (1 - y) * np.log(1 - prob)
+
+
+@nb.njit
+def bernoulli_neg_llk(points, probs):
+    llk = 0
+    for (
+        y,
+        p,
+    ) in zip(points, probs):
+        llk -= bernoulli_log_pdf(y, p)
+    return llk
+
+
+@nb.njit
 def poisson_log_pdf(y, lam):
     if lam == 0:
         return -np.inf
@@ -92,5 +111,6 @@ def poisson_neg_llk(points, lam):
 LIKELIHOODS = {
     "gaussian": gaussian_neg_llk,
     "binomial": binomial_neg_llk,
+    "bernoulli": bernoulli_neg_llk,
     "poisson": poisson_neg_llk,
 }
