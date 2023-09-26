@@ -191,26 +191,28 @@ class Projector:
             f"{model.response_name}_mean"
         ]
         if model.family.name == "gaussian":
-            linear_preds = model.family.link["mu"].linkinv(preds.values)
             # initialise probability distribution object
             dist = XrContinuousRV(
-                stats.norm, linear_preds, idata.posterior[f"{model.response_name}_sigma"]
+                stats.norm, preds.values, idata.posterior[f"{model.response_name}_sigma"]
             )
         elif model.family.name == "binomial":
-            linear_preds = model.family.link["p"].linkinv(preds.values)
-
             # initialise probability distribution object
             dist = XrDiscreteRV(
                 stats.binom,
                 n=model.response.data[:, 1],
-                p=linear_preds,
+                p=preds.values,
+            )
+        elif model.family.name == "bernoulli":
+            # initialise probability distribution object
+            dist = XrDiscreteRV(
+                stats.bernoulli,
+                p=preds.values,
             )
         elif model.family.name == "poisson":
-            linear_preds = model.family.link["mu"].linkinv(preds.values)
             # initialise probability distribution object
             dist = XrDiscreteRV(
                 stats.poisson,
-                mu=linear_preds,
+                mu=preds.values,
             )
         else:
             raise NotImplementedError(f"The {model.family.name} family is not yet implemented.")
