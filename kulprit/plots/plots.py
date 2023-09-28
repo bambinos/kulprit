@@ -127,6 +127,9 @@ def plot_densities(
         data = [idata]
         l_labels = ["Reference"]
         var_names.append(f"~{model.response_name}_mean")
+    else:
+        data = []
+        l_labels = []
 
     if submodels is None:
         submodels = path.values()
