@@ -2,3 +2,4 @@ pydata-sphinx-theme>=0.6.3
 myst-nb
 sphinx>=4
 sphinx-copybutton
+sphinx-math-dollar
