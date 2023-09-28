@@ -48,6 +48,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx_copybutton",
     "myst_nb",
+    "sphinx_math_dollar",
 ]
 
 

@@ -15,10 +15,6 @@ Kullback-Leibler projections for Bayesian model selection
     :target: https://github.com/ambv/black
 
 
-Overview
-========
-
-
 
 Dependencies
 ============
