@@ -11,7 +11,7 @@ import bambi as bmb
 import pandas as pd
 
 from kulprit.data.submodel import SubModel
-from kulprit.plots.plots import plot_compare
+from kulprit.plots.plots import plot_compare, plot_densities
 from kulprit.projection.projector import Projector
 from kulprit.search.searcher import Searcher
 
@@ -234,26 +234,50 @@ class ProjectionPredictive:
     def plot_densities(
         self,
         var_names: Optional[List[str]] = None,
-        outline: Optional[bool] = False,
-        shade: Optional[float] = 0.4,
+        submodels: Optional[List[int]] = None,
+        include_reference: bool = True,
+        labels: Literal["formula", "size"] = "formula",
+        kind: Literal["density", "forest"] = "density",
+        figsize: Optional[Tuple[int, int]] = None,
+        plot_kwargs: Optional[dict] = None,
     ) -> matplotlib.axes.Axes:
-        """Compare the projected posterior densities of the submodels"""
+        """Compare the projected posterior densities of the submodels
 
-        # set default variable names to the reference model terms
-        if not var_names:
-            var_names = list(
-                set(self.model.response_component.terms.keys()) - set([self.model.response_name])
-            )
+        Parameters:
+        -----------
+        var_names : list of str, optional
+            List of variables to plot.
+        submodels : list of int, optional
+            List of submodels to plot, 0 is intercept-only model and the largest valid integer is
+            the total number of variables in reference model. If None, all submodels are plotted.
+        include_reference : bool
+            Whether to include the reference model in the plot. Defaults to True.
+        labels : str
+            If "formula", the labels are the formulas of the submodels. If "size", the number
+            of covariates in the submodels.
+        figsize : tuple
+            Figure size. If None it will be defined automatically.
+        plot_kwargs : dict
+            Dictionary passed to ArviZ's ``plot_density`` function (if kind density) or to
+            ``plot_forest`` (if kind forest).
 
-        axes = az.plot_density(
-            data=[submodel.idata for submodel in self.path.values()],
-            group="posterior",
+        Returns:
+        --------
+
+        axes : matplotlib_axes or bokeh_figure
+        """
+        return plot_densities(
+            self.model,
+            self.path,
+            self.idata,
             var_names=var_names,
-            outline=outline,
-            shade=shade,
-            data_labels=[submodel.model.formula for submodel in self.path.values()],
+            submodels=submodels,
+            include_reference=include_reference,
+            labels=labels,
+            kind=kind,
+            figsize=figsize,
+            plot_kwargs=plot_kwargs,
         )
-        return axes
 
 
 def check_model_idata_compatability(model, idata):

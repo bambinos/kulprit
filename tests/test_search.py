@@ -109,7 +109,17 @@ class TestSearch:
         ref_model_copy.search()
         ref_model_copy.plot_compare(plot=True, figsize=(10, 5))
 
-    def test_plot_densities(self, ref_model):
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {},
+            {"kind": "forest"},
+            {"kind": "forest", "plot_kwargs": {"combined": False}},
+            {"submodels": [0, 1], "labels": "size"},
+            {"figsize": (4, 4)},
+        ],
+    )
+    def test_plot_densities(self, ref_model, kwargs):
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.search()
-        ref_model_copy.plot_densities()
+        ref_model_copy.plot_densities(**kwargs)
