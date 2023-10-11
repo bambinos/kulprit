@@ -14,17 +14,16 @@ Kullback-Leibler projections for Bayesian model selection
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
+Kulprit is under active development so use with care. If you find any bugs or have any feature requests, please open an issue on GitHub.
 
-
-Dependencies
-============
-Kulprit is tested on Python 3.9+.
-
+Besides this documentation, we also recomend you to read [Robust and efficient projection predictive inference](https://arxiv.org/abs/2306.15581). The paper is not
+about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find useful this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html)
+on Cross-Validation and model selection.
 
 Installation
 ============
 
-Kulprit requires a working Python interpreter (3.9+). We recommend installing Python and key numerical libraries using the [Anaconda Distribution](https://www.anaconda.com/products/individual#Downloads), which has one-click installers available on all major platforms.
+Kulprit requires a working Python interpreter (3.9+). We recommend installing Python and key numerical libraries using the `Anaconda Distribution <https://www.anaconda.com/products/individual#Downloads>`_, which has one-click installers available on all major platforms.
 
 Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using pip:
 
@@ -39,14 +38,39 @@ Alternatively, if you want the bleeding edge version of the package you can inst
     pip install git+https://github.com/bambinos/kulprit.git
 
 
+Dependencies
+============
+
+Kulprit is tested on Python 3.9+. Dependencies are listed in `pyproject.toml` and should all be installed by the Kulprit installer; no further action should be required.
+
+
 Contributing
 ============
+
 We welcome contributions from interested individuals or groups!
 For information about contributing to Kulrpit check out our instructions, policies, and guidelines `here <https://github.com/bambinos/kulprit/blob/main/CONTRIBUTING.md>`_.
+
 
 Contributors
 ============
 See the `GitHub contributor page <https://github.com/bambinos/kulprit/graphs/contributors>`_.
+
+
+Citation
+========
+
+If you find Kulprit useful in your work, please cite the following paper:
+
+.. code-block:: latex
+
+    @misc{mclatchie2023,
+        title={Robust and efficient projection predictive inference}, 
+        author={Yann McLatchie and Sölvi Rögnvaldsson and Frank Weber and Aki Vehtari},
+        year={2023},
+        eprint={2306.15581},
+        archivePrefix={arXiv},
+        primaryClass={stat.ME}
+    }
 
 
 Donations
