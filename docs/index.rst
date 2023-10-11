@@ -14,11 +14,10 @@ Kullback-Leibler projections for Bayesian model selection
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
-Kulprit is under active development so use with care. If you find any bugs or have any feature requests, please open an issue on GitHub.
+Kulprit is under active development so use it with care. If you find any bugs or have any feature requests, please open an issue on GitHub.
 
-Besides this documentation, we also recomend you to read [Robust and efficient projection predictive inference](https://arxiv.org/abs/2306.15581). The paper is not
-about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find useful this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html)
-on Cross-Validation and model selection.
+Besides this documentation, we also recommend you to read `Robust and efficient projection predictive inference <https://arxiv.org/abs/2306.15581>`_. The paper is not about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html)
+on Cross-Validation and model selection is useful.
 
 Installation
 ============
@@ -31,7 +30,7 @@ Assuming a standard Python environment is installed on your machine (including p
 
     pip install kulprit
 
-Alternatively, if you want the bleeding edge version of the package you can install from GitHub:
+Alternatively, if you want the bleeding edge version of the package you can install it from GitHub:
 
 .. code-block:: bash
 
