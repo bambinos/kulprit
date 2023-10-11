@@ -11,6 +11,7 @@ Kullback-Leibler projections for Bayesian model selection in Python.
 ## Overview
 
 Kulprit _(Pronounced: kuːl.prɪt)_ is a package for variable selection for [Bambi](https://github.com/bambinos/bambi) models.
+Kulprit is under active development so use with care. If you find any bugs or have any feature requests, please open an issue.
 
 
 ## Installation
@@ -27,7 +28,7 @@ Alternatively, if you want the bleeding edge version of the package you can inst
 
 ## Documentation
 
-The Kulprit documentation can be found in the [official docs](https://kulprit.readthedocs.io/en/latest/)
+The Kulprit documentation can be found in the [official docs](https://kulprit.readthedocs.io/en/latest/). If you are not familiar with the theory behind Kulprit or need some practical advice on how to use Kulprit or interpret its results, we recommend you read the paper [Robust and efficient projection predictive inference](https://arxiv.org/abs/2306.15581). You may also find useful this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html) on Cross-Validation and model selection.
 
 
 ## Development
@@ -40,6 +41,23 @@ Read our development guide in [CONTRIBUTING.md](https://github.com/bambinos/kulp
 Kulprit is a community project and welcomes contributions. Additional information can be found in the [Contributing](https://github.com/bambinos/kulprit/blob/main/docs/CONTRIBUTING.md) Readme.
 
 For a list of contributors see the [GitHub contributor](https://github.com/bambinos/kulprit/graphs/contributors) page
+
+
+## Citation
+
+If you use Bambi and want to cite it please use
+
+```
+@misc{mclatchie2023,
+    title={Robust and efficient projection predictive inference}, 
+    author={Yann McLatchie and Sölvi Rögnvaldsson and Frank Weber and Aki Vehtari},
+    year={2023},
+    eprint={2306.15581},
+    archivePrefix={arXiv},
+    primaryClass={stat.ME}
+}
+```
+
 
 ## Donations
 
