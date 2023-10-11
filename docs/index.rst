@@ -16,7 +16,7 @@ Kullback-Leibler projections for Bayesian model selection
 
 Kulprit is under active development so use it with care. If you find any bugs or have any feature requests, please open an issue on GitHub.
 
-Besides this documentation, we also recommend you to read `Robust and efficient projection predictive inference <https://arxiv.org/abs/2306.15581>`_. The paper is not about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html)
+Besides this documentation, we also recommend you to read `Robust and efficient projection predictive inference <https://arxiv.org/abs/2306.15581>`_. The paper is not about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find this `guide <https://avehtari.github.io/modelselection/CV-FAQ.html>`_
 on Cross-Validation and model selection is useful.
 
 Installation
