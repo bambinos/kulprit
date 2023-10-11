@@ -24,11 +24,19 @@ Kulprit is tested on Python 3.9+.
 Installation
 ============
 
-Currently, this package is only available for download directly from GitHub with the command:
+Kulprit requires a working Python interpreter (3.9+). We recommend installing Python and key numerical libraries using the [Anaconda Distribution](https://www.anaconda.com/products/individual#Downloads), which has one-click installers available on all major platforms.
+
+Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using pip:
 
 .. code-block:: bash
 
-  pip install git+https://github.com/bambinos/kulprit.git
+    pip install kulprit
+
+Alternatively, if you want the bleeding edge version of the package you can install from GitHub:
+
+.. code-block:: bash
+
+    pip install git+https://github.com/bambinos/kulprit.git
 
 
 Contributing
@@ -39,6 +47,13 @@ For information about contributing to Kulrpit check out our instructions, polici
 Contributors
 ============
 See the `GitHub contributor page <https://github.com/bambinos/kulprit/graphs/contributors>`_.
+
+
+Donations
+============
+
+If you want to support Kulprit financially, you can `make a donation <https://numfocus.org/donate-to-pymc>`_ to our sister project PyMC.
+
 
 Contents
 ========
