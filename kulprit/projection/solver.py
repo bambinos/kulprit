@@ -1,5 +1,6 @@
 """optimization module."""
 
+# pylint: disable=protected-access
 from typing import List, Optional
 import warnings
 
@@ -37,7 +38,7 @@ class Solver:
         self.num_samples = self.num_chain * 100
 
         if self.ref_family not in ["gaussian", "poisson", "bernoulli", "binomial"]:
-            raise (NotImplementedError(f"Family {self.ref_family} not supported"))
+            raise NotImplementedError(f"Family {self.ref_family} not supported")
 
     @property
     def pps(self):
