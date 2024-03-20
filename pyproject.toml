@@ -26,7 +26,7 @@ description = "Kullback-Leibler projections for Bayesian model selection."
 dependencies = [
     "bambi>=0.12.0",
     "scikit-learn>=1.0.2",
-    "numba>=0.56.0",
+    "preliz>=0.4.0"
 ]
 
 [tool.flit.module]
