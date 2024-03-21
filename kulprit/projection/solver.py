@@ -1,5 +1,6 @@
 """optimization module."""
 
+# pylint: disable=protected-access
 from typing import List, Optional
 import warnings
 
@@ -7,11 +8,11 @@ import arviz as az
 import bambi as bmb
 import numpy as np
 import xarray as xr
+import preliz as pz
 
 from scipy.optimize import minimize
 
 from kulprit.data.submodel import SubModel
-from kulprit.projection.likelihood import LIKELIHOODS
 
 
 class Solver:
@@ -36,11 +37,8 @@ class Solver:
         self.num_chain = self.ref_idata.posterior.dims["chain"]
         self.num_samples = self.num_chain * 100
 
-        try:
-            # define the negative log likelihood function of the submodel
-            self.neg_log_likelihood = LIKELIHOODS[self.ref_family]
-        except KeyError:
-            raise NotImplementedError from None
+        if self.ref_family not in ["gaussian", "poisson", "bernoulli", "binomial"]:
+            raise NotImplementedError(f"Family {self.ref_family} not supported")
 
     @property
     def pps(self):
@@ -115,20 +113,20 @@ class Solver:
         # Gaussian observation likelihood
         if self.ref_family == "gaussian":
             linear_predictor = _linear_predict(beta_x=params[:-1], X=X)
-            neg_llk = self.neg_log_likelihood(points=obs, mean=linear_predictor, sigma=params[-1])
+            neg_llk = pz.Normal(mu=linear_predictor, sigma=params[-1])._neg_logpdf(obs)
 
         # Binomial observation likelihood
         elif self.ref_family == "binomial":
             trials = self.ref_model.response.data[:, 1]
             linear_predictor = _linear_predict(beta_x=params, X=X)
             probs = self.ref_model.family.link["p"].linkinv(linear_predictor)
-            neg_llk = self.neg_log_likelihood(points=obs, probs=probs, trials=trials)
+            neg_llk = pz.Binomial(n=trials, p=probs)._neg_logpdf(obs)
 
         # Bernoulli observation likelihood
         elif self.ref_family == "bernoulli":
             linear_predictor = _linear_predict(beta_x=params, X=X)
             probs = self.ref_model.family.link["p"].linkinv(linear_predictor)
-            neg_llk = self.neg_log_likelihood(points=obs, probs=probs)
+            neg_llk = pz.Binomial(p=probs)._neg_logpdf(obs)
 
         # Poisson observation likelihood
         elif self.ref_family == "poisson":
@@ -136,7 +134,8 @@ class Solver:
                 warnings.filterwarnings("ignore", message="overflow encountered in exp")
                 linear_predictor = _linear_predict(beta_x=params, X=X)
                 lam = self.ref_model.family.link["mu"].linkinv(np.float64(linear_predictor))
-                neg_llk = self.neg_log_likelihood(points=obs, lam=lam)
+                neg_llk = pz.Poisson(mu=lam)._neg_logpdf(obs)
+
         return neg_llk
 
     def solve(self, term_names: List[str], X: np.ndarray, slices: dict) -> SubModel:
@@ -160,34 +159,21 @@ class Solver:
             SubModel: The projected submodel object
         """
         # build the optimization parameter bounds
-        init = np.hstack(
-            [self.ref_idata.posterior.mean(["chain", "draw"])[term].values for term in term_names]
-        )
-        bounds = self._build_bounds(init)
+        term_values = az.extract(self.ref_idata.posterior, num_samples=self.pps.shape[0])
+        init = np.stack([term_values[key].values.flatten() for key in term_names]).T
+        bounds = self._build_bounds(init[0])
 
-        # perform mean-field variational projection predictive inference
+        # perform projection predictive inference
         res_posterior = []
         objectives = []
-
-        chains = np.random.randint(0, self.ref_idata.posterior.dims["chain"], self.pps.shape[0])
-        draws = np.random.randint(0, self.ref_idata.posterior.dims["draw"], self.pps.shape[0])
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="Values in x were outside bounds")
             for idx, obs in enumerate(self.pps):
-                # use samples from reference model posterior as initial guess
-                init = np.hstack(
-                    [
-                        self.ref_idata.posterior.sel({"chain": chains[idx], "draw": draws[idx]})[
-                            term
-                        ].values
-                        for term in term_names
-                    ]
-                )
                 opt = minimize(
                     self.objective,
                     args=(obs, X),
-                    x0=init,
+                    x0=init[idx],
                     tol=0.001,
                     bounds=bounds,
                     method="SLSQP",
