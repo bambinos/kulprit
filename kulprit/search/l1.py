@@ -16,17 +16,10 @@ class L1SearchPath(SearchPath):
 
         # log the projector object
         self.projector = projector
+        terms = self.projector.model.components[self.projector.model.family.likelihood.parent].terms
 
         # test whether the model includes categorical terms, and if so raise error
-        if (
-            sum(
-                (
-                    self.projector.model.response_component.terms[term].categorical
-                    for term in self.projector.model.response_component.terms.keys()
-                )
-            )
-            > 0
-        ):
+        if sum(terms[term].categorical for term in terms.keys()) > 0:
             raise NotImplementedError("Group-lasso not yet implemented")
 
         # initialise search
@@ -39,7 +32,14 @@ class L1SearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [list(submodel.model.response_component.terms.keys()), submodel.loss]
+            k: [
+                list(
+                    submodel.model.components[
+                        submodel.model.family.likelihood.parent
+                    ].common_terms.keys()
+                ),
+                submodel.loss,
+            ]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(
@@ -92,23 +92,18 @@ class L1SearchPath(SearchPath):
         -------
         np.ndarray: The coefficients for each model size
         """
-
+        model = self.projector.model
         # extract reference model data and latent predictor
         self.common_terms = list(  # pylint: disable=attribute-defined-outside-init
-            self.projector.model.response_component.common_terms
+            model.components[model.family.likelihood.parent].common_terms
         )
-        X = np.column_stack(
-            [
-                self.projector.model.response_component.design.common[term]
-                for term in self.common_terms
-            ]
-        )
+        d_component = model.distributional_components[model.family.likelihood.parent]
+        X = np.column_stack([d_component.design.common[term] for term in self.common_terms])
         # XXX we need to make this more general  # pylint: disable=fixme
         mean_param_name = list(self.projector.model.family.link.keys())[0]
         eta = self.projector.model.family.link[mean_param_name].link(
-            np.array(self.projector.model.response_component.design.response)
+            model.components[model.family.likelihood.parent].design.response.design_matrix
         )
-
         # compute L1 path in the latent space
         _, coef_path, _ = lasso_path(X, eta)
         cov_order = self.first_non_zero_idx(coef_path)

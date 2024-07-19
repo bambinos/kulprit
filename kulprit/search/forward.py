@@ -16,7 +16,9 @@ class ForwardSearchPath(SearchPath):
         self.projector = projector
 
         # log the names of the terms in the reference model
-        self.ref_terms = list(self.projector.model.response_component.common_terms)
+
+        model = self.projector.model
+        self.ref_terms = list(model.components[model.family.likelihood.parent].common_terms.keys())
 
         # initialise search
         self.k_term_idx = {}
@@ -29,7 +31,14 @@ class ForwardSearchPath(SearchPath):
         """String representation of the search path."""
 
         path_dict = {
-            k: [list(submodel.model.response_component.terms.keys()), submodel.loss]
+            k: [
+                list(
+                    submodel.model.components[
+                        submodel.model.family.likelihood.parent
+                    ].common_terms.keys()
+                ),
+                submodel.loss,
+            ]
             for k, submodel in self.k_submodel.items()
         }
         df = pd.DataFrame.from_dict(

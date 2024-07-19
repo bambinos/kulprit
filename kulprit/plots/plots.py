@@ -121,12 +121,15 @@ def plot_densities(
 
     # set default variable names to the reference model terms
     if not var_names:
-        var_names = list(set(model.response_component.terms.keys()) - set([model.response_name]))
+        var_names = list(
+            set(model.components[model.family.likelihood.parent].common_terms.keys())
+            - set([model.response_component.term.name])
+        )
 
     if include_reference:
         data = [idata]
         l_labels = ["Reference"]
-        var_names.append(f"~{model.response_name}_mean")
+        var_names.append(f"~{model.family.likelihood.parent}")
     else:
         data = []
         l_labels = []
