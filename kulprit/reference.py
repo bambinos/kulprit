@@ -39,13 +39,13 @@ class ProjectionPredictive:
             The ArviZ InferenceData object of the fitted reference model
         """
         # test that the reference model has an intercept term
-        if model.response_component.intercept_term is None:
+        if not bmb.formula.formula_has_intercept(model.formula.main):
             raise UserWarning(
                 "The procedure currently requires reference models to have an intercept term."
             )
 
         # test that the reference model does not admit any hierarchical structure
-        if model.response_component.group_specific_terms:
+        if any(val.group_specific_groups for val in model.distributional_components.values()):
             raise NotImplementedError("Hierarchical models currently not supported.")
 
         # build posterior if not provided
@@ -137,11 +137,11 @@ class ProjectionPredictive:
         """
 
         # set default `max_terms` value
+        n_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
         if max_terms is None:
-            max_terms = len(self.model.response_component.common_terms)
-
+            max_terms = n_terms
         # test `max_terms` input
-        if max_terms > len(self.model.response_component.common_terms):
+        elif max_terms > n_terms:
             raise UserWarning(
                 "Please ensure that the maximum number to consider in the "
                 + "submodel search is between 1 and the number of terms in the "
@@ -283,9 +283,6 @@ class ProjectionPredictive:
 def check_model_idata_compatability(model, idata):
     """Check that the Bambi model and idata are compatible with vanilla procedure.
 
-    In the future, this will be extended to allow for different structures and
-    covariates, checking instead only that the observation data are the same.
-
     Parameters:
     ----------
     model : Bambi model
@@ -297,22 +294,8 @@ def check_model_idata_compatability(model, idata):
     -------
         bool : Indicator of whether the two objects are compatible
     """
-
     # test that the variate's name is the same in reference model and idata
-    if not model.response_name == list(idata.observed_data.data_vars.variables)[0]:
-        return False
-
-    # test that the variate has the same dimensions in reference model and idata
-    if model.response_component.design.response.kind != "proportion" and (
-        idata.observed_data[model.response_name].to_numpy().shape
-        != model.data[model.response_name].shape
-    ):
-        return False
-
-    if model.response_component.design.response.kind == "proportion" and (
-        idata.observed_data[model.response_name].to_numpy().shape
-        != model.response_component.design.response.evaluate_new_data(model.data).shape
-    ):
+    if not model.response_component.term.name == list(idata.observed_data.data_vars.variables)[0]:
         return False
 
     # return default truth

@@ -46,7 +46,7 @@ class Projector:
         self.idata = idata
 
         # log properties of the reference model
-        self.response_name = self.model.response_name
+        self.response_name = model.response_component.term.name
         self.ref_family = self.model.family.name
         self.priors = self.model.constant_components
 
@@ -80,7 +80,10 @@ class Projector:
                 terms = list(terms)
 
             # test `terms` input
-            if not set(terms).issubset(set(self.model.response_component.common_terms)):
+            ref_terms = list(
+                self.model.components[self.model.family.likelihood.parent].common_terms.keys()
+            )
+            if not set(terms).issubset(set(ref_terms)):
                 raise UserWarning(
                     "Please ensure that all terms selected for projection exist in"
                     + " the reference model."
@@ -128,15 +131,17 @@ class Projector:
         new_model = self._build_restricted_model(term_names=term_names_)
 
         # extract the design matrix from the model
-        if new_model.response_component.design.common:
-            X = new_model.response_component.design.common.design_matrix
-            slices = new_model.response_component.design.common.slices
+        d_component = new_model.distributional_components[new_model.family.likelihood.parent]
+
+        if d_component:
+            X = d_component.design.common.design_matrix
+            slices = d_component.design.common.slices
 
             # Add offset columns to their own design matrix
             # Remove them from the common design matrix.
             if hasattr(new_model, "offset_terms"):  # pragma: no cover
                 for term in new_model.offset_terms:
-                    term_slice = new_model.response_component.design.common.slices[term]
+                    term_slice = slices[term]
                     X = np.delete(X, term_slice, axis=1)
 
         # build new term_names (add dispersion parameter if included)
@@ -174,26 +179,28 @@ class Projector:
             model=new_model,
             idata=new_idata,
             loss=loss,
-            size=len(new_model.response_component.common_terms),
+            size=len(new_model.components[new_model.family.likelihood.parent].common_terms),
             term_names=term_names,
         )
         return sub_model
 
     def compute_model_log_likelihood(self, model, idata):
         # extract observed data
-        obs_array = self.idata.observed_data[model.response_name]
+        obs_array = self.idata.observed_data[model.response_component.term.name]
         obs_array = obs_array.expand_dims(
             chain=idata.posterior.dims["chain"],
             draw=idata.posterior.dims["draw"],
         )
 
-        preds = model.predict(idata, kind="mean", inplace=False).posterior[
-            f"{model.response_name}_mean"
+        preds = model.predict(idata, kind="response_params", inplace=False).posterior[
+            f"{model.family.likelihood.parent}"
         ]
         if model.family.name == "gaussian":
             # initialise probability distribution object
             dist = XrContinuousRV(
-                stats.norm, preds.values, idata.posterior[f"{model.response_name}_sigma"]
+                stats.norm,
+                preds.values,
+                idata.posterior["sigma"],
             )
         elif model.family.name == "binomial":
             # initialise probability distribution object
@@ -254,12 +261,12 @@ class Projector:
         """Extend the model term names to include dispersion terms."""
 
         # add intercept term if present
-        if new_model.response_component.intercept_term:
+        if bmb.formula.formula_has_intercept(new_model.formula.main):
             term_names.insert(0, "Intercept")
 
         # add the auxiliary parameters
         if self.priors:
-            aux_params = [f"{self.response_name}_{str(k)}" for k in self.priors]
+            aux_params = [f"{str(k)}" for k in self.priors]
             term_names += aux_params
             # TODO generalize  #pylint: disable=fixme
             slices[aux_params[0]] = slice(-1, None, None)

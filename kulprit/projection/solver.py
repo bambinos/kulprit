@@ -30,7 +30,7 @@ class Solver:
         self.ref_idata = idata
 
         # log the reference model's response name and family
-        self.response_name = self.ref_model.response_name
+        self.response_name = self.ref_model.response_component.term.name
         self.ref_family = self.ref_model.family.name
 
         # define sampling options
@@ -44,7 +44,7 @@ class Solver:
     def pps(self):
         # make in-sample predictions with the reference model if not available
         if "posterior_predictive" not in self.ref_idata.groups():
-            self.ref_model.predict(self.ref_idata, kind="pps", inplace=True)
+            self.ref_model.predict(self.ref_idata, kind="response", inplace=True)
 
         pps = az.extract(
             self.ref_idata,

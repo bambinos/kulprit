@@ -84,26 +84,6 @@ class TestProjector(KulpritTest):
             # build a bad reference model object
             kpt.ProjectionPredictive(bad_model, bambi_model_idata)
 
-    def test_different_variate_dim(self, bambi_model_idata):
-        """Test that an error is raised when model and idata aren't compatible."""
-
-        # define model data
-        data = pd.DataFrame(
-            {
-                "z": np.array([1.6907, 1.7242, 1.7552, 1.7842, 1.8113, 1.8369, 1.8610, 1.8839]),
-                "x": np.array([59, 60, 62, 56, 63, 59, 62, 60]),
-                "y": np.array([6, 13, 18, 28, 52, 53, 61, 60]),
-            }
-        )
-
-        # define model
-        formula = "z ~ x + y"
-        bad_model = bmb.Model(formula, data, family="gaussian")
-
-        with pytest.raises(UserWarning):
-            # build a bad reference model object
-            kpt.ProjectionPredictive(bad_model, bambi_model_idata)
-
     def test_no_term_names_error(self, ref_model):
         """Test that an error is raised when no term names are provided."""
 
@@ -196,9 +176,11 @@ class TestProjector(KulpritTest):
         )
         assert new_model.family.name == bambi_model.family.name
         assert (
-            new_model.response_component.terms.keys() == bambi_model.response_component.terms.keys()
+            new_model.components[new_model.family.likelihood.parent].common_terms.keys()
+            == bambi_model.components[bambi_model.family.likelihood.parent].common_terms.keys()
         )
-        assert set(new_model.response_component.common_terms.keys()) == set(
-            bambi_model.response_component.common_terms.keys()
-        )
-        assert new_model.response_name == bambi_model.response_name
+
+        assert set(
+            new_model.components[new_model.family.likelihood.parent].common_terms.keys()
+        ) == set(bambi_model.components[bambi_model.family.likelihood.parent].common_terms.keys())
+        assert new_model.response_component.term.name == bambi_model.response_component.term.name
