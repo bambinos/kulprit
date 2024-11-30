@@ -27,7 +27,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
         plot_kwargs = {}
 
     if figsize is None:
-        figsize = (len(cmp_df) - 1, 10)
+        figsize = (10, 4)
 
     figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(figsize, None, 1, 1)
 
@@ -105,13 +105,12 @@ def plot_densities(
     var_names=None,
     submodels=None,
     include_reference=True,
-    labels="formula",
+    labels="size",
     kind="density",
     figsize=None,
     plot_kwargs=None,
 ):
     """Compare the projected posterior densities of the submodels"""
-
     if plot_kwargs is None:
         plot_kwargs = {}
     plot_kwargs.setdefault("figsize", figsize)
@@ -119,12 +118,14 @@ def plot_densities(
     if kind not in ["density", "forest"]:
         raise ValueError("kind must be one of 'density' or 'forest'")
 
+    if submodels is None:
+        submodels = path.values()
+    else:
+        submodels = [path[key] for key in submodels]
+
     # set default variable names to the reference model terms
     if not var_names:
-        var_names = list(
-            set(model.components[model.family.likelihood.parent].common_terms.keys())
-            - set([model.response_component.term.name])
-        )
+        var_names = [fvar.name for fvar in model.backend.model.free_RVs]
 
     if include_reference:
         data = [idata]
@@ -134,13 +135,8 @@ def plot_densities(
         data = []
         l_labels = []
 
-    if submodels is None:
-        submodels = path.values()
-    else:
-        submodels = [path[key] for key in submodels]
-
     if labels == "formula":
-        l_labels.extend([submodel.model.formula for submodel in submodels])
+        l_labels.extend([",".join(submodel.term_names) for submodel in submodels])
     else:
         l_labels.extend([submodel.size for submodel in submodels])
 
@@ -167,13 +163,3 @@ def plot_densities(
         )
 
     return axes
-
-
-def align_yaxis(axes, v_1, ax2, v_2):
-    """adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in axes"""
-    _, y_1 = axes.transData.transform((0, v_1))
-    _, y_2 = ax2.transData.transform((0, v_2))
-    inv = ax2.transData.inverted()
-    _, d_y = inv.transform((0, 0)) - inv.transform((0, y_1 - y_2))
-    miny, maxy = ax2.get_ylim()
-    ax2.set_ylim(miny + d_y, maxy + d_y)

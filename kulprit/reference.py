@@ -13,7 +13,8 @@ import pandas as pd
 from kulprit.data.submodel import SubModel
 from kulprit.plots.plots import plot_compare, plot_densities
 from kulprit.projection.projector import Projector
-from kulprit.search.searcher import Searcher
+from kulprit.search.forward import ForwardSearchPath
+from kulprit.search.l1 import L1SearchPath
 
 
 class ProjectionPredictive:
@@ -25,6 +26,7 @@ class ProjectionPredictive:
         self,
         model: bmb.models.Model,
         idata: Optional[az.InferenceData] = None,
+        num_samples: int = 400,
     ) -> None:
         """Builder for projection predictive model selection.
 
@@ -39,7 +41,8 @@ class ProjectionPredictive:
             The ArviZ InferenceData object of the fitted reference model
         """
         # test that the reference model has an intercept term
-        if not bmb.formula.formula_has_intercept(model.formula.main):
+        self.has_intercept = bmb.formula.formula_has_intercept(model.formula.main)
+        if not self.has_intercept:
             raise UserWarning(
                 "The procedure currently requires reference models to have an intercept term."
             )
@@ -65,9 +68,17 @@ class ProjectionPredictive:
         self.model = model
         self.idata = idata
 
+        self.searcher_path = None
+        # indicator variable tracking whether or not a search has been run
+        self.search_completed = False
+
         # instantiate projector, searcher classes
-        self.projector = Projector(model=self.model, idata=self.idata)
-        self.searcher = Searcher(self.projector)
+        self.projector = Projector(
+            model=self.model,
+            idata=self.idata,
+            num_samples=num_samples,
+            has_intercept=self.has_intercept,
+        )
         # we have not yet run a search
         self.path = None
 
@@ -76,17 +87,12 @@ class ProjectionPredictive:
 
         # return the formular for the reference model if no search has been run
         if self.path is None:
-            return (
-                f"ReferenceModel("
-                f"{', '.join([self.model.formula.main] + list(self.model.formula.additionals))})"
-            )
+            return "ReferenceModel"
 
         # otherwise return the formulas for the submodels
         else:
             str_of_submodels = "\n".join(
-                f"{idx:>3} "
-                f"{', '.join([value.model.formula.main] + list(value.model.formula.additionals))}"
-                for idx, value in enumerate(self.path.values())
+                f"{idx:>3} " f"{value}" for idx, value in enumerate(self.path.values())
             )
             return str_of_submodels
 
@@ -136,6 +142,16 @@ class ProjectionPredictive:
             search path, keyed by their model size.
         """
 
+        # test valid solution method
+        if method not in ["forward", "l1"]:
+            raise ValueError("Please select either forward search or L1 search.")
+
+        # initialise search path
+        if method == "forward":
+            self.searcher_path = ForwardSearchPath(self.projector)
+        else:
+            self.searcher_path = L1SearchPath(self.projector)
+
         # set default `max_terms` value
         n_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
         if max_terms is None:
@@ -148,15 +164,19 @@ class ProjectionPredictive:
                 + "reference model."
             )
 
-        # perform search through the parameter space
-        self.path = self.searcher.search(
-            max_terms=max_terms,
-            method=method,
-        )
+        # perform the search according to the chosen heuristic
+        k_submodels = self.searcher_path.search(max_terms=max_terms)
 
-    def plot_compare(
+        # feed path result through to the projector
+        self.projector.path = k_submodels
+        self.path = k_submodels
+        # toggle indicator variable and return search path
+        self.search_completed = True
+
+    def compare(
         self,
-        plot: Optional[bool] = False,
+        plot: Optional[bool] = True,
+        min_model_size: Optional[int] = 0,
         legend: Optional[bool] = True,
         title: Optional[bool] = True,
         figsize: Optional[tuple] = None,
@@ -168,7 +188,7 @@ class ProjectionPredictive:
         Parameters:
         -----------
         plot : bool
-            Plot the results of the comparison. Defaults to False
+            Plot the results of the comparison. Defaults to True
         legend : bool
             Add legend to figure. Defaults to True.
         title : bool
@@ -204,24 +224,25 @@ class ProjectionPredictive:
         """
 
         # test that search has been previously run
-        if self.searcher.search_completed is False:
+        if self.search_completed is False:
             raise UserWarning("Please run search before comparing submodels.")
 
         # initiate plotting arguments if none provided
         if plot_kwargs is None:
             plot_kwargs = {}
 
-        self.searcher.idatas = {}  # pylint: disable=attribute-defined-outside-init
+        self.searcher_idatas = {}  # pylint: disable=attribute-defined-outside-init
 
         # make dictionary of inferencedata objects for each projection
-        for k, submodel in self.searcher.path.k_submodel.items():
-            self.searcher.idatas[k] = submodel.idata
-        self.searcher.idatas[
+        for k, submodel in self.searcher_path.k_submodel.items():
+            if k >= min_model_size:
+                self.searcher_idatas[k] = submodel.idata
+        self.searcher_idatas[
             k + 1  # pylint: disable=undefined-loop-variable
-        ] = self.searcher.projector.idata
+        ] = self.projector.idata
 
         # compare the submodels using loo (other criteria may be added in the future)
-        comparison = az.compare(self.searcher.idatas)
+        comparison = az.compare(self.searcher_idatas)
         comparison.sort_index(ascending=False, inplace=True)
 
         # plot the comparison if requested

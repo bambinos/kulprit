@@ -22,6 +22,15 @@ def bambi_model():  # pragma: no cover
 
 
 @pytest.fixture(scope="session")
+def pymc_model(bambi_model):  # pragma: no cover
+    """Return a bambi model."""
+
+    bambi_model.build()
+    model = bambi_model.backend.model
+    return model
+
+
+@pytest.fixture(scope="session")
 def bambi_model_idata(bambi_model):  # pragma: no cover
     """Return a bambi model fitted inference data."""
 
