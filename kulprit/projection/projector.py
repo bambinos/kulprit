@@ -1,21 +1,21 @@
 # pylint: disable=too-many-instance-attributes
 """Base projection class."""
 
-from typing import Optional, Union, Sequence
 import collections
+from typing import Optional, Sequence, Union
 
 import arviz as az
 import bambi as bmb
-
 import numpy as np
+
 from kulprit.data.submodel import SubModel
-from kulprit.projection.solver import solve
 from kulprit.projection.pymc_io import (
     compile_mllk,
     compute_llk,
     compute_new_model,
     get_model_information,
 )
+from kulprit.projection.solver import solve
 
 
 class Projector:
