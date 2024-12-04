@@ -4,12 +4,11 @@ from typing import List
 
 import pandas as pd
 from kulprit.data.submodel import SubModel
-from kulprit.projection.projector import Projector
 from kulprit.search import SearchPath
 
 
 class ForwardSearchPath(SearchPath):
-    def __init__(self, projector: Projector) -> None:
+    def __init__(self, projector) -> None:
         """Initialise search path class."""
 
         # log the projector object

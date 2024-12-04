@@ -1,4 +1,3 @@
-# pylint: disable=no-self-use
 import copy
 import pytest
 
@@ -12,9 +11,9 @@ from tests import KulpritTest
 
 
 class TestProjector(KulpritTest):
-    """Test projection methods in the procedure."""
+    """Test projection methods."""
 
-    NUM_DRAWS, NUM_CHAINS = 500, 4
+    NUM_CHAINS, NUM_DRAWS = 4, 500
 
     def test_idata_is_none(self, bambi_model):
         """Test that some inference data is automatically produced when None."""
@@ -46,23 +45,6 @@ class TestProjector(KulpritTest):
         with pytest.raises(NotImplementedError):
             # build a bad reference model object
             kpt.ProjectionPredictive(bad_model)
-
-    def test_unimplemented_family(self):
-        """Test that an error is raised when an unimplemented family is used."""
-
-        # define model data
-        data = bmb.load_data("my_data")
-        # define model
-        bad_model = bmb.Model("z ~ x + y", data, family="t")
-        bad_idata = bad_model.fit(
-            draws=self.NUM_DRAWS,
-            chains=self.NUM_CHAINS,
-            idata_kwargs={"log_likelihood": True},
-        )
-
-        with pytest.raises(NotImplementedError):
-            # build a bad reference model object
-            kpt.ProjectionPredictive(bad_model, bad_idata)
 
     def test_different_variate_name(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
@@ -159,28 +141,3 @@ class TestProjector(KulpritTest):
         with pytest.raises(UserWarning):
             # project the reference model to some parameter subset
             ref_model.project(terms=["spam", "ham"])
-
-    def test_build_restricted_model(self, bambi_model, bambi_model_idata):
-        """Test that restricted model building works as expected."""
-
-        # build restricted model which is the same as the reference model
-        solver = kpt.projection.projector.Projector(model=bambi_model, idata=bambi_model_idata)
-        new_model = solver._build_restricted_model(["x", "y"])  # pylint: disable=protected-access
-
-        # perform checks
-        assert new_model.formula.__str__() == bambi_model.formula.__str__()
-        assert new_model.data.shape == bambi_model.data.shape
-        assert np.all(
-            new_model.data.loc[:, new_model.data.columns != solver.response_name]
-            == bambi_model.data.loc[:, new_model.data.columns != solver.response_name]
-        )
-        assert new_model.family.name == bambi_model.family.name
-        assert (
-            new_model.components[new_model.family.likelihood.parent].common_terms.keys()
-            == bambi_model.components[bambi_model.family.likelihood.parent].common_terms.keys()
-        )
-
-        assert set(
-            new_model.components[new_model.family.likelihood.parent].common_terms.keys()
-        ) == set(bambi_model.components[bambi_model.family.likelihood.parent].common_terms.keys())
-        assert new_model.response_component.term.name == bambi_model.response_component.term.name
