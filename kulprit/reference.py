@@ -47,9 +47,9 @@ class ProjectionPredictive:
                 "The procedure currently requires reference models to have an intercept term."
             )
 
-        # test that the reference model does not admit any hierarchical structure
-        if any(val.group_specific_groups for val in model.distributional_components.values()):
-            raise NotImplementedError("Hierarchical models currently not supported.")
+        # # test that the reference model does not admit any hierarchical structure
+        # if any(val.group_specific_groups for val in model.distributional_components.values()):
+        #     raise NotImplementedError("Hierarchical models currently not supported.")
 
         # build posterior if not provided
         if idata is None:
@@ -153,7 +153,7 @@ class ProjectionPredictive:
             self.searcher_path = L1SearchPath(self.projector)
 
         # set default `max_terms` value
-        n_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
+        n_terms = len(self.model.components[self.model.family.likelihood.parent].terms)
         if max_terms is None:
             max_terms = n_terms
         # test `max_terms` input
@@ -170,6 +170,7 @@ class ProjectionPredictive:
         # feed path result through to the projector
         self.projector.path = k_submodels
         self.path = k_submodels
+        #print(self.path)
         # toggle indicator variable and return search path
         self.search_completed = True
 

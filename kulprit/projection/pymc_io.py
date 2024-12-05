@@ -42,8 +42,11 @@ def compute_new_model(model, ref_var_info, all_terms, term_names):
     for term in set(all_terms) - set(term_names):
         shape = ref_var_info[term][0]
         exclude_terms[term] = np.zeros(shape)
-
-    return do(model, exclude_terms)
+    print("include terms", term_names)
+    #print("exclude_terms", exclude_terms.keys())
+    return do(model, exclude_terms,
+              #prune_vars=True,
+              )
 
 
 def compute_llk(idata, model):

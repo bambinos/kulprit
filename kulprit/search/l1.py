@@ -17,6 +17,7 @@ class L1SearchPath(SearchPath):
         # log the projector object
         self.projector = projector
         terms = self.projector.model.components[self.projector.model.family.likelihood.parent].terms
+        #terms.pop("Intercept")
 
         # test whether the model includes categorical terms, and if so raise error
         if sum(terms[term].categorical for term in terms.keys()) > 0:

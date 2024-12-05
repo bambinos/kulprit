@@ -65,6 +65,7 @@ class Projector:
         self.all_terms = [fvar.name for fvar in self.pymc_model.free_RVs]
         self.ref_var_info = get_model_information(self.pymc_model)
 
+        self.prev_models = []
         # log search path
         self.path = path
 
@@ -93,8 +94,16 @@ class Projector:
 
             # test `terms` input
             ref_terms = list(
-                self.model.components[self.model.family.likelihood.parent].common_terms.keys()
+                self.model.components[self.model.family.likelihood.parent].terms.keys()
             )
+            offsets = []
+            for term in ref_terms:
+                if "|" in term and "_" not in term:
+                    offsets.append(term + "_offset")
+            ref_terms = ref_terms + offsets
+
+
+            #print("projector", terms, ref_terms)
             if not set(terms).issubset(set(ref_terms)):
                 raise UserWarning(
                     "Please ensure that all terms selected for projection exist in"
@@ -142,7 +151,16 @@ class Projector:
         new_model = compute_new_model(
             self.pymc_model, self.ref_var_info, self.all_terms, term_names_
         )
-
+        new_subset = [fvar.name for fvar in new_model.free_RVs]
+        if new_subset not in self.prev_models:
+            self.prev_models.append(new_subset)
+        else:
+            dummy_sub_model = type('', (), {})()
+            dummy_sub_model.loss = np.inf
+            return dummy_sub_model
+        
+        print("prev_models", self.prev_models)
+        print("free_rvs", new_model.free_RVs)
         model_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
         initial_guess = np.concatenate(
             [np.ravel(value) for value in new_model.initial_point().values()]
@@ -164,6 +182,7 @@ class Projector:
         new_idata.add_groups(log_likelihood=compute_llk(new_idata, new_model))
 
         # build SubModel object and return
+
         sub_model = SubModel(
             model=new_model,
             idata=new_idata,

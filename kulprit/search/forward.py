@@ -17,7 +17,13 @@ class ForwardSearchPath(SearchPath):
         # log the names of the terms in the reference model
 
         model = self.projector.model
-        self.ref_terms = list(model.components[model.family.likelihood.parent].common_terms.keys())
+        self.ref_terms = list(model.components[model.family.likelihood.parent].terms.keys())
+        offsets = []
+        for term in self.ref_terms:
+              if "|" in term and "_" not in term:
+                offsets.append(term + "_offset")
+        self.ref_terms = self.ref_terms + offsets
+        self.ref_terms.remove("Intercept")
 
         # initialise search
         self.k_term_idx = {}
@@ -34,7 +40,7 @@ class ForwardSearchPath(SearchPath):
                 list(
                     submodel.model.components[
                         submodel.model.family.likelihood.parent
-                    ].common_terms.keys()
+                    ].terms.keys()
                 ),
                 submodel.loss,
             ]
@@ -121,6 +127,9 @@ class ForwardSearchPath(SearchPath):
             # identify the best candidate by loss (equivalent to KL min)
             best_submodel = min(k_projections, key=lambda projection: projection.loss)
             best_loss = best_submodel.loss
+            import numpy as np
+            if not np.isfinite(best_loss):
+                continue
 
             # retrieve the best candidate's term names and indices
             k_term_names = best_submodel.term_names
