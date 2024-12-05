@@ -37,7 +37,7 @@ def solve(model_log_likelihood, pps, initial_guess, var_info):
                 model_log_likelihood,
                 args=(obs),
                 x0=initial_guess,
-                tol=0.001,
+                tol=1,
                 method="SLSQP",
             )
 
