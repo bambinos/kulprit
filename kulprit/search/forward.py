@@ -119,10 +119,6 @@ class ForwardSearchPath(SearchPath):
             # identify the best candidate by loss (equivalent to KL min)
             best_submodel = min(k_projections, key=lambda projection: projection.loss)
             best_loss = best_submodel.loss
-            import numpy as np
-
-            if not np.isfinite(best_loss):
-                continue
 
             # retrieve the best candidate's term names and indices
             k_term_names = best_submodel.term_names

@@ -54,7 +54,7 @@ def compute_new_model(model, noncentered, ref_var_info, all_terms, term_names):
     return do(
         model,
         exclude_terms,
-        prune_vars=True,
+        #prune_vars=True,
     )
 
 
