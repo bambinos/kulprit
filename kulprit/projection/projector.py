@@ -146,7 +146,6 @@ class Projector:
         new_model = compute_new_model(
             self.pymc_model, self.noncentered, self.ref_var_info, self.all_terms, term_names_
         )
-        print("free_rvs", new_model.free_RVs)
         model_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
         initial_guess = np.concatenate(
             [np.ravel(value) for value in new_model.initial_point().values()]

@@ -38,7 +38,6 @@ def compute_new_model(model, noncentered, ref_var_info, all_terms, term_names):
     """
     Compute a new model by excluding the terms not in term_names.
     """
-    print("term_names", term_names)
     # get all the terms not in term_names
     exclude_terms = {term: 0 for term in set(all_terms) - set(term_names)}
     for term in exclude_terms.keys():
