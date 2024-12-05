@@ -34,19 +34,29 @@ def compile_mllk(model):
     return fmodel, old_y_value, obs_rvs
 
 
-def compute_new_model(model, ref_var_info, all_terms, term_names):
+def compute_new_model(model, noncentered, ref_var_info, all_terms, term_names):
     """
     Compute a new model by excluding the terms not in term_names.
     """
-    exclude_terms = {term: (0,) for term in set(all_terms) - set(term_names)}
-    for term in set(all_terms) - set(term_names):
+    print("term_names", term_names)
+    # get all the terms not in term_names
+    exclude_terms = {term: 0 for term in set(all_terms) - set(term_names)}
+    for term in exclude_terms.keys():
         shape = ref_var_info[term][0]
         exclude_terms[term] = np.zeros(shape)
-    print("include terms", term_names)
-    #print("exclude_terms", exclude_terms.keys())
-    return do(model, exclude_terms,
-              #prune_vars=True,
-              )
+
+    if noncentered:
+        for term in term_names:
+            if term.startswith("1|"):
+                exclude_terms.pop(term + "_sigma")
+            if "|" in term:
+                exclude_terms.pop(term + "_offset")
+
+    return do(
+        model,
+        exclude_terms,
+        prune_vars=True,
+    )
 
 
 def compute_llk(idata, model):

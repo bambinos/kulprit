@@ -23,8 +23,9 @@ class Projector:
         self,
         model: bmb.Model,
         idata: az.InferenceData,
-        has_intercept: bool,
         num_samples: int,
+        has_intercept: bool,
+        noncentered: bool,
         path: Optional[dict] = None,
     ) -> None:
         """Reference model builder for projection predictive model selection.
@@ -50,6 +51,7 @@ class Projector:
         self.idata = idata
         self.has_intercept = has_intercept
         self.num_samples = num_samples
+        self.noncentered = noncentered
 
         # log properties of the reference Bambi model
         self.response_name = model.response_component.term.name
@@ -96,14 +98,7 @@ class Projector:
             ref_terms = list(
                 self.model.components[self.model.family.likelihood.parent].terms.keys()
             )
-            offsets = []
-            for term in ref_terms:
-                if "|" in term and "_" not in term:
-                    offsets.append(term + "_offset")
-            ref_terms = ref_terms + offsets
 
-
-            #print("projector", terms, ref_terms)
             if not set(terms).issubset(set(ref_terms)):
                 raise UserWarning(
                     "Please ensure that all terms selected for projection exist in"
@@ -149,17 +144,8 @@ class Projector:
 
         term_names_ = self.base_terms + term_names
         new_model = compute_new_model(
-            self.pymc_model, self.ref_var_info, self.all_terms, term_names_
+            self.pymc_model, self.noncentered, self.ref_var_info, self.all_terms, term_names_
         )
-        new_subset = [fvar.name for fvar in new_model.free_RVs]
-        if new_subset not in self.prev_models:
-            self.prev_models.append(new_subset)
-        else:
-            dummy_sub_model = type('', (), {})()
-            dummy_sub_model.loss = np.inf
-            return dummy_sub_model
-        
-        print("prev_models", self.prev_models)
         print("free_rvs", new_model.free_RVs)
         model_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
         initial_guess = np.concatenate(

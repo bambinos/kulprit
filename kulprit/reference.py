@@ -41,8 +41,8 @@ class ProjectionPredictive:
             The ArviZ InferenceData object of the fitted reference model
         """
         # test that the reference model has an intercept term
-        self.has_intercept = bmb.formula.formula_has_intercept(model.formula.main)
-        if not self.has_intercept:
+        has_intercept = bmb.formula.formula_has_intercept(model.formula.main)
+        if not has_intercept:
             raise UserWarning(
                 "The procedure currently requires reference models to have an intercept term."
             )
@@ -77,7 +77,8 @@ class ProjectionPredictive:
             model=self.model,
             idata=self.idata,
             num_samples=num_samples,
-            has_intercept=self.has_intercept,
+            has_intercept=has_intercept,
+            noncentered=model.noncentered,
         )
         # we have not yet run a search
         self.path = None
@@ -153,7 +154,10 @@ class ProjectionPredictive:
             self.searcher_path = L1SearchPath(self.projector)
 
         # set default `max_terms` value
-        n_terms = len(self.model.components[self.model.family.likelihood.parent].terms)
+        ref_terms = self.model.components[self.model.family.likelihood.parent].terms
+        n_terms = len(ref_terms)
+        if "Intercept" in ref_terms:
+            n_terms -= 1
         if max_terms is None:
             max_terms = n_terms
         # test `max_terms` input
@@ -170,7 +174,6 @@ class ProjectionPredictive:
         # feed path result through to the projector
         self.projector.path = k_submodels
         self.path = k_submodels
-        #print(self.path)
         # toggle indicator variable and return search path
         self.search_completed = True
 

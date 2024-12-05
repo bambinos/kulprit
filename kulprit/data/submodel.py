@@ -33,11 +33,4 @@ class SubModel:
         else:
             intercept = []
 
-        offset_stripped_terms = []
-        for term in self.term_names:
-            if "_offset" in term and "|" in term:
-                offset_stripped_terms.append(term.strip("_offset"))
-            else:
-                offset_stripped_terms.append(term)
-
-        return f"model_size {self.size}, terms {intercept + offset_stripped_terms}"
+        return f"model_size {self.size}, terms {intercept + self.term_names}"

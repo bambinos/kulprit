@@ -18,11 +18,6 @@ class ForwardSearchPath(SearchPath):
 
         model = self.projector.model
         self.ref_terms = list(model.components[model.family.likelihood.parent].terms.keys())
-        offsets = []
-        for term in self.ref_terms:
-              if "|" in term and "_" not in term:
-                offsets.append(term + "_offset")
-        self.ref_terms = self.ref_terms + offsets
         self.ref_terms.remove("Intercept")
 
         # initialise search
@@ -38,9 +33,7 @@ class ForwardSearchPath(SearchPath):
         path_dict = {
             k: [
                 list(
-                    submodel.model.components[
-                        submodel.model.family.likelihood.parent
-                    ].terms.keys()
+                    submodel.model.components[submodel.model.family.likelihood.parent].terms.keys()
                 ),
                 submodel.loss,
             ]
@@ -105,7 +98,6 @@ class ForwardSearchPath(SearchPath):
         k_term_names = []
         k_submodel = self.projector.project(terms=k_term_names)
         k_loss = k_submodel.loss
-
         # add submodel to search path
         self.add_submodel(
             k=k,
@@ -128,6 +120,7 @@ class ForwardSearchPath(SearchPath):
             best_submodel = min(k_projections, key=lambda projection: projection.loss)
             best_loss = best_submodel.loss
             import numpy as np
+
             if not np.isfinite(best_loss):
                 continue
 
