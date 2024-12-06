@@ -40,22 +40,18 @@ def compute_new_model(model, noncentered, ref_var_info, all_terms, term_names):
     """
     # get all the terms not in term_names
     exclude_terms = {term: 0 for term in set(all_terms) - set(term_names)}
+
+    if noncentered:
+        for term in term_names:
+            if "|" in term:
+                exclude_terms.pop(term + "_sigma")
+                exclude_terms.pop(term + "_offset")
+
     for term in exclude_terms.keys():
         shape = ref_var_info[term][0]
         exclude_terms[term] = np.zeros(shape)
 
-    if noncentered:
-        for term in term_names:
-            if term.startswith("1|"):
-                exclude_terms.pop(term + "_sigma")
-            if "|" in term:
-                exclude_terms.pop(term + "_offset")
-
-    return do(
-        model,
-        exclude_terms,
-        #prune_vars=True,
-    )
+    return do(model, exclude_terms)
 
 
 def compute_llk(idata, model):

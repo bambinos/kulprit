@@ -130,7 +130,6 @@ def plot_densities(
     if include_reference:
         data = [idata]
         l_labels = ["Reference"]
-        var_names.append(f"~{model.family.likelihood.parent}")
     else:
         data = []
         l_labels = []
@@ -142,6 +141,7 @@ def plot_densities(
 
     data.extend([submodel.idata for submodel in submodels])
 
+    print(var_names)
     if kind == "density":
         plot_kwargs.setdefault("outline", False)
         plot_kwargs.setdefault("shade", 0.4)
