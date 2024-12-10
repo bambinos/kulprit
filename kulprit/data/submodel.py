@@ -33,4 +33,4 @@ class SubModel:
         else:
             intercept = []
 
-        return f"model_size {self.size}, terms {intercept + self.term_names}"
+        return f"{intercept + self.term_names}"

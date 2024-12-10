@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None):
+def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None, plot_kwargs=None):
     """
     Plot model comparison.
 
@@ -14,6 +14,8 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
         Dataframe containing the comparison data. Should have columns
         `elpd_loo` and `elpd_diff` containing the ELPD values and the
         differences to the reference model.
+    label_terms : list
+        List of the labels for the submodels.
     legend : bool
         Flag for plotting the legend, default True.
     title : bool
@@ -31,20 +33,18 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
 
     figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(figsize, None, 1, 1)
 
-    xticks_pos, step = np.linspace(0, -1, ((cmp_df.shape[0]) * 2) - 2, retstep=True)
-    xticks_pos[1::2] = xticks_pos[1::2] - step * 1.5
-
-    labels = cmp_df.index.values[1:]
-    xticks_labels = [""] * len(xticks_pos)
-    xticks_labels[0] = labels[0]
-    xticks_labels[2::2] = labels[1:]
+    xticks_pos = np.linspace(0, 1, cmp_df.shape[0] - 1)[::-1]
+    xticks_num_labels = cmp_df.index.values[1:]
+    xticks_name_labels = [f"\n\n{term}" for term in label_terms[::-1]]
+    elpd_loo = cmp_df["elpd_loo"][1:].values
+    elpd_se = cmp_df["se"][1:].values
 
     fig, axes = plt.subplots(1, figsize=figsize)
 
     axes.errorbar(
-        y=cmp_df["elpd_loo"][1:],
-        x=xticks_pos[::2],
-        yerr=cmp_df.se[1:],
+        y=elpd_loo,
+        x=xticks_pos,
+        yerr=elpd_se,
         label="Submodels",
         color=plot_kwargs.get("color_eldp", "k"),
         fmt=plot_kwargs.get("marker_eldp", "o"),
@@ -63,7 +63,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
     )
 
     axes.fill_between(
-        [-2, 1],
+        [-0.15, 1.15],
         cmp_df["elpd_loo"].iloc[0] + cmp_df["se"].iloc[0],
         cmp_df["elpd_loo"].iloc[0] - cmp_df["se"].iloc[0],
         alpha=0.1,
@@ -72,7 +72,7 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
 
     if legend:
         fig.legend(
-            bbox_to_anchor=(0.9, 0.1),
+            bbox_to_anchor=(0.9, 0.3),
             loc="lower right",
             ncol=1,
             fontsize=ax_labelsize * 0.6,
@@ -84,15 +84,18 @@ def plot_compare(cmp_df, legend=True, title=True, figsize=None, plot_kwargs=None
             fontsize=ax_labelsize * 0.6,
         )
 
-    # remove double ticks
-    xticks_pos, xticks_labels = xticks_pos[::2], xticks_labels[::2]
+    sec0 = axes.secondary_xaxis(location=0)
+    sec0.set_xticks(xticks_pos, xticks_num_labels)
+    sec0.tick_params("x", length=0, labelsize=xt_labelsize * 0.6)
 
-    # set axes
-    axes.set_xticks(xticks_pos)
+    sec1 = axes.secondary_xaxis(location=0)
+    sec1.set_xticks(xticks_pos, xticks_name_labels, rotation=plot_kwargs.get("xlabel_rotation", 0))
+    sec1.tick_params("x", length=0, labelsize=xt_labelsize * 0.6)
+    sec1.set_xlabel("Submodels", fontsize=ax_labelsize * 0.6)
+
+    axes.set_xticks([])
     axes.set_ylabel("ELPD", fontsize=ax_labelsize * 0.6)
-    axes.set_xlabel("Submodel size", fontsize=ax_labelsize * 0.6)
-    axes.set_xticklabels(xticks_labels)
-    axes.set_xlim(-1 + step, 0 - step)
+    axes.set_xlim(-0.1, 1.1)
     axes.tick_params(labelsize=xt_labelsize * 0.6)
 
     return axes
@@ -130,7 +133,6 @@ def plot_densities(
     if include_reference:
         data = [idata]
         l_labels = ["Reference"]
-        var_names.append(f"~{model.family.likelihood.parent}")
     else:
         data = []
         l_labels = []

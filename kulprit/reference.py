@@ -1,3 +1,4 @@
+# pylint: disable=undefined-loop-variable
 """Core reference model class."""
 
 from typing import Tuple, Union, Optional, List
@@ -197,7 +198,8 @@ class ProjectionPredictive:
             If None, size is (10, num of submodels) inches
         plot_kwargs : dict
             Optional arguments for plot elements. Currently accepts 'color_elpd', 'marker_elpd',
-        'marker_fc_elpd', 'color_dse', 'marker_dse', 'ls_reference', 'color_ls_reference'.
+        'marker_fc_elpd', 'color_dse', 'marker_dse', 'ls_reference', 'color_ls_reference',
+        'xlabel_rotation'.
 
         Returns:
         --------
@@ -237,9 +239,11 @@ class ProjectionPredictive:
         for k, submodel in self.searcher_path.k_submodel.items():
             if k >= min_model_size:
                 self.searcher_idatas[k] = submodel.idata
-        self.searcher_idatas[
-            k + 1  # pylint: disable=undefined-loop-variable
-        ] = self.projector.idata
+
+        self.searcher_idatas[k + 1] = self.projector.idata
+
+        label_terms = ["Intercept"] if self.has_intercept else []
+        label_terms.extend(submodel.term_names)
 
         # compare the submodels using loo (other criteria may be added in the future)
         comparison = az.compare(self.searcher_idatas)
@@ -248,7 +252,7 @@ class ProjectionPredictive:
         # plot the comparison if requested
         axes = None
         if plot:
-            axes = plot_compare(comparison, legend, title, figsize, **plot_kwargs)
+            axes = plot_compare(comparison, label_terms, legend, title, figsize, plot_kwargs)
 
         return comparison, axes
 

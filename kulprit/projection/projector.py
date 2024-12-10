@@ -168,7 +168,7 @@ class Projector:
             model=new_model,
             idata=new_idata,
             loss=loss,
-            size=len(new_model.free_RVs) - len(self.base_terms),
+            size=len(term_names),
             term_names=term_names,
             has_intercept=self.has_intercept,
         )
