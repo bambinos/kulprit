@@ -49,11 +49,6 @@ def compute_new_model(model, ref_var_info, all_terms, term_names):
     # get all the terms not in term_names
     exclude_terms = {term: 0 for term in set(all_terms) - set(term_names)}
 
-    for term in term_names:
-        if "|" in term:
-            exclude_terms.pop(term + "_sigma", None)
-            exclude_terms.pop(term + "_offset", None)
-
     for term in exclude_terms.keys():
         shape = ref_var_info[term][0]
         exclude_terms[term] = np.zeros(shape)
