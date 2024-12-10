@@ -78,7 +78,6 @@ class ProjectionPredictive:
             idata=self.idata,
             num_samples=num_samples,
             has_intercept=has_intercept,
-            noncentered=model.noncentered,
         )
         # we have not yet run a search
         self.path = None

@@ -25,7 +25,6 @@ class Projector:
         idata: az.InferenceData,
         num_samples: int,
         has_intercept: bool,
-        noncentered: bool,
         path: Optional[dict] = None,
     ) -> None:
         """Reference model builder for projection predictive model selection.
@@ -51,7 +50,6 @@ class Projector:
         self.idata = idata
         self.has_intercept = has_intercept
         self.num_samples = num_samples
-        self.noncentered = noncentered
 
         # log properties of the reference Bambi model
         self.response_name = model.response_component.term.name
@@ -144,17 +142,19 @@ class Projector:
 
         term_names_ = self.base_terms + term_names
         new_model = compute_new_model(
-            self.pymc_model, self.noncentered, self.ref_var_info, self.all_terms, term_names_
+            self.pymc_model, self.ref_var_info, self.all_terms, term_names_
         )
         model_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
         initial_guess = np.concatenate(
             [np.ravel(value) for value in new_model.initial_point().values()]
         )
+        #print(new_model.free_RVs)
         var_info = get_model_information(new_model)
 
         new_idata, loss = solve(
             model_log_likelihood,
             self.pps,
+            self.idata.posterior,
             initial_guess,
             var_info,
         )
@@ -197,6 +197,7 @@ class Projector:
             group="posterior_predictive",
             var_names=[self.response_name],
             num_samples=self.num_samples,
+            rng=1, 
         ).values.T
         return pps
 
