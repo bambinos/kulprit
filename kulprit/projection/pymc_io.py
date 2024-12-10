@@ -6,10 +6,10 @@ from pymc.util import is_transformed_name, get_untransformed_name
 from pymc.pytensorf import join_nonshared_inputs
 
 try:
-    # Try to import compile_pymc as compile for newer versions of pymc
+    # Try to import compile_pymc as compile for older versions of pymc
     from pymc.pytensorf import compile_pymc as compile_
 except ImportError:
-    # Fallback to importing compile for older versions of pymc
+    # Fallback to importing compile for newer versions of pymc
     from pymc.pytensorf import compile as compile_
 
 from pytensor import function
