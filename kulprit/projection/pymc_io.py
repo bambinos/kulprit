@@ -3,7 +3,15 @@ import numpy as np
 
 from pymc import do, compute_log_likelihood
 from pymc.util import is_transformed_name, get_untransformed_name
-from pymc.pytensorf import compile_pymc, join_nonshared_inputs
+from pymc.pytensorf import join_nonshared_inputs
+
+try:
+    # Try to import compile_pymc as compile for newer versions of pymc
+    from pymc.pytensorf import compile_pymc as compile_
+except ImportError:
+    # Fallback to importing compile for older versions of pymc
+    from pymc.pytensorf import compile as compile_
+
 from pytensor import function
 from pytensor.tensor import matrix
 
@@ -14,7 +22,7 @@ def compile_mllk(model):
     data and parameters.
     """
     obs_rvs = model.observed_RVs[0]
-    old_y_value = model.rvs_to_values[obs_rvs]  # do we need to restore the value
+    old_y_value = model.rvs_to_values[obs_rvs]
     new_y_value = obs_rvs.type()
     model.rvs_to_values[obs_rvs] = new_y_value
 
@@ -25,11 +33,11 @@ def compile_mllk(model):
         point=initial_point, outputs=[model.datalogp], inputs=vars_
     )
 
-    rv_logp_fn = compile_pymc([raveled_inp, new_y_value], logp)
+    rv_logp_fn = compile_([raveled_inp, new_y_value], logp)
     rv_logp_fn.trust_input = True
 
     def fmodel(params, obs):
-        return -rv_logp_fn(params, obs).sum()
+        return -rv_logp_fn(params, obs)
 
     return fmodel, old_y_value, obs_rvs
 
@@ -38,8 +46,15 @@ def compute_new_model(model, ref_var_info, all_terms, term_names):
     """
     Compute a new model by excluding the terms not in term_names.
     """
-    exclude_terms = {term: (0,) for term in set(all_terms) - set(term_names)}
-    for term in set(all_terms) - set(term_names):
+    # get all the terms not in term_names
+    exclude_terms = {term: 0 for term in set(all_terms) - set(term_names)}
+
+    for term in term_names:
+        if "|" in term:
+            exclude_terms.pop(term + "_sigma", None)
+            exclude_terms.pop(term + "_offset", None)
+
+    for term in exclude_terms.keys():
         shape = ref_var_info[term][0]
         exclude_terms[term] = np.zeros(shape)
 
