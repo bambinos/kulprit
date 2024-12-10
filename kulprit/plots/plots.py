@@ -33,7 +33,7 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
 
     figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(figsize, None, 1, 1)
 
-    xticks_pos = np.linspace(0, 1, cmp_df.shape[0]-1)[::-1]
+    xticks_pos = np.linspace(0, 1, cmp_df.shape[0] - 1)[::-1]
     xticks_num_labels = cmp_df.index.values[1:]
     xticks_name_labels = [f"\n\n{term}" for term in label_terms[::-1]]
     elpd_loo = cmp_df["elpd_loo"][1:].values
@@ -84,14 +84,13 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
             fontsize=ax_labelsize * 0.6,
         )
 
-
     sec0 = axes.secondary_xaxis(location=0)
     sec0.set_xticks(xticks_pos, xticks_num_labels)
-    sec0.tick_params('x', length=0, labelsize=xt_labelsize * 0.6)
+    sec0.tick_params("x", length=0, labelsize=xt_labelsize * 0.6)
 
     sec1 = axes.secondary_xaxis(location=0)
     sec1.set_xticks(xticks_pos, xticks_name_labels, rotation=plot_kwargs.get("xlabel_rotation", 0))
-    sec1.tick_params('x', length=0, labelsize=xt_labelsize * 0.6)
+    sec1.tick_params("x", length=0, labelsize=xt_labelsize * 0.6)
     sec1.set_xlabel("Submodels", fontsize=ax_labelsize * 0.6)
 
     axes.set_xticks([])
