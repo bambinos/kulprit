@@ -1,7 +1,5 @@
 """optimization module."""
-import warnings
-
-import arviz as az
+from arviz import from_dict
 import numpy as np
 from scipy.optimize import minimize
 
@@ -30,20 +28,18 @@ def solve(model_log_likelihood, pps, initial_guess, var_info):
     posterior_dict = {}
     objectives = []
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message="Values in x were outside bounds")
-        for idx, obs in enumerate(pps):
-            opt = minimize(
-                model_log_likelihood,
-                args=(obs),
-                x0=initial_guess,
-                tol=0.001,
-                method="SLSQP",
-            )
+    for idx, obs in enumerate(pps):
+        opt = minimize(
+            model_log_likelihood,
+            args=(obs),
+            x0=initial_guess,
+            tol=0.001,
+            method="SLSQP",
+        )
 
-            posterior_array[idx] = opt.x
-            objectives.append(opt.fun)
-            initial_guess = opt.x
+        posterior_array[idx] = opt.x
+        objectives.append(opt.fun)
+        initial_guess = opt.x
 
     size = 0
     for key, values in var_info.items():
@@ -55,6 +51,6 @@ def solve(model_log_likelihood, pps, initial_guess, var_info):
             posterior_dict[key] = transformation(posterior_dict[key])
         size += new_size
 
-    new_idata = az.from_dict(posterior=posterior_dict)
+    new_idata = from_dict(posterior=posterior_dict)
     loss = np.mean(objectives)
     return new_idata, loss
