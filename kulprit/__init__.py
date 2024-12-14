@@ -4,7 +4,7 @@ Kulprit.
 Kullback-Leibler projections for Bayesian model selection.
 """
 
-from kulprit.reference import ProjectionPredictive
+from kulprit.projector import ProjectionPredictive
 from kulprit.datasets import *
 
 

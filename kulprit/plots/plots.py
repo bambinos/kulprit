@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None, plot_kwargs=None):
+def plot_compare(
+    elpd_info, label_terms=None, legend=True, title=True, figsize=None, plot_kwargs=None
+):
     """
     Plot model comparison.
 
@@ -24,7 +26,6 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
         Figure size. If None it will be defined automatically.
     plot_kwargs : dict
     """
-
     if plot_kwargs is None:
         plot_kwargs = {}
 
@@ -33,18 +34,18 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
 
     figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(figsize, None, 1, 1)
 
-    xticks_pos = np.linspace(0, 1, cmp_df.shape[0] - 1)[::-1]
-    xticks_num_labels = cmp_df.index.values[1:]
-    xticks_name_labels = [f"\n\n{term}" for term in label_terms[::-1]]
-    elpd_loo = cmp_df["elpd_loo"][1:].values
-    elpd_se = cmp_df["se"][1:].values
+    xticks_pos = np.linspace(0, 1, len(elpd_info) - 1)
+    xticks_num_labels = [value[0] for value in elpd_info[1:]]
+    xticks_name_labels = [f"\n\n{term}" for term in label_terms]
+    elpd_loo = [value[1] for value in elpd_info]
+    elpd_se = [value[2] for value in elpd_info]
 
     fig, axes = plt.subplots(1, figsize=figsize)
 
     axes.errorbar(
-        y=elpd_loo,
+        y=elpd_loo[1:],
         x=xticks_pos,
-        yerr=elpd_se,
+        yerr=elpd_se[1:],
         label="Submodels",
         color=plot_kwargs.get("color_eldp", "k"),
         fmt=plot_kwargs.get("marker_eldp", "o"),
@@ -55,7 +56,7 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
     )
 
     axes.axhline(
-        cmp_df["elpd_loo"].iloc[0],
+        elpd_loo[0],
         ls=plot_kwargs.get("ls_reference", "--"),
         color=plot_kwargs.get("color_ls_reference", "grey"),
         lw=linewidth,
@@ -64,8 +65,8 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
 
     axes.fill_between(
         [-0.15, 1.15],
-        cmp_df["elpd_loo"].iloc[0] + cmp_df["se"].iloc[0],
-        cmp_df["elpd_loo"].iloc[0] - cmp_df["se"].iloc[0],
+        elpd_loo[0] + elpd_se[0],
+        elpd_loo[0] - elpd_se[0],
         alpha=0.1,
         color=plot_kwargs.get("color_ls_reference", "grey"),
     )
@@ -103,10 +104,9 @@ def plot_compare(cmp_df, label_terms=None, legend=True, title=True, figsize=None
 
 def plot_densities(
     model,
-    path,
     idata,
+    submodels,
     var_names=None,
-    submodels=None,
     include_reference=True,
     labels="size",
     kind="density",
@@ -116,15 +116,9 @@ def plot_densities(
     """Compare the projected posterior densities of the submodels"""
     if plot_kwargs is None:
         plot_kwargs = {}
-    plot_kwargs.setdefault("figsize", figsize)
 
     if kind not in ["density", "forest"]:
         raise ValueError("kind must be one of 'density' or 'forest'")
-
-    if submodels is None:
-        submodels = path.values()
-    else:
-        submodels = [path[key] for key in submodels]
 
     # set default variable names to the reference model terms
     if not var_names:
@@ -147,6 +141,7 @@ def plot_densities(
     if kind == "density":
         plot_kwargs.setdefault("outline", False)
         plot_kwargs.setdefault("shade", 0.4)
+        plot_kwargs.setdefault("figsize", figsize)
 
         axes = plot_density(
             data=data,
@@ -157,6 +152,8 @@ def plot_densities(
 
     elif kind == "forest":
         plot_kwargs.setdefault("combined", True)
+        plot_kwargs.setdefault("figsize", (10, 2 + len(var_names) ** 0.5))
+
         axes = plot_forest(
             data=data,
             model_names=l_labels,
