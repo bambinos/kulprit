@@ -1,11 +1,6 @@
 import copy
 import pytest
 
-import bambi as bmb
-import numpy as np
-
-import kulprit as kpt
-
 
 class TestSearch:
     """Test the search method of the model selection procedure."""
@@ -17,7 +12,7 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project()
-        assert [submodel.size for submodel in ref_model_copy.submodels] == [0, 1, 2]
+        assert [submodel.size for submodel in ref_model_copy.submodels([0, 1, 2])] == [0, 1, 2]
 
     # def test_l1(self, ref_model):
     #     """Test that L1 search gives expected result."""

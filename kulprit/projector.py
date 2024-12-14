@@ -64,17 +64,18 @@ class ProjectionPredictive:
         self.pps = get_pps(self.model, self.idata, self.response_name, self.num_samples)
         self.elpd_ref = compute_loo(idata=self.idata)
 
-        self.submodels = []
+        self.list_of_submodels = []
 
     def __repr__(self) -> str:
         """Return the terms of the submodels."""
 
-        if not self.submodels:
+        if not self.list_of_submodels:
             return "ReferenceModel"
 
         else:
             str_of_submodels = "\n".join(
-                f"{idx:>3} " f"{value.term_names}" for idx, value in enumerate(self.submodels)
+                f"{idx:>3} " f"{value.term_names}"
+                for idx, value in enumerate(self.list_of_submodels)
             )
             return str_of_submodels
 
@@ -104,7 +105,7 @@ class ProjectionPredictive:
                 if not set(term_names).issubset(self.all_terms):
                     raise ValueError(f"Term {idx} is not a valid term in the reference")
 
-            self.submodels = user_path(self._project, path)
+            self.list_of_submodels = user_path(self._project, path)
         else:
             # test valid solution method
             if path not in ["forward", "l1"]:
@@ -123,8 +124,7 @@ class ProjectionPredictive:
                 max_terms = n_terms
 
             if path == "forward":
-                self.submodels = forward_search(self._project, self.ref_terms, max_terms)
-
+                self.list_of_submodels = forward_search(self._project, self.ref_terms, max_terms)
             # else:
             #     self.searcher_path = L1SearchPath(self.projector)
 
@@ -198,6 +198,32 @@ class ProjectionPredictive:
         ):
             raise UserWarning("Incompatible model and inference data.")
 
+    def submodels(self, index):
+        """Return submodels by index
+
+        Parameters
+        ----------
+        index : int or list of int
+            The index or indices of the submodels to return. If a list of indices is provided,
+            the submodels will be returned in the order of the list.
+
+        Returns
+        -------
+        list of SubModel
+            The submodels corresponding to the provided indices
+        """
+
+        if isinstance(index, int):
+            return self.list_of_submodels[index]
+        else:
+            n_submodels = len(self.list_of_submodels)
+            if not all(-n_submodels <= i < n_submodels for i in index):
+                warnings.warn(
+                    "At least one index is out of bounds. Ignoring out of bounds indices."
+                )
+                index = [i for i in index if -n_submodels <= i < n_submodels]
+            return [self.list_of_submodels[i] for i in index]
+
     def compare(
         self,
         plot=True,
@@ -233,30 +259,27 @@ class ProjectionPredictive:
         axes : matplotlib_axes or bokeh_figure
         """
         # test that search has been previously run
-        if not self.submodels:
+        if not self.list_of_submodels:
             raise UserWarning("Please run search before comparing submodels.")
 
         # initiate plotting arguments if none provided
         if plot_kwargs is None:
             plot_kwargs = {}
 
+        label_terms = []
         elpd_info = [(-1, self.elpd_ref.elpd_loo, self.elpd_ref.se)]
         # make list with elpd loo and se for each submodel
-        for k, submodel in enumerate(self.submodels):
+        for k, submodel in enumerate(self.list_of_submodels):
             if k >= min_model_size:
                 elpd_info.append((k, submodel.elpd_loo, submodel.elpd_se))
+                if submodel.term_names:
+                    label_terms.append(submodel.term_names[-1])
+                else:
+                    label_terms.append("Intercept")
 
         # plot the comparison if requested
         axes = None
         if plot:
-            # list term_names to use  labels
-            if not self.submodels[0].term_names:
-                label_terms = ["Intercept"]
-            else:
-                label_terms = []
-            label_terms.extend(submodel.term_names)
-            label_terms = label_terms[min_model_size:]
-
             axes = plot_compare(elpd_info, label_terms, legend, title, figsize, plot_kwargs)
 
         return elpd_info, axes
@@ -297,15 +320,9 @@ class ProjectionPredictive:
         axes : matplotlib_axes or bokeh_figure
         """
         if submodels is None:
-            submodels = self.submodels
+            submodels = self.list_of_submodels
         else:
-            if max(submodels) > len(self.submodels) - 1:
-                submodels = np.clip(submodels, 0, len(self.submodels) - 1)
-                warnings.warn(
-                    "At least one index for the submodels is larger than the number "
-                    "of available submodels"
-                )
-            submodels = [self.submodels[idx] for idx in submodels]
+            submodels = self.submodels(submodels)
 
         return plot_densities(
             self.model,

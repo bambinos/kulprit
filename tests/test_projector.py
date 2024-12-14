@@ -47,7 +47,7 @@ class TestProjector(KulpritTest):
         # project the reference model to some parameter subset
         ppi.project(path=[["x"]])
 
-        sub_model_keys = ppi.submodels[0].idata.posterior.data_vars.keys()
+        sub_model_keys = ppi.list_of_submodels[0].idata.posterior.data_vars.keys()
         assert "x" in sub_model_keys
         assert "y" not in sub_model_keys
 
@@ -63,7 +63,7 @@ class TestProjector(KulpritTest):
         )
         ppi = ProjectionPredictive(model=model_cat, idata=fitted_cat)
         ppi.project(path=[["gender"]])
-        assert ppi.submodels[0].size == 1
+        assert ppi.list_of_submodels[0].size == 1
 
     def test_project_one_term(self, ref_model):
         """Test that the projection method works for a single term."""
@@ -71,4 +71,4 @@ class TestProjector(KulpritTest):
         # project the reference model to some parameter subset
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project()
-        assert ref_model_copy.submodels[1].size == 1
+        assert ref_model_copy.submodels(1).size == 1
