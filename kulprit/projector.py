@@ -66,6 +66,7 @@ class ProjectionPredictive:
 
         self.tolerance = None
         self.early_stop = None
+        self.pps = None
         self.list_of_submodels = []
 
     def __repr__(self) -> str:
