@@ -83,7 +83,7 @@ class ProjectionPredictive:
             return str_of_submodels
 
     def project(
-        self, max_terms=None, path="forward", num_samples=100, tolerance=0.1, early_stop=False
+        self, max_terms=None, path="forward", num_samples=100, tolerance=0.01, early_stop=False
     ):
         """Perform model projection.
 
@@ -103,7 +103,7 @@ class ProjectionPredictive:
             The number of samples to draw from the posterior predictive distribution for the
             projection procedure. Defaults to 100.
         tolerance : float
-            The tolerance for the optimization procedure. Defaults to 0.1
+            The tolerance for the optimization procedure. Defaults to 0.01
         early_stop : bool or str
             Whether to stop the search when the difference in ELPD between the submodel and the
             reference model is small. There are two criteria, "mean" and "se". The "mean" criterion
