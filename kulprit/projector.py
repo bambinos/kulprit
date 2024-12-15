@@ -7,7 +7,7 @@ import numpy as np
 from bambi import formula
 from kulprit.plots.plots import plot_compare, plot_densities
 
-from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
+from kulprit.projection.arviz_io import compute_loo, get_observed_data, compute_pps, get_pps
 from kulprit.projection.pymc_io import (
     compile_mllk,
     compute_llk,
@@ -23,7 +23,7 @@ class ProjectionPredictive:
     Projection Predictive class from which we perform the model selection procedure.
     """
 
-    def __init__(self, model, idata=None, num_samples=100):
+    def __init__(self, model, idata=None):
         """Builder for projection predictive model selection.
 
         This object initializes the reference model and handles the core projection, variable search
@@ -60,10 +60,12 @@ class ProjectionPredictive:
         self.observed_dataset, self.observed_array = get_observed_data(
             self.idata, self.response_name
         )
-        self.num_samples = num_samples
-        self.pps = get_pps(self.model, self.idata, self.response_name, self.num_samples)
+        self.num_samples = None
+        compute_pps(self.model, self.idata)
         self.elpd_ref = compute_loo(idata=self.idata)
 
+        self.tolerance = None
+        self.early_stop = None
         self.list_of_submodels = []
 
     def __repr__(self) -> str:
@@ -79,7 +81,9 @@ class ProjectionPredictive:
             )
             return str_of_submodels
 
-    def project(self, max_terms=None, path="forward"):
+    def project(
+        self, max_terms=None, path="forward", num_samples=100, tolerance=0.1, early_stop=False
+    ):
         """Perform model projection.
 
         If ``max_terms`` is not provided, then the search path runs from the intercept-only model
@@ -94,7 +98,23 @@ class ProjectionPredictive:
             The search method to employ, either "forward" for a forward search, or "l1" for
             a L1-regularized search path. If a nested list of terms is provided, model with
             those terms will be projected directly.
+        num_samples : int
+            The number of samples to draw from the posterior predictive distribution for the
+            projection procedure. Defaults to 100.
+        tolerance : float
+            The tolerance for the optimization procedure. Defaults to 0.1
+        early_stop : bool or str
+            Whether to stop the search when the difference in ELPD between the submodel and the
+            reference model is small. There are two criteria, "mean" and "se". The "mean" criterion
+            stops the search when the difference in ELPD is smaller than 4. The "se" criterion stops
+            the search when the ELPD of the submodel is within one standard error of the reference
+            model. Defaults to False.
         """
+        self.num_samples = num_samples
+        self.tolerance = tolerance
+        self.early_stop = early_stop
+        self.pps = get_pps(self.idata, self.response_name, self.num_samples)
+
         # test if path is a list of terms
         if isinstance(path, list):
             # check if the length of the path always increase
@@ -124,7 +144,9 @@ class ProjectionPredictive:
                 max_terms = n_terms
 
             if path == "forward":
-                self.list_of_submodels = forward_search(self._project, self.ref_terms, max_terms)
+                self.list_of_submodels = forward_search(
+                    self._project, self.ref_terms, max_terms, self.elpd_ref, self.early_stop
+                )
             # else:
             #     self.searcher_path = L1SearchPath(self.projector)
 
@@ -146,6 +168,7 @@ class ProjectionPredictive:
             self.pps,
             initial_guess,
             var_info,
+            self.tolerance,
         )
         # restore obs_rvs value in the model
         new_model.rvs_to_values[obs_rvs] = old_y_value
