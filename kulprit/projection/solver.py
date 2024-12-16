@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 
-def solve(model_log_likelihood, pps, initial_guess, var_info):
+def solve(model_log_likelihood, pps, initial_guess, var_info, tolerance):
     """The primary projection method in the procedure.
 
     Parameters:
@@ -28,12 +28,19 @@ def solve(model_log_likelihood, pps, initial_guess, var_info):
     posterior_dict = {}
     objectives = []
 
+    opt = minimize(
+        model_log_likelihood,
+        args=(pps[0]),
+        x0=initial_guess,
+    )
+    initial_guess = opt.x
+
     for idx, obs in enumerate(pps):
         opt = minimize(
             model_log_likelihood,
             args=(obs),
             x0=initial_guess,
-            tol=0.001,
+            tol=tolerance,
             method="SLSQP",
         )
 

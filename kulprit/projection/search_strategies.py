@@ -12,7 +12,7 @@ def user_path(_project, path):
     return submodels
 
 
-def forward_search(_project, ref_terms, max_terms):
+def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop):
     # initial intercept-only subset
     submodel_size = 0
     term_names = []
@@ -34,6 +34,10 @@ def forward_search(_project, ref_terms, max_terms):
 
         # compute loo for the best candidate and update inplace
         compute_loo(submodel=submodel)
+
+        if early_stopping(submodel, elpd_ref, early_stop):
+            submodels.append(submodel)
+            break
 
         # add best candidate to the list of selected submodels
         submodels.append(submodel)
@@ -58,3 +62,13 @@ def get_candidates(prev_subset, ref_terms):
     candidate_additions = list(set(ref_terms).difference(prev_subset))
     candidates = [prev_subset + [addition] for addition in candidate_additions]
     return candidates
+
+
+def early_stopping(submodel, elpd_ref, early_stop):
+    if early_stop == "mean":
+        if elpd_ref.elpd_loo - submodel.elpd_loo <= 4:
+            return True
+    elif early_stop == "se":
+        if submodel.elpd_loo + submodel.elpd_se >= elpd_ref.elpd_loo:
+            return True
+    return False
