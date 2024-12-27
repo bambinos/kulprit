@@ -11,12 +11,12 @@ Kullback-Leibler projections for Bayesian model selection in Python.
 ## Overview
 
 Kulprit _(Pronounced: kuːl.prɪt)_ is a package for variable selection for [Bambi](https://github.com/bambinos/bambi) models.
-Kulprit is under active development so use it with care. If you find any bugs or have any feature requests, please open an issue.
+Kulprit is under active development so use it with care. If you find any bugs or have any feature requests, please open an [issue](https://github.com/bambinos/kulprit/issues).
 
 
 ## Installation
 
-Kulprit requires a working Python interpreter (3.9+). We recommend installing Python and key numerical libraries using the [Anaconda Distribution](https://www.anaconda.com/products/individual#Downloads), which has one-click installers available on all major platforms.
+Kulprit requires a working Python interpreter (3.10+). We recommend installing Python and key numerical libraries using the [Anaconda Distribution](https://www.anaconda.com/products/individual#Downloads), which has one-click installers available on all major platforms.
 
 Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using pip:
 
