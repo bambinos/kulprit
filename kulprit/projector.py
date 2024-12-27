@@ -14,7 +14,7 @@ from kulprit.projection.pymc_io import (
     compute_new_model,
     get_model_information,
 )
-from kulprit.projection.search_strategies import user_path, forward_search
+from kulprit.projection.search_strategies import user_path, forward_search, l1_search
 from kulprit.projection.solver import solve
 
 
@@ -45,6 +45,13 @@ class ProjectionPredictive:
         self.ref_terms = list(
             self.model.components[self.model.family.likelihood.parent].common_terms.keys()
         )
+        self.categorical_terms = sum(
+            term.categorical
+            for term in self.model.components[
+                self.model.family.likelihood.parent
+            ].common_terms.values()
+        )
+
         self.base_terms = self._get_base_terms()
 
         # get information from PyMC's reference model
@@ -148,8 +155,19 @@ class ProjectionPredictive:
                 self.list_of_submodels = forward_search(
                     self._project, self.ref_terms, max_terms, self.elpd_ref, self.early_stop
                 )
-            # else:
-            #     self.searcher_path = L1SearchPath(self.projector)
+            else:
+                # test whether the model includes categorical terms, and if so raise error
+                if self.categorical_terms:
+                    raise NotImplementedError("Group-lasso not yet implemented")
+
+                self.list_of_submodels = l1_search(
+                    self._project,
+                    self.model,
+                    self.ref_terms,
+                    max_terms,
+                    self.elpd_ref,
+                    self.early_stop,
+                )
 
     def _project(self, term_names):
 
