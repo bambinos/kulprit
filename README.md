@@ -48,13 +48,14 @@ For a list of contributors see the [GitHub contributor](https://github.com/bambi
 If you use Bambi and want to cite it please use
 
 ```
-@misc{mclatchie2023,
-    title={Robust and efficient projection predictive inference}, 
-    author={Yann McLatchie and Sölvi Rögnvaldsson and Frank Weber and Aki Vehtari},
-    year={2023},
-    eprint={2306.15581},
-    archivePrefix={arXiv},
-    primaryClass={stat.ME}
+@misc{mclatchie2024,
+      title={Advances in projection predictive inference}, 
+      author={Yann McLatchie and Sölvi Rögnvaldsson and Frank Weber and Aki Vehtari},
+      year={2024},
+      eprint={2306.15581},
+      archivePrefix={arXiv},
+      primaryClass={stat.ME},
+      url={https://arxiv.org/abs/2306.15581}, 
 }
 ```
 
