@@ -1,7 +1,8 @@
 """This module contains the search strategies"""
 
 import numpy as np
-from sklearn.linear_model import lasso_path
+
+# from sklearn.linear_model import lasso_path
 from kulprit.projection.arviz_io import compute_loo
 
 
@@ -98,7 +99,8 @@ def l1_search(_project, model, ref_terms, max_terms, elpd_ref, early_stop):
         model.components[model.family.likelihood.parent].design.response.design_matrix
     )
     # compute L1 path in the latent space
-    _, coef_path, *_ = lasso_path(X, eta)
+    # _, coef_path, *_ = lasso_path(X, eta)
+    coef_path = _lasso_path(X, eta)
     cov_order = _first_non_zero_idx(coef_path)
 
     # sort the covariates according to their L1 ordering
@@ -146,6 +148,66 @@ def _get_candidates(prev_subset, ref_terms):
     return candidates
 
 
+def _early_stopping(submodel, elpd_ref, early_stop):
+    if early_stop == "mean":
+        if elpd_ref.elpd_loo - submodel.elpd_loo <= 4:
+            return True
+    elif early_stop == "se":
+        if submodel.elpd_loo + submodel.elpd_se >= elpd_ref.elpd_loo:
+            return True
+    return False
+
+
+def _lasso_path(X, y, tol=1e-4, max_iter=1000, alpha_min_ratio=0.001, n_alphas=100):
+    """
+    Compute LASSO path using coordinate descent.
+
+    Parameters:
+    ----------
+    X : np.ndarray
+        The design matrix.
+    y : np.ndarray
+        The response vector.
+    tol : float
+        The tolerance for the stopping criterion.
+    max_iter : int
+        The maximum number of iterations.
+    alpha_min_ratio : float
+        The ratio of the maximum alpha to the minimum alpha.
+    n_alphas : int
+        The number of alphas to compute.
+
+    Returns:
+    -------
+    np.ndarray: The LASSO path.
+    """
+    n_samples, n_features = X.shape
+
+    X_scaled = (X - X.mean(axis=0)) / np.sum(X**2, axis=0)
+    y_centered = y - y.mean()
+
+    alpha_max = (1 / (n_samples)) * np.max(np.abs(X.T @ y))
+    alphas = np.logspace(np.log10(alpha_max), np.log10(alpha_max * alpha_min_ratio), n_alphas)
+
+    coefs = np.zeros((n_features, len(alphas)))
+    beta = np.zeros(n_features)
+
+    for i, alpha in enumerate(alphas):
+        for _ in range(max_iter):
+            beta_old = beta.copy()
+            for j in range(n_features):
+                residual = y_centered - X_scaled @ beta + beta[j] * X_scaled[:, j]
+                rho_j = X_scaled[:, j] @ residual
+                beta[j] = np.sign(rho_j) * max(abs(rho_j) - alpha, 0)
+
+            if np.max(np.abs(beta - beta_old)) < tol:
+                break
+
+        coefs[:, i] = beta
+
+    return coefs
+
+
 def _first_non_zero_idx(arr):
     """Find the index of the first non-zero element in each row of a matrix.
 
@@ -176,13 +238,3 @@ def _first_non_zero_idx(arr):
             idx_dict[key] = np.inf
 
     return idx_dict
-
-
-def _early_stopping(submodel, elpd_ref, early_stop):
-    if early_stop == "mean":
-        if elpd_ref.elpd_loo - submodel.elpd_loo <= 4:
-            return True
-    elif early_stop == "se":
-        if submodel.elpd_loo + submodel.elpd_se >= elpd_ref.elpd_loo:
-            return True
-    return False
