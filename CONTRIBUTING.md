@@ -16,7 +16,7 @@ The preferred workflow for contributing to Kulprit is to fork the GitHub [reposi
 
    ```bash
    git clone git@github.com:<your GitHub handle>/kulprit.git
-   cd pymc
+   cd kulprit 
    git remote add upstream git@github.com:bambinos/kulprit.git
    ```
 
