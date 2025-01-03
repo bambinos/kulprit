@@ -1,7 +1,11 @@
 """This module contains the search strategies"""
 
 import numpy as np
-from sklearn.linear_model import lasso_path
+
+try:
+    from sklearn.linear_model import lasso_path
+except ImportError:
+    pass
 from kulprit.projection.arviz_io import compute_loo
 
 

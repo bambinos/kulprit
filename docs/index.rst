@@ -30,6 +30,13 @@ Assuming a standard Python environment is installed on your machine (including p
 
     pip install kulprit
 
+
+By default Kulprit performs a forward search, if you want to use Lasso (L1 search) you need to install `scikit-learn` package. You can install it using pip:
+
+.. code-block:: bash
+    
+    pip install kulprit[lasso]
+
 Alternatively, if you want the bleeding edge version of the package you can install it from GitHub:
 
 .. code-block:: bash
