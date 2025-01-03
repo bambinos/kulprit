@@ -54,11 +54,12 @@ Contributing
 ============
 
 We welcome contributions from interested individuals or groups!
-For information about contributing to Kulrpit check out our instructions, policies, and guidelines `here <https://github.com/bambinos/kulprit/blob/main/CONTRIBUTING.md>`_.
+For information about contributing to Kulprit check out our instructions, policies, and guidelines `here <https://github.com/bambinos/kulprit/blob/main/CONTRIBUTING.md>`_.
 
 
 Contributors
 ============
+
 See the `GitHub contributor page <https://github.com/bambinos/kulprit/graphs/contributors>`_.
 
 

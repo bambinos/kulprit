@@ -35,21 +35,15 @@ Alternatively, if you want the bleeding edge version of the package you can inst
 The Kulprit documentation can be found in the [official docs](https://kulprit.readthedocs.io/en/latest/). If you are not familiar with the theory behind Kulprit or need some practical advice on how to use Kulprit or interpret its results, we recommend you read the paper [Robust and efficient projection predictive inference](https://arxiv.org/abs/2306.15581). You may also find useful this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html) on Cross-Validation and model selection.
 
 
-## Development
-
-Read our development guide in [CONTRIBUTING.md](https://github.com/bambinos/kulprit/blob/main/CONTRIBUTING.md).
-
-
 ## Contributions
 
-Kulprit is a community project and welcomes contributions. Additional information can be found in the [Contributing](https://github.com/bambinos/kulprit/blob/main/docs/CONTRIBUTING.md) Readme.
+Kulprit is a community project and welcomes contributions. Additional information can be found in the [CONTRIBUTING.md](https://github.com/bambinos/kulprit/blob/main/CONTRIBUTING.md) page.
 
 For a list of contributors see the [GitHub contributor](https://github.com/bambinos/kulprit/graphs/contributors) page
 
-
 ## Citation
 
-If you use Bambi and want to cite it please use
+If you use Kulprit and want to cite it please use
 
 ```
 @misc{mclatchie2024,
