@@ -72,7 +72,7 @@ If you find Kulprit useful in your work, please cite the following paper:
 
     @misc{mclatchie2024,
         title={Advances in projection predictive inference}, 
-        author={Yann McLatchie and Sölvi Rögnvaldsson and Frank Weber and Aki Vehtari},
+        author={Yann McLatchie and S{\"o}lvi R{\"o}gnvaldsson and Frank Weber and Aki Vehtari},
         year={2024},
         eprint={2306.15581},
         archivePrefix={arXiv},
