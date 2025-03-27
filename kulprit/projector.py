@@ -2,12 +2,14 @@
 # pylint: disable=too-many-instance-attributes
 """Core reference model class."""
 import warnings
+from copy import copy
 import numpy as np
 
 from bambi import formula
+from pymc import sample, sample_posterior_predictive
 from kulprit.plots.plots import plot_compare, plot_densities
 
-from kulprit.projection.arviz_io import compute_loo, get_observed_data, compute_pps, get_pps
+from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
 from kulprit.projection.pymc_io import (
     compile_mllk,
     compute_llk,
@@ -23,7 +25,7 @@ class ProjectionPredictive:
     Projection Predictive class from which we perform the model selection procedure.
     """
 
-    def __init__(self, model, idata=None):
+    def __init__(self, model, idata=None, rng=456):
         """Builder for projection predictive model selection.
 
         This object initializes the reference model and handles the core projection, variable search
@@ -35,7 +37,14 @@ class ProjectionPredictive:
             The reference GLM model to project
         idata : InferenceData
             The ArviZ InferenceData object of the fitted reference model
+        rng : RandomState
+            Random number generator
         """
+        # set random number generator
+        if rng is None:
+            self.rng = np.random.default_rng()
+        else:
+            self.rng = np.random.default_rng(rng)
         # get information from Bambi's reference model
         self.model = model
         self.has_intercept = formula.formula_has_intercept(self.model.formula.main)
@@ -57,7 +66,7 @@ class ProjectionPredictive:
         # get information from PyMC's reference model
         if not self.model.built:
             self.model.build()
-        self.pymc_model = self.model.backend.model
+        self.pymc_model = copy(self.model.backend.model)
         self.ref_var_info = get_model_information(self.pymc_model)
         self.all_terms = [fvar.name for fvar in self.pymc_model.free_RVs]
 
@@ -68,7 +77,7 @@ class ProjectionPredictive:
             self.idata, self.response_name
         )
         self.num_samples = None
-        compute_pps(self.model, self.idata)
+        # self.idata = compute_pps(self.pymc_model, self.idata)
         self.elpd_ref = compute_loo(idata=self.idata)
 
         self.tolerance = None
@@ -176,18 +185,19 @@ class ProjectionPredictive:
             self.pymc_model, self.ref_var_info, self.all_terms, term_names_
         )
 
-        model_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
+        neg_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
         initial_guess = np.concatenate(
             [np.ravel(value) for value in new_model.initial_point().values()]
         )
         var_info = get_model_information(new_model)
 
         new_idata, loss = solve(
-            model_log_likelihood,
+            neg_log_likelihood,
             self.pps,
             initial_guess,
             var_info,
             self.tolerance,
+            self.rng,
         )
         # restore obs_rvs value in the model
         new_model.rvs_to_values[obs_rvs] = old_y_value
@@ -226,12 +236,20 @@ class ProjectionPredictive:
     def _check_idata(self):
         # build posterior if not provided
         if self.idata is None:
-            self.idata = self.model.fit(idata_kwargs={"log_likelihood": True})
-        elif "log_likelihood" not in self.idata.groups():
+            warnings.warn("No InferenceData object provided. Building posterior from model.")
+            with self.pymc_model:
+                self.idata = sample(idata_kwargs={"log_likelihood": True}, random_seed=self.rng)
+                sample_posterior_predictive(
+                    self.idata, extend_inferencedata=True, random_seed=self.rng
+                )
+
+        if "log_likelihood" not in self.idata.groups():
             raise UserWarning(
                 """Please run Bambi's fit method with the option
                 idata_kwargs={'log_likelihood': True}"""
             )
+        if "posterior_predictive" not in self.idata.groups():
+            self.model.predict(self.idata, kind="response", inplace=True)
 
         # test compatibility between model and idata
         if (

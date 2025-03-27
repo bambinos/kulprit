@@ -9,12 +9,6 @@ def get_observed_data(idata, response_name):
     return convert_to_dataset(observed_data), idata.observed_data.get(response_name).values
 
 
-def compute_pps(model, idata):
-    """Compute posterior predictive samples from the reference model."""
-    if "posterior_predictive" not in idata.groups():
-        model.predict(idata, kind="response", inplace=True)
-
-
 def get_pps(idata, response_name, num_samples):
     """Extract samples posterior predictive samples from the reference model."""
     pps = extract(

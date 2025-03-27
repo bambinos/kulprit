@@ -26,7 +26,6 @@ description = "Kullback-Leibler projections for Bayesian model selection."
 dependencies = [
     "arviz>=0.17.1",
     "bambi>=0.12.0",
-    "numba>=0.56.0",
     ]
 
 [project.optional-dependencies]

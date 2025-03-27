@@ -4,13 +4,13 @@ import numpy as np
 from scipy.optimize import minimize
 
 
-def solve(model_log_likelihood, pps, initial_guess, var_info, tolerance):
+def solve(neg_log_likelihood, pps, initial_guess, var_info, tolerance, rng):
     """The primary projection method in the procedure.
 
     Parameters:
     ----------
-    model_log_likelihood: Callable
-        The log-likelihood function of the model
+    neg_log_likelihood: Callable
+        The negative log-likelihood function of the model
     pps: array
         The predictions of the reference model
     initial_guess: array
@@ -23,25 +23,30 @@ def solve(model_log_likelihood, pps, initial_guess, var_info, tolerance):
         new_idata: arviz.InferenceData
         loss: float
     """
-    num_samples = len(pps)
+    num_samples, num_obs = pps.shape
+    size_rep = max(1, np.log(num_obs).astype(int))
     posterior_array = np.zeros((num_samples, len(initial_guess)))
     posterior_dict = {}
     objectives = []
 
     opt = minimize(
-        model_log_likelihood,
-        args=(pps[0]),
+        neg_log_likelihood,
+        args=(pps[-1]),
         x0=initial_guess,
+        tol=tolerance,
+        method="powell",
     )
     initial_guess = opt.x
 
     for idx, obs in enumerate(pps):
+        rep = rng.choice(range(0, num_obs), size=size_rep, replace=False)
+        obs[rep] = pps[idx - 1][rep]
         opt = minimize(
-            model_log_likelihood,
+            neg_log_likelihood,
             args=(obs),
             x0=initial_guess,
             tol=tolerance,
-            method="SLSQP",
+            method="powell",
         )
 
         posterior_array[idx] = opt.x
