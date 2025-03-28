@@ -122,7 +122,10 @@ def plot_densities(
 
     # set default variable names to the reference model terms
     if not var_names:
-        var_names = [fvar.name for fvar in model.backend.model.free_RVs]
+        if include_reference:
+            var_names = [fvar.name for fvar in model.backend.model.free_RVs]
+        else:
+            var_names = sorted([submodel.term_names for submodel in submodels])[-1]
 
     if include_reference:
         data = [idata]
