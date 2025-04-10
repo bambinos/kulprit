@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 
-def solve(neg_log_likelihood, pps, initial_guess, var_info, tolerance, rng):
+def solve(neg_log_likelihood, pps, initial_guess, var_info, tolerance):
     """The primary projection method in the procedure.
 
     Parameters:
@@ -23,27 +23,15 @@ def solve(neg_log_likelihood, pps, initial_guess, var_info, tolerance, rng):
         new_idata: arviz.InferenceData
         loss: float
     """
-    num_samples, num_obs = pps.shape
-    size_rep = max(1, np.log(num_obs).astype(int))
+    num_samples = len(pps)
     posterior_array = np.zeros((num_samples, len(initial_guess)))
     posterior_dict = {}
     objectives = []
 
-    opt = minimize(
-        neg_log_likelihood,
-        args=(pps[-1]),
-        x0=initial_guess,
-        tol=tolerance,
-        method="powell",
-    )
-    initial_guess = opt.x
-
     for idx, obs in enumerate(pps):
-        rep = rng.choice(range(0, num_obs), size=size_rep, replace=False)
-        obs[rep] = pps[idx - 1][rep]
         opt = minimize(
             neg_log_likelihood,
-            args=(obs),
+            args=obs,
             x0=initial_guess,
             tol=tolerance,
             method="powell",

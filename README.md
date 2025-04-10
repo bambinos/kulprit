@@ -32,7 +32,7 @@ Alternatively, if you want the bleeding edge version of the package you can inst
 
 ## Documentation
 
-The Kulprit documentation can be found in the [official docs](https://kulprit.readthedocs.io/en/latest/). If you are not familiar with the theory behind Kulprit or need some practical advice on how to use Kulprit or interpret its results, we recommend you read the paper [Robust and efficient projection predictive inference](https://arxiv.org/abs/2306.15581). You may also find useful this [guide](https://avehtari.github.io/modelselection/CV-FAQ.html) on Cross-Validation and model selection.
+The Kulprit documentation can be found in the [official docs](https://kulprit.readthedocs.io/en/latest/). The examples provides a quick overview of variable selection and how this problem is tackled by Kulprit. A more detailed discussion of the theory, but also practical advice, we recommend you read the paper [Advances in Projection Predictive Inference](https://doi.org/10.1214/24-STS949).
 
 
 ## Contributions
@@ -46,14 +46,18 @@ For a list of contributors see the [GitHub contributor](https://github.com/bambi
 If you use Kulprit and want to cite it please use
 
 ```
-@misc{mclatchie2024,
-      title={Advances in projection predictive inference}, 
-      author={Yann McLatchie and S{\"o}lvi R{\"o}gnvaldsson and Frank Weber and Aki Vehtari},
-      year={2024},
-      eprint={2306.15581},
-      archivePrefix={arXiv},
-      primaryClass={stat.ME},
-      url={https://arxiv.org/abs/2306.15581}, 
+@article{mclatchie2024,
+    author = {Yann McLatchie and S{\"o}lvi R{\"o}gnvaldsson and Frank Weber and Aki Vehtari},
+    title = {{Advances in Projection Predictive Inference}},
+    volume = {40},
+    journal = {Statistical Science},
+    number = {1},
+    publisher = {Institute of Mathematical Statistics},
+    pages = {128 -- 147},
+    keywords = {Bayesian model selection, cross-validation, projection predictive inference},
+    year = {2025},
+    doi = {10.1214/24-STS949},
+    URL = {https://doi.org/10.1214/24-STS949}
 }
 ```
 

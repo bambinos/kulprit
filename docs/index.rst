@@ -100,7 +100,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   examples/overview
+   examples/Overview
+   examples/Examples
    
    api_reference
 
