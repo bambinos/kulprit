@@ -23,23 +23,21 @@ from kulprit.projection.solver import solve
 class ProjectionPredictive:
     """
     Projection Predictive class from which we perform the model selection procedure.
+
+    Parameters:
+    ----------
+    model : Bambi model
+        The reference GLM model to project
+    idata : InferenceData
+        The ArviZ InferenceData object of the fitted reference model
+    rng : RandomState
+        Random number generator used for sampling from the posterior if idata is not provided.
+        And for sampling from the posterior predictive distribution.
+
     """
 
     def __init__(self, model, idata=None, rng=456):
-        """Builder for projection predictive model selection.
-
-        This object initializes the reference model and handles the core projection, variable search
-        methods and submodel comparison.
-
-        Parameters:
-        ----------
-        model : Bambi model
-            The reference GLM model to project
-        idata : InferenceData
-            The ArviZ InferenceData object of the fitted reference model
-        rng : RandomState
-            Random number generator
-        """
+        """Builder for projection predictive model selection."""
         # set random number generator
         if rng is None:
             self.rng = np.random.default_rng()
@@ -179,8 +177,9 @@ class ProjectionPredictive:
                 )
 
     def select(self, criterion="mean"):
-        """
-        Select the best submodel based on the specified methods.
+        """Select the smallest submodel
+
+        The selection is based on comparing the ELPDs of the reference and submodels.
 
         Parameters
         ----------
@@ -189,6 +188,11 @@ class ProjectionPredictive:
             The "mean" criterion selects the smallest submodel with an ELPD that is within
             4 units of the reference model. The "se" criterion selects the smallest submodel
             with an ELPD that is within one standard error of the reference model.
+
+        Returns
+        -------
+        SubModel
+            The selected submodel.
         """
         if criterion not in ["mean", "se"]:
             raise ValueError("Please select either mean or se as the methods.")
@@ -200,6 +204,7 @@ class ProjectionPredictive:
             else:
                 if submodel.elpd_loo + submodel.elpd_se >= self.elpd_ref.elpd_loo:
                     return submodel
+
         return None
 
     def _project(self, term_names):
@@ -292,8 +297,8 @@ class ProjectionPredictive:
 
         Returns
         -------
-        list of SubModel
-            The submodels corresponding to the provided indices
+        SubModel(s)
+            The submodel or list of submodels corresponding to the provided indices
         """
 
         if isinstance(index, int):
@@ -339,7 +344,7 @@ class ProjectionPredictive:
         cmp : elpd_info
             tuples of index, elpd_loo point estimate and standard error for each submodel
             The index -1 corresponds to the reference model.
-        axes : matplotlib_axes or bokeh_figure
+        axes : matplotlib_axes
         """
         # test that search has been previously run
         if not self.list_of_submodels:
@@ -391,6 +396,8 @@ class ProjectionPredictive:
         labels : str
             If "formula", the labels are the formulas of the submodels. If "size", the number
             of covariates in the submodels.
+        kind : str
+            The kind of plot to create. Either "density" or "forest". Defaults to "density".
         figsize : tuple
             Figure size. If None it will be defined automatically.
         plot_kwargs : dict
@@ -400,7 +407,7 @@ class ProjectionPredictive:
         Returns:
         --------
 
-        axes : matplotlib_axes or bokeh_figure
+        axes : matplotlib_axes
         """
         if submodels is None:
             submodels = self.list_of_submodels
