@@ -1,4 +1,3 @@
-# pylint: disable=too-many-positional-arguments
 # pylint: disable=undefined-loop-variable
 # pylint: disable=too-many-instance-attributes
 """Core reference model class."""

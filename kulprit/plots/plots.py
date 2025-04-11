@@ -1,4 +1,3 @@
-# pylint: disable=too-many-positional-arguments
 from arviz.plots.plot_utils import _scale_fig_size
 from arviz.plots import plot_density, plot_forest
 import matplotlib.pyplot as plt
