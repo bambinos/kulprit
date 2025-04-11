@@ -13,9 +13,3 @@ This reference provides detailed documentation for user functions in the current
 
 .. automodule:: kulprit
    :members:
-
-:mod:`kulprit.plots`
-======================================
-
-.. automodule:: kulprit.plots
-   :members:
