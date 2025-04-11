@@ -25,6 +25,14 @@ def plot_compare(
     figsize : tuple
         Figure size. If None it will be defined automatically.
     plot_kwargs : dict
+        Dictionary of plot parameters. Available keys:
+        - color_eldp : color for the ELPD points
+        - marker_eldp : marker for the ELPD points
+        - marker_fc_elpd : face color for the ELPD points
+        - ls_reference : linestyle for the reference model line
+        - color_ls_reference : color for the reference model line
+        - xlabel_rotation : rotation for the x-axis labels
+
     """
     if plot_kwargs is None:
         plot_kwargs = {}
@@ -125,7 +133,7 @@ def plot_densities(
         if include_reference:
             var_names = [fvar.name for fvar in model.backend.model.free_RVs]
         else:
-            var_names = sorted([submodel.term_names for submodel in submodels])[-1]
+            var_names = ["Intercept"] + sorted(submodel.term_names for submodel in submodels)[-1]
 
     if include_reference:
         data = [idata]
@@ -153,7 +161,7 @@ def plot_densities(
             **plot_kwargs,
         )
 
-    elif kind == "forest":
+    else:
         plot_kwargs.setdefault("combined", True)
         plot_kwargs.setdefault("figsize", (10, 2 + len(var_names) ** 0.5))
 

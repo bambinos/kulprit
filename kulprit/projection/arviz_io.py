@@ -10,7 +10,7 @@ def get_observed_data(idata, response_name):
 
 
 def get_pps(idata, response_name, num_samples):
-    """Extract samples posterior predictive samples from the reference model."""
+    """Extract posterior predictive samples from the reference model."""
     pps = extract(
         idata,
         group="posterior_predictive",
@@ -18,7 +18,8 @@ def get_pps(idata, response_name, num_samples):
         num_samples=num_samples,
         rng=1,
     ).values.T
-    return pps
+    tuple_list = [(pps[i], pps[i - 1]) for i in range(len(pps))]
+    return tuple_list
 
 
 def compute_loo(submodel=None, idata=None):

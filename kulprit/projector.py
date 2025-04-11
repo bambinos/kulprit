@@ -123,9 +123,9 @@ class ProjectionPredictive:
         early_stop : bool or str
             Whether to stop the search when the difference in ELPD between the submodel and the
             reference model is small. There are two criteria, "mean" and "se". The "mean" criterion
-            stops the search when the difference in ELPD is smaller than 4. The "se" criterion stops
-            the search when the ELPD of the submodel is within one standard error of the reference
-            model. Defaults to False.
+            stops the search when the difference between a the ELPD is smaller than 4. The "se"
+            criterion stops the search when the ELPD of the submodel is within one standard error
+            of the reference model. Defaults to False.
         """
         self.num_samples = num_samples
         self.tolerance = tolerance
@@ -178,6 +178,30 @@ class ProjectionPredictive:
                     self.early_stop,
                 )
 
+    def select(self, criterion="mean"):
+        """
+        Select the best submodel based on the specified methods.
+
+        Parameters
+        ----------
+        criterion : str
+            The criterion to use for selecting the best submodel. Either "mean" or "se".
+            The "mean" criterion selects the smallest submodel with an ELPD that is within
+            4 units of the reference model. The "se" criterion selects the smallest submodel
+            with an ELPD that is within one standard error of the reference model.
+        """
+        if criterion not in ["mean", "se"]:
+            raise ValueError("Please select either mean or se as the methods.")
+
+        for submodel in self.list_of_submodels:
+            if criterion == "mean":
+                if (self.elpd_ref.elpd_loo - submodel.elpd_loo) < 4:
+                    return submodel
+            else:
+                if submodel.elpd_loo + submodel.elpd_se >= self.elpd_ref.elpd_loo:
+                    return submodel
+        return None
+
     def _project(self, term_names):
 
         term_names_ = self.base_terms + term_names
@@ -197,7 +221,6 @@ class ProjectionPredictive:
             initial_guess,
             var_info,
             self.tolerance,
-            self.rng,
         )
         # restore obs_rvs value in the model
         new_model.rvs_to_values[obs_rvs] = old_y_value

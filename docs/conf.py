@@ -47,6 +47,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
     "myst_nb",
     "sphinx_math_dollar",
 ]
@@ -54,11 +55,14 @@ extensions = [
 
 # -- Extension configuration -------------------------------------------------
 nb_execution_mode = "off"
-myst_enable_extensions = ["colon_fence", "deflist"]
+myst_enable_extensions = ["colon_fence", "deflist", "amsmath", "dollarmath"]
 
 autodoc_default_options = {
     "inherited-members": True,
 }
+
+## Bibtex file
+bibtex_bibfiles = ["examples/references.bib"]
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ["_templates"]
