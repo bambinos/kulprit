@@ -29,8 +29,11 @@ def compile_mllk(model):
     rv_logp_fn = compile_([raveled_inp, new_y_value], logp)
     rv_logp_fn.trust_input = True
 
-    def fmodel(params, obs0, obs1):
-        return -(rv_logp_fn(params, obs0) + rv_logp_fn(params, obs1))
+    def fmodel(params, *pred):
+        if len(pred) == 2:
+            return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
+        else:
+            return -(rv_logp_fn(params, pred[0]))
 
     return fmodel, old_y_value, obs_rvs
 

@@ -12,7 +12,7 @@ from kulprit.projection.arviz_io import compute_loo
 def user_path(_project, path):
     submodels = []
     for term_names in path:
-        submodel = _project(term_names)
+        submodel = _project(term_names, clusters=False)
         compute_loo(submodel=submodel)
         submodels.append(submodel)
     return submodels
@@ -42,7 +42,7 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop):
     # initial intercept-only subset
     submodel_size = 0
     term_names = []
-    submodel = _project(term_names)
+    submodel = _project(term_names, clusters=False)
     compute_loo(submodel=submodel)
     submodels = [submodel]
 
@@ -53,10 +53,13 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop):
         # get list of candidate submodels, project onto them, and compute
         # their distances
         candidates = _get_candidates(submodel.term_names, ref_terms)
-        projections = [_project(candidate) for candidate in candidates]
+        projections = [_project(candidate, clusters=True) for candidate in candidates]
 
         # identify the best candidate by loss (equivalent to KL min)
         submodel = min(projections, key=lambda projection: projection.loss)
+
+        # reproject the best candidate using more samples
+        submodel = _project(submodel.term_names, clusters=False)
 
         # compute loo for the best candidate and update inplace
         compute_loo(submodel=submodel)
@@ -114,7 +117,7 @@ def l1_search(_project, model, ref_terms, max_terms, elpd_ref, early_stop):
 
     while submodel_size < max_terms + 1:
         term_names = sorted_covs[:submodel_size]
-        submodel = _project(term_names)
+        submodel = _project(term_names, clusters=False)
 
         # compute loo for the best candidate and update inplace
         compute_loo(submodel=submodel)

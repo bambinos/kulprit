@@ -75,12 +75,15 @@ class ProjectionPredictive:
             self.idata, self.response_name
         )
         self.num_samples = None
+        self.num_clusters = None
         # self.idata = compute_pps(self.pymc_model, self.idata)
         self.elpd_ref = compute_loo(idata=self.idata)
 
         self.tolerance = None
         self.early_stop = None
         self.pps = None
+        self.ppc = None
+        self.weights = None
         self.list_of_submodels = []
 
     def __repr__(self) -> str:
@@ -97,7 +100,13 @@ class ProjectionPredictive:
             return str_of_submodels
 
     def project(
-        self, max_terms=None, path="forward", num_samples=100, tolerance=0.01, early_stop=False
+        self,
+        max_terms=None,
+        path="forward",
+        num_samples=400,
+        tolerance=0.01,
+        num_clusters=20,
+        early_stop=False,
     ):
         """Perform model projection.
 
@@ -115,7 +124,9 @@ class ProjectionPredictive:
             those terms will be projected directly.
         num_samples : int
             The number of samples to draw from the posterior predictive distribution for the
-            projection procedure. Defaults to 100.
+            projection procedure. Defaults to 400.
+        num_clusters : int
+            The number of clusters to use for the KMeans clustering algorithm. Defaults to 10.
         tolerance : float
             The tolerance for the optimization procedure. Defaults to 0.01
         early_stop : bool or str
@@ -126,9 +137,12 @@ class ProjectionPredictive:
             of the reference model. Defaults to False.
         """
         self.num_samples = num_samples
+        self.num_clusters = num_clusters
         self.tolerance = tolerance
         self.early_stop = early_stop
-        self.pps = get_pps(self.idata, self.response_name, self.num_samples)
+        self.pps, self.ppc, self.weights = get_pps(
+            self.idata, self.response_name, self.num_samples, self.num_clusters, self.rng
+        )
 
         # test if path is a list of terms
         if isinstance(path, list):
@@ -207,7 +221,7 @@ class ProjectionPredictive:
 
         return None
 
-    def _project(self, term_names):
+    def _project(self, term_names, clusters=True):
 
         term_names_ = self.base_terms + term_names
         new_model = compute_new_model(
@@ -220,19 +234,30 @@ class ProjectionPredictive:
         )
         var_info = get_model_information(new_model)
 
+        if clusters:
+            samples = self.ppc
+            weights = self.weights
+        else:
+            samples = self.pps
+            weights = None
+
         new_idata, loss = solve(
             neg_log_likelihood,
-            self.pps,
+            samples,
             initial_guess,
             var_info,
             self.tolerance,
+            weights,
         )
+
         # restore obs_rvs value in the model
         new_model.rvs_to_values[obs_rvs] = old_y_value
 
         # Add observed data and log-likelihood to the projected InferenceData object
-        new_idata.add_groups(observed_data=self.observed_dataset)
-        new_idata.add_groups(log_likelihood=compute_llk(new_idata, new_model))
+        # We only do this for the selected projected model, not the intermediate ones
+        if new_idata is not None:
+            new_idata.add_groups(observed_data=self.observed_dataset)
+            new_idata.add_groups(log_likelihood=compute_llk(new_idata, new_model))
 
         # build SubModel object and return
         sub_model = SubModel(
@@ -376,8 +401,8 @@ class ProjectionPredictive:
         self,
         var_names=None,
         submodels=None,
-        include_reference=True,
-        labels="formula",
+        include_reference=False,
+        labels="size",
         kind="density",
         figsize=None,
         plot_kwargs=None,

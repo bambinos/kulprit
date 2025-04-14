@@ -115,7 +115,7 @@ def plot_densities(
     idata,
     submodels,
     var_names=None,
-    include_reference=True,
+    include_reference=False,
     labels="size",
     kind="density",
     figsize=None,
