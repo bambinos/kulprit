@@ -22,7 +22,7 @@ class TestSearch:
         """Test that L1 search gives expected result."""
 
         ref_model_copy = copy.copy(ref_model)
-        ref_model_copy.project(path="l1")
+        ref_model_copy.project(method="l1")
         assert [submodel.size for submodel in ref_model_copy.submodels([0, 1, 2])] == [0, 1, 2]
 
     def test_l1_utils(self):
@@ -31,7 +31,7 @@ class TestSearch:
         assert _first_non_zero_idx(arr) == {0: 1, 1: 2, 2: np.inf}
 
     def test_l1_categorical_error(self):
-        """Test that an error is raised when no search path is found."""
+        """Test that an error is raised when using L1 with a categorical model."""
 
         data = bmb.load_data("carclaims")[::50]
         model_cat = bmb.Model("claimcst0 ~ C(agecat) + gender + area", data, family="gaussian")
@@ -43,18 +43,18 @@ class TestSearch:
 
         with pytest.raises(NotImplementedError):
             ref_model = ProjectionPredictive(model=model_cat, idata=fitted_cat)
-            ref_model.project(path="l1")
+            ref_model.project(method="l1")
 
     def test_bad_search_method(self, ref_model):
         """Test that an error is raised when an invalid search method is used."""
 
         with pytest.raises(ValueError):
             ref_model_copy = copy.copy(ref_model)
-            ref_model_copy.project(path="bad_method")
+            ref_model_copy.project(method="bad_method")
 
     def test_search_too_many_terms(self, ref_model):
-        """Test than an error is raise when too many terms are used."""
+        """Test than an error is raise when early_stop > than all available terms."""
 
         with pytest.warns(UserWarning):
             ref_model_copy = copy.copy(ref_model)
-            ref_model_copy.project(max_terms=10)
+            ref_model_copy.project(early_stop=10)

@@ -41,11 +41,11 @@ class TestProjector(KulpritTest):
             ProjectionPredictive(bad_model, bambi_model_idata)
 
     def test_custom_path(self, bambi_model, bambi_model_idata):
-        """Test that the analytic projection method works."""
+        """Test user-defined path projection."""
 
         ppi = ProjectionPredictive(bambi_model, bambi_model_idata)
         # project the reference model to some parameter subset
-        ppi.project(path=[["x"]])
+        ppi.project(user_terms=[["x"]])
 
         sub_model_keys = ppi.list_of_submodels[0].idata.posterior.data_vars.keys()
         assert "x" in sub_model_keys
@@ -62,7 +62,7 @@ class TestProjector(KulpritTest):
             idata_kwargs={"log_likelihood": True},
         )
         ppi = ProjectionPredictive(model=model_cat, idata=fitted_cat)
-        ppi.project(path=[["gender"]])
+        ppi.project(user_terms=[["gender"]])
         assert ppi.list_of_submodels[0].size == 1
 
     def test_project_one_term(self, ref_model):
