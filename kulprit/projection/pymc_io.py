@@ -28,7 +28,7 @@ def compile_mllk(model, initial_point):
 
     def fmodel(params, *pred):
         if len(pred) == 2:
-            return -(rv_logp_fn(params, pred[0])+ rv_logp_fn(params, pred[1]))
+            return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
         else:
             return -(rv_logp_fn(params, pred[0]))
 

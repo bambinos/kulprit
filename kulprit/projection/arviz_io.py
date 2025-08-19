@@ -34,8 +34,7 @@ def get_pps(idata, response_name, num_samples, num_clusters, rng):
         rng=rng,
     ).values.T
 
-    if num_samples > total_num_samples:
-        num_samples = total_num_samples
+    num_samples = min(num_samples, total_num_samples)
 
     pps_tuple = [(pps[i], pps[i - 1]) for i in range(0, num_samples)]
 

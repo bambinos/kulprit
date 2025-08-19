@@ -6,7 +6,6 @@ from copy import copy
 import numpy as np
 
 from bambi import formula
-from pymc import sample, sample_posterior_predictive
 from kulprit.plots.plots import plot_compare, plot_densities
 
 from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
@@ -146,10 +145,15 @@ class ProjectionPredictive:
         # if user provided the terms we used them directly, no search is performed
         if user_terms is not None:
             # check if the terms are a list of lists
-            if not isinstance(user_terms, list) or not all(isinstance(term, list ) for term in user_terms):
+            if not isinstance(user_terms, list) or not all(
+                isinstance(term, list) for term in user_terms
+            ):
                 raise ValueError("Please provide a list of lists of terms.")
             # check if the length of the submodels always increase
-            if not all(len(user_terms[idx]) < len(user_terms[idx + 1]) for idx in range(len(user_terms) - 1)):
+            if not all(
+                len(user_terms[idx]) < len(user_terms[idx + 1])
+                for idx in range(len(user_terms) - 1)
+            ):
                 raise ValueError("Please provide a list of terms in increasing order")
             # check if the listed terms are valid
             for idx, term_names in enumerate(user_terms):
@@ -163,11 +167,10 @@ class ProjectionPredictive:
 
             max_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
 
-            # if early_stop is an integer, check that it is positive and not larger than the number of terms
             if isinstance(self.early_stop, int):
                 if self.early_stop < 0:
                     raise ValueError("The early stopping value must be a positive integer.")
-                
+
                 if self.early_stop > max_terms:
                     warnings.warn(
                         "early_stop is larger than the number of terms in the reference model."
@@ -254,7 +257,7 @@ class ProjectionPredictive:
             self.tolerance,
             weights,
         )
-        
+
         # restore obs_rvs value in the model
         new_model.rvs_to_values[obs_rvs] = old_y_value
 
@@ -309,7 +312,8 @@ class ProjectionPredictive:
 
         # check if we have the log_likelihood group
         if "log_likelihood" not in self.idata.groups():
-            warnings.warn("log_likelihood group is missing from idata, it will be computed.\n"
+            warnings.warn(
+                "log_likelihood group is missing from idata, it will be computed.\n"
                 "To avoid this message, please run Bambi's fit method with the option "
                 "idata_kwargs={'log_likelihood': True}"
             )
@@ -318,7 +322,6 @@ class ProjectionPredictive:
         # check if we have the posterior_predictive group
         if "posterior_predictive" not in self.idata.groups():
             self.model.predict(self.idata, kind="response", inplace=True, random_seed=self.rng)
-
 
     def submodels(self, index):
         """Return submodels by index
