@@ -1,4 +1,5 @@
 """Functions to interact with InferenceData objects"""
+
 import warnings
 import numpy as np
 from sklearn.cluster import KMeans

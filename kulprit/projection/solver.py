@@ -1,4 +1,5 @@
 """optimization module."""
+
 from arviz import from_dict
 import numpy as np
 from scipy.optimize import minimize

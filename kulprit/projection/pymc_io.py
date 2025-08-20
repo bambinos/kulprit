@@ -1,4 +1,5 @@
 """Functions to interact with PyMC models"""
+
 import numpy as np
 
 from pymc import do, compute_log_likelihood
