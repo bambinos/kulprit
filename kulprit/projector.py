@@ -6,7 +6,6 @@ from copy import copy
 import numpy as np
 
 from bambi import formula
-from pymc import sample, sample_posterior_predictive
 from kulprit.plots.plots import plot_compare, plot_densities
 
 from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
@@ -65,7 +64,7 @@ class ProjectionPredictive:
         if not self.model.built:
             self.model.build()
         self.pymc_model = copy(self.model.backend.model)
-        self.ref_var_info = get_model_information(self.pymc_model)
+        self.ref_var_info = get_model_information(self.pymc_model, self.pymc_model.initial_point())
         self.all_terms = [fvar.name for fvar in self.pymc_model.free_RVs]
 
         # get information from ArviZ's InferenceData object
@@ -75,12 +74,14 @@ class ProjectionPredictive:
             self.idata, self.response_name
         )
         self.num_samples = None
-        # self.idata = compute_pps(self.pymc_model, self.idata)
+        self.num_clusters = None
         self.elpd_ref = compute_loo(idata=self.idata)
 
         self.tolerance = None
         self.early_stop = None
         self.pps = None
+        self.ppc = None
+        self.weights = None
         self.list_of_submodels = []
 
     def __repr__(self) -> str:
@@ -97,73 +98,93 @@ class ProjectionPredictive:
             return str_of_submodels
 
     def project(
-        self, max_terms=None, path="forward", num_samples=100, tolerance=0.01, early_stop=False
+        self,
+        method="forward",
+        user_terms=None,
+        num_samples=400,
+        tolerance=0.01,
+        num_clusters=20,
+        early_stop=None,
     ):
         """Perform model projection.
 
-        If ``max_terms`` is not provided, then the search path runs from the intercept-only model
-        up to but not including the full model.
-
         Parameters:
         -----------
-        max_terms : int
-            The number of parameters of the largest submodel in the search path, not including the
-            intercept term.
-        path : str or list
+        method : str or list
             The search method to employ, either "forward" for a forward search, or "l1" for
-            a L1-regularized search path. If a nested list of terms is provided, model with
-            those terms will be projected directly.
+            a L1-regularized search. Ignored if "terms" is provided.
+        user_terms : list of list of str
+            If a nested list of terms is provided, model with those terms will be projected
+            directly.
         num_samples : int
             The number of samples to draw from the posterior predictive distribution for the
-            projection procedure. Defaults to 100.
+            projection procedure and ELPD computation. Defaults to 400.
+        num_clusters : int
+            The number of clusters to use during the forward search. Defaults to 20.
+        If None, the number of clusters is set to the number of samples.
+        If num_clusters is larger than num_samples, it is set to num_samples.
         tolerance : float
             The tolerance for the optimization procedure. Defaults to 0.01
-        early_stop : bool or str
-            Whether to stop the search when the difference in ELPD between the submodel and the
-            reference model is small. There are two criteria, "mean" and "se". The "mean" criterion
-            stops the search when the difference between a the ELPD is smaller than 4. The "se"
-            criterion stops the search when the ELPD of the submodel is within one standard error
-            of the reference model. Defaults to False.
+        early_stop : str or int, optional
+            Whether to stop the search earlier. If an integer is provided, the search stops
+            when the submodel size is equal to the integer. If a string is provided, the search
+            stops when the difference in ELPD between the reference and submodel is small.
+            There are two criteria to define what small is, "mean" and "se".
+            The "mean" criterion stops the search when the difference between a the ELPD is smaller
+            than 4. The "se" criterion stops the search when the ELPD of the submodel is within
+            one standard error of the reference model. Defaults to None.
         """
         self.num_samples = num_samples
+        self.num_clusters = num_clusters
         self.tolerance = tolerance
         self.early_stop = early_stop
-        self.pps = get_pps(self.idata, self.response_name, self.num_samples)
+        self.pps, self.ppc, self.weights = get_pps(
+            self.idata, self.response_name, self.num_samples, self.num_clusters, self.rng
+        )
 
-        # test if path is a list of terms
-        if isinstance(path, list):
-            # check if the length of the path always increase
-            if not all(len(path[idx]) < len(path[idx + 1]) for idx in range(len(path) - 1)):
+        # if user provided the terms we used them directly, no search is performed
+        if user_terms is not None:
+            # check if the terms are a list of lists
+            if not isinstance(user_terms, list) or not all(
+                isinstance(term, list) for term in user_terms
+            ):
+                raise ValueError("Please provide a list of lists of terms.")
+            # check if the length of the submodels always increase
+            if not all(
+                len(user_terms[idx]) < len(user_terms[idx + 1])
+                for idx in range(len(user_terms) - 1)
+            ):
                 raise ValueError("Please provide a list of terms in increasing order")
-            # test if the terms in the path are valid
-            for idx, term_names in enumerate(path):
+            # check if the listed terms are valid
+            for idx, term_names in enumerate(user_terms):
                 if not set(term_names).issubset(self.all_terms):
                     raise ValueError(f"Term {idx} is not a valid term in the reference")
 
-            self.list_of_submodels = user_path(self._project, path)
+            self.list_of_submodels = user_path(self._project, user_terms)
         else:
-            # test valid solution method
-            if path not in ["forward", "l1"]:
+            if method not in ["forward", "l1"]:
                 raise ValueError("Please select either forward search or L1 search.")
 
-            # set default `max_terms` value
-            n_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
-            if max_terms is None:
-                max_terms = n_terms
-            # test `max_terms` input
-            elif max_terms > n_terms:
-                warnings.warn(
-                    "max_terms is larger than the number of terms in the reference model."
-                    + "Searching for {n_terms}."
-                )
-                max_terms = n_terms
+            max_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
 
-            if path == "forward":
+            if isinstance(self.early_stop, int):
+                if self.early_stop < 0:
+                    raise ValueError("The early stopping value must be a positive integer.")
+
+                if self.early_stop > max_terms:
+                    warnings.warn(
+                        "early_stop is larger than the number of terms in the reference model."
+                        + "Searching for {n_terms}."
+                    )
+                    self.early_stop = max_terms
+                max_terms = self.early_stop
+
+            if method == "forward":
                 self.list_of_submodels = forward_search(
                     self._project, self.ref_terms, max_terms, self.elpd_ref, self.early_stop
                 )
             else:
-                # test whether the model includes categorical terms, and if so raise error
+                # currently L1 search is not implemented for categorical models
                 if self.categorical_terms:
                     raise NotImplementedError("Group-lasso not yet implemented")
 
@@ -207,32 +228,44 @@ class ProjectionPredictive:
 
         return None
 
-    def _project(self, term_names):
-
+    def _project(self, term_names, clusters=True):
         term_names_ = self.base_terms + term_names
         new_model = compute_new_model(
             self.pymc_model, self.ref_var_info, self.all_terms, term_names_
         )
 
-        neg_log_likelihood, old_y_value, obs_rvs = compile_mllk(new_model)
-        initial_guess = np.concatenate(
-            [np.ravel(value) for value in new_model.initial_point().values()]
+        initial_point = new_model.initial_point()
+        neg_log_likelihood, old_y_value, obs_rvs, initial_point = compile_mllk(
+            new_model, initial_point
         )
-        var_info = get_model_information(new_model)
+
+        initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
+        var_info = get_model_information(new_model, initial_point)
+
+        if clusters:
+            samples = self.ppc
+            weights = self.weights
+        else:
+            samples = self.pps
+            weights = None
 
         new_idata, loss = solve(
             neg_log_likelihood,
-            self.pps,
+            samples,
             initial_guess,
             var_info,
             self.tolerance,
+            weights,
         )
+
         # restore obs_rvs value in the model
         new_model.rvs_to_values[obs_rvs] = old_y_value
 
         # Add observed data and log-likelihood to the projected InferenceData object
-        new_idata.add_groups(observed_data=self.observed_dataset)
-        new_idata.add_groups(log_likelihood=compute_llk(new_idata, new_model))
+        # We only do this for the selected projected model, not the intermediate ones
+        if new_idata is not None:
+            new_idata.add_groups(observed_data=self.observed_dataset)
+            new_idata.add_groups(log_likelihood=compute_llk(new_idata, new_model))
 
         # build SubModel object and return
         sub_model = SubModel(
@@ -265,26 +298,30 @@ class ProjectionPredictive:
         # build posterior if not provided
         if self.idata is None:
             warnings.warn("No InferenceData object provided. Building posterior from model.")
-            with self.pymc_model:
-                self.idata = sample(idata_kwargs={"log_likelihood": True}, random_seed=self.rng)
-                sample_posterior_predictive(
-                    self.idata, extend_inferencedata=True, random_seed=self.rng
-                )
-
-        if "log_likelihood" not in self.idata.groups():
-            raise UserWarning(
-                """Please run Bambi's fit method with the option
-                idata_kwargs={'log_likelihood': True}"""
+            self.idata = self.model.fit(
+                idata_kwargs={"log_likelihood": True},
+                random_seed=self.rng,
             )
-        if "posterior_predictive" not in self.idata.groups():
-            self.model.predict(self.idata, kind="response", inplace=True)
 
-        # test compatibility between model and idata
+        # check compatibility between model and idata
         if (
             not self.model.response_component.term.name
             == list(self.idata.observed_data.data_vars.variables)[0]
         ):
             raise UserWarning("Incompatible model and inference data.")
+
+        # check if we have the log_likelihood group
+        if "log_likelihood" not in self.idata.groups():
+            warnings.warn(
+                "log_likelihood group is missing from idata, it will be computed.\n"
+                "To avoid this message, please run Bambi's fit method with the option "
+                "idata_kwargs={'log_likelihood': True}"
+            )
+            self.model.compute_log_likelihood(self.idata)
+
+        # check if we have the posterior_predictive group
+        if "posterior_predictive" not in self.idata.groups():
+            self.model.predict(self.idata, kind="response", inplace=True, random_seed=self.rng)
 
     def submodels(self, index):
         """Return submodels by index
@@ -376,8 +413,8 @@ class ProjectionPredictive:
         self,
         var_names=None,
         submodels=None,
-        include_reference=True,
-        labels="formula",
+        include_reference=False,
+        labels="size",
         kind="density",
         figsize=None,
         plot_kwargs=None,

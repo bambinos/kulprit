@@ -17,19 +17,18 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dynamic = ["version"]
 description = "Kullback-Leibler projections for Bayesian model selection."
 dependencies = [
     "arviz>=0.17.1",
-    "bambi>=0.13.0",
+    "bambi @ git+https://github.com/bambinos/bambi",
+    "scikit-learn>=1.0.2"
     ]
 
-[project.optional-dependencies]
-lasso = ["scikit-learn>=1.0.2"]
 
 [tool.flit.module]
 name = "kulprit"
