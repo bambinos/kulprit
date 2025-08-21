@@ -24,7 +24,7 @@ classifiers = [
 dynamic = ["version"]
 description = "Kullback-Leibler projections for Bayesian model selection."
 dependencies = [
-    "arviz>=0.17.1",
+    "arviz_plots @ git+https://github.com/arviz-devs/arviz_plots",
     "bambi @ git+https://github.com/bambinos/bambi",
     "scikit-learn>=1.0.2"
     ]

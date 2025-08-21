@@ -4,9 +4,9 @@
 import warnings
 from copy import copy
 import numpy as np
+from pandas import DataFrame
 
 from bambi import formula
-from kulprit.plots.plots import plot_compare, plot_densities
 
 from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
 from kulprit.projection.pymc_io import (
@@ -349,119 +349,72 @@ class ProjectionPredictive:
                 index = [i for i in index if -n_submodels <= i < n_submodels]
             return [self.list_of_submodels[i] for i in index]
 
-    def compare(
-        self,
-        plot=True,
-        min_model_size=0,
-        legend=True,
-        title=True,
-        figsize=None,
-        plot_kwargs=None,
-    ):
-        """Compare the ELPD of the projected models along the search path.
-
+    def compare(self, stats="elpd", min_model_size=0, round_to=None):
+        """Return a DataFrame with the performance statistics of the reference and selected submodels.
 
         Parameters:
         -----------
-        plot : bool
-            Plot the results of the comparison. Defaults to True
-        legend : bool
-            Add legend to figure. Defaults to True.
-        title : bool
-            Show a tittle with a description of how to interpret the plot. Defaults to True.
-        figsize : tuple
-            If None, size is (10, num of submodels) inches
-        plot_kwargs : dict
-            Optional arguments for plot elements. Currently accepts 'color_elpd', 'marker_elpd',
-        'marker_fc_elpd', 'color_dse', 'marker_dse', 'ls_reference', 'color_ls_reference',
-        'xlabel_rotation'.
+        stats : str
+            The statistics to compute. Defaults to "elpd".
+            * "elpd": expected log (pointwise) predictive density (ELPD).
+            * "mlpd": mean log predictive density (MLPD), that is, the ELPD divided by the
+            number of observations.
+            * "gmpd": geometric mean predictive density (GMPD), that is, exp(MLDP).
+            For discrete response families the GMPD is bounded by zero and one.
+        min_model_size : int
+            The minimum size of the submodels to compare. Defaults to 0, which means the
+            intercept-only model is included in the comparison.
+        round_to : int
+            Number of decimals used to round results. Defaults to None
 
         Returns:
         --------
-        cmp : elpd_info
-            tuples of index, elpd_loo point estimate and standard error for each submodel
-            The index -1 corresponds to the reference model.
-        axes : matplotlib_axes
+        DataFrame
+            A DataFrame with the ELPD and standard error of the submodels and the reference model.
+            The index of the DataFrame is the term names of the submodels, and the last row is the reference model.
         """
         # test that search has been previously run
         if not self.list_of_submodels:
             raise UserWarning("Please run search before comparing submodels.")
 
-        # initiate plotting arguments if none provided
-        if plot_kwargs is None:
-            plot_kwargs = {}
+        if stats not in ["elpd", "mlpd", "gmpd"]:
+            raise ValueError(
+                "Please select one of the following statistics: 'elpd', 'mlpd', or 'gmpd'."
+            )
 
         label_terms = []
-        elpd_info = [(-1, self.elpd_ref.elpd_loo, self.elpd_ref.se)]
-        # make list with elpd loo and se for each submodel
+        performance_info = {stats: [], "se": []}
         for k, submodel in enumerate(self.list_of_submodels):
             if k >= min_model_size:
-                elpd_info.append((k, submodel.elpd_loo, submodel.elpd_se))
+                performance_info[stats].append(submodel.elpd_loo)
+                performance_info["se"].append(submodel.elpd_se)
                 if submodel.term_names:
                     label_terms.append(submodel.term_names[-1])
                 else:
                     label_terms.append("Intercept")
 
-        # plot the comparison if requested
-        axes = None
-        if plot:
-            axes = plot_compare(elpd_info, label_terms, legend, title, figsize, plot_kwargs)
+        label_terms.append("reference")
+        performance_info[stats].append(self.elpd_ref.elpd_loo)
+        performance_info["se"].append(self.elpd_ref.se)
 
-        return elpd_info, axes
+        if stats in ["mlpd", "gmpd"]:
+            performance_info[stats] = np.array(performance_info[stats])
+            performance_info["se"] = np.array(performance_info["se"])
 
-    def plot_densities(
-        self,
-        var_names=None,
-        submodels=None,
-        include_reference=False,
-        labels="size",
-        kind="density",
-        figsize=None,
-        plot_kwargs=None,
-    ):
-        """Compare the projected posterior densities of the submodels
+            performance_info[stats] = performance_info[stats] / self.observed_array.shape[0]
+            performance_info["se"] = performance_info["se"] / self.observed_array.shape[0]
 
-        Parameters:
-        -----------
-        var_names : list of str, optional
-            List of variables to plot.
-        submodels : list of int, optional
-            List of submodels to plot, 0 is intercept-only model and the largest valid integer is
-            the total number of variables in reference model. If None, all submodels are plotted.
-        include_reference : bool
-            Whether to include the reference model in the plot. Defaults to True.
-        labels : str
-            If "formula", the labels are the formulas of the submodels. If "size", the number
-            of covariates in the submodels.
-        kind : str
-            The kind of plot to create. Either "density" or "forest". Defaults to "density".
-        figsize : tuple
-            Figure size. If None it will be defined automatically.
-        plot_kwargs : dict
-            Dictionary passed to ArviZ's ``plot_density`` function (if kind density) or to
-            ``plot_forest`` (if kind forest).
+            if stats == "gmpd":
+                performance_info[stats] = np.exp(performance_info[stats])
+                # delta method
+                performance_info["se"] = performance_info["se"] * performance_info[stats]
 
-        Returns:
-        --------
+        summary_df = DataFrame(performance_info, index=label_terms).iloc[::-1]
 
-        axes : matplotlib_axes
-        """
-        if submodels is None:
-            submodels = self.list_of_submodels
-        else:
-            submodels = self.submodels(submodels)
+        if (round_to is not None) and (round_to not in ("None", "none")):
+            summary_df = summary_df.round(round_to)
 
-        return plot_densities(
-            self.model,
-            self.idata,
-            var_names=var_names,
-            submodels=submodels,
-            include_reference=include_reference,
-            labels=labels,
-            kind=kind,
-            figsize=figsize,
-            plot_kwargs=plot_kwargs,
-        )
+        return summary_df
 
 
 class SubModel:

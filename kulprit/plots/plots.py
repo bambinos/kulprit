@@ -1,175 +1,394 @@
-from arviz.plots.plot_utils import _scale_fig_size
-from arviz.plots import plot_density, plot_forest
-import matplotlib.pyplot as plt
-import numpy as np
+from arviz_plots import plot_dist as azp_plot_dist
+from arviz_plots import plot_forest as azp_plot_forest
+from arviz_plots import plot_compare as azp_plot_compare
 
 
 def plot_compare(
-    elpd_info, label_terms=None, legend=True, title=True, figsize=None, plot_kwargs=None
+    cmp_df,
+    relative_scale=True,
+    backend=None,
+    visuals=None,
+    **pc_kwargs,
 ):
+    r"""Summary plot for model comparison.
+
+    Models are compared based on their expected log pointwise predictive density (ELPD).
+    Higher ELPD values indicate better predictive performance.
+
+    The ELPD is estimated by Pareto smoothed importance sampling leave-one-out
+    cross-validation (LOO). Details are presented in [1]_ and [2]_.
+
+    The ELPD can only be interpreted in relative terms. But differences in ELPD less than 4
+    are considered negligible [3]_.
+
+    Parameters
+    ----------
+    comp_df : pandas.DataFrame
+        The result of Kulprit's `compare` function
+    relative_scale : bool, optional.
+        If True scale the ELPD values relative to the reference model.
+        Defaults to True.
+    backend : {"bokeh", "matplotlib", "plotly"}
+        Select plotting backend. Defaults to ArviZ's rcParams["plot.backend"].
+    visuals : mapping of {str : mapping or bool}, optional
+        Valid keys are:
+
+        * point_estimate -> passed to :func:`~arviz_plots.backend.none.scatter`
+        * error_bar -> passed to :func:`~arviz_plots.backend.none.line`
+        * ref_line -> passed to :func:`~arviz_plots.backend.none.hline`.
+        * ref_band -> passed to :func:`~arviz_plots.backend.none.hspan`
+        * similar_line -> passed to :func:`~arviz_plots.backend.none.hline` or
+          Defaults to False
+        * labels -> passed to :func:`~arviz_plots.backend.none.xticks`
+          and :func:`~arviz_plots.backend.none.yticks`
+        * title -> passed to :func:`~arviz_plots.backend.none.title`.
+          Defaults to False.
+        * ticklabels -> passed to :func:`~arviz_plots.backend.none.yticks`
+
+    **pc_kwargs
+        Passed to :class:`arviz_plots.PlotCollection`
+
+    Returns
+    -------
+    PlotCollection
+
+    References
+    ----------
+    .. [1] Vehtari et al. *Practical Bayesian model evaluation using leave-one-out cross-validation
+        and WAIC*. Statistics and Computing. 27(5) (2017).
+        https://doi.org/10.1007/s11222-016-9696-4. arXiv preprint https://arxiv.org/abs/1507.04544.
+
+    .. [2] Vehtari et al. *Pareto Smoothed Importance Sampling*.
+        Journal of Machine Learning Research, 25(72) (2024) https://jmlr.org/papers/v25/19-556.html
+        arXiv preprint https://arxiv.org/abs/1507.02646
+
+    .. [3] Sivula et al. *Uncertainty in Bayesian Leave-One-Out Cross-Validation Based Model
+        Comparison*. (2025). https://doi.org/10.48550/arXiv.2008.10296
     """
-    Plot model comparison.
+    if visuals is None:
+        visuals = {}
 
-    Parameters:
-    -----------
-    cmp_df : pd.DataFrame
-        Dataframe containing the comparison data. Should have columns
-        `elpd_loo` and `elpd_diff` containing the ELPD values and the
-        differences to the reference model.
-    label_terms : list
-        List of the labels for the submodels.
-    legend : bool
-        Flag for plotting the legend, default True.
-    title : bool
-        Flag for plotting the title, default True.
-    figsize : tuple
-        Figure size. If None it will be defined automatically.
-    plot_kwargs : dict
-        Dictionary of plot parameters. Available keys:
-        - color_eldp : color for the ELPD points
-        - marker_eldp : marker for the ELPD points
-        - marker_fc_elpd : face color for the ELPD points
-        - ls_reference : linestyle for the reference model line
-        - color_ls_reference : color for the reference model line
-        - xlabel_rotation : rotation for the x-axis labels
+    visuals.setdefault("title", False)
+    visuals.setdefault("ref_band", True)
+    visuals.setdefault("similar_line", False)
 
-    """
-    if plot_kwargs is None:
-        plot_kwargs = {}
-
-    if figsize is None:
-        figsize = (10, 4)
-
-    figsize, ax_labelsize, _, xt_labelsize, linewidth, _ = _scale_fig_size(figsize, None, 1, 1)
-
-    xticks_pos = np.linspace(0, 1, len(elpd_info) - 1)
-    xticks_num_labels = [value[0] for value in elpd_info[1:]]
-    xticks_name_labels = [f"\n\n{term}" for term in label_terms]
-    elpd_loo = [value[1] for value in elpd_info]
-    elpd_se = [value[2] for value in elpd_info]
-
-    fig, axes = plt.subplots(1, figsize=figsize)
-
-    axes.errorbar(
-        y=elpd_loo[1:],
-        x=xticks_pos,
-        yerr=elpd_se[1:],
-        label="Submodels",
-        color=plot_kwargs.get("color_eldp", "k"),
-        fmt=plot_kwargs.get("marker_eldp", "o"),
-        mfc=plot_kwargs.get("marker_fc_elpd", "white"),
-        mew=linewidth,
-        lw=linewidth,
-        markersize=4,
+    pc = azp_plot_compare(
+        cmp_df,
+        relative_scale=relative_scale,
+        hide_top_model=True,
+        rotated=True,
+        visuals=visuals,
+        backend=backend,
+        **pc_kwargs,
     )
-
-    axes.axhline(
-        elpd_loo[0],
-        ls=plot_kwargs.get("ls_reference", "--"),
-        color=plot_kwargs.get("color_ls_reference", "grey"),
-        lw=linewidth,
-        label="Reference model",
-    )
-
-    axes.fill_between(
-        [-0.15, 1.15],
-        elpd_loo[0] + elpd_se[0],
-        elpd_loo[0] - elpd_se[0],
-        alpha=0.1,
-        color=plot_kwargs.get("color_ls_reference", "grey"),
-    )
-
-    if legend:
-        fig.legend(
-            bbox_to_anchor=(0.9, 0.3),
-            loc="lower right",
-            ncol=1,
-            fontsize=ax_labelsize * 0.6,
-        )
-
-    if title:
-        axes.set_title(
-            "Model comparison",
-            fontsize=ax_labelsize * 0.6,
-        )
-
-    sec0 = axes.secondary_xaxis(location=0)
-    sec0.set_xticks(xticks_pos, xticks_num_labels)
-    sec0.tick_params("x", length=0, labelsize=xt_labelsize * 0.6)
-
-    sec1 = axes.secondary_xaxis(location=0)
-    sec1.set_xticks(xticks_pos, xticks_name_labels, rotation=plot_kwargs.get("xlabel_rotation", 0))
-    sec1.tick_params("x", length=0, labelsize=xt_labelsize * 0.6)
-    sec1.set_xlabel("Submodels", fontsize=ax_labelsize * 0.6)
-
-    axes.set_xticks([])
-    axes.set_ylabel("ELPD", fontsize=ax_labelsize * 0.6)
-    axes.set_xlim(-0.1, 1.1)
-    axes.tick_params(labelsize=xt_labelsize * 0.6)
-
-    return axes
+    return pc
 
 
-def plot_densities(
-    model,
-    idata,
-    submodels,
-    var_names=None,
+def plot_forest(ppi,
+    submodels=None,
     include_reference=False,
-    labels="size",
-    kind="density",
-    figsize=None,
-    plot_kwargs=None,
+    var_names=None,
+    filter_vars=None,
+    coords=None,
+    sample_dims=None,
+    point_estimate=None,
+    ci_kind=None,
+    ci_probs=None,
+    labels=None,
+    shade_label=None,
+    plot_collection=None,
+    backend=None,
+    labeller=None,
+    aes_by_visuals = None,
+    visuals = None,
+    stats = None,
+    **pc_kwargs,
+
 ):
-    """Compare the projected posterior densities of the submodels"""
-    if plot_kwargs is None:
-        plot_kwargs = {}
+    """Plot 1D marginal credible intervals in a single plot.
 
-    if kind not in ["density", "forest"]:
-        raise ValueError("kind must be one of 'density' or 'forest'")
+    This function is a thin wrapper around :func:`arviz.plots.plot_forest`
+    that prepares the data from a :class:`kulprit.ProjectionPredictive` object.
 
-    # set default variable names to the reference model terms
+    Parameters
+    ----------
+    ppi :`kulprit.ProjectionPredictive` object
+    submodels : list of {int, str}, optional
+        List of submodel sizes or names to be plotted.
+    include_reference : bool, default False
+        Whether to include the reference model in the plot.
+    var_names : str or list of str, optional
+        One or more variables to be plotted.
+        Prefix the variables by ~ when you want to exclude them from the plot.
+    filter_vars : {None, “like”, “regex”}, default None
+        If None, interpret var_names as the real variables names.
+        If “like”, interpret var_names as substrings of the real variables names.
+        If “regex”, interpret var_names as regular expressions on the real variables names.
+    group : str, default "posterior"
+        Group to be plotted.
+    coords : dict, optional
+    sample_dims : str or sequence of hashable, optional
+        Dimensions to reduce unless mapped to an aesthetic.
+        Defaults to ``rcParams["data.sample_dims"]``
+    combined : bool, default False
+        Whether to plot intervals for each chain or not. Ignored when the "chain" dimension
+        is not present.
+    point_estimate : {"mean", "median", "mode"}, optional
+        Which point estimate to plot. Defaults to rcParam :data:`stats.point_estimate`
+    ci_kind : {"eti", "hdi"}, optional
+        Which credible interval to use. Defaults to ``rcParams["stats.ci_kind"]``
+    ci_probs : (float, float), optional
+        Indicates the probabilities that should be contained within the plotted credible intervals.
+        It should be sorted as the elements refer to the probabilities of the "trunk" and "twig"
+        elements. Defaults to ``(0.5, rcParams["stats.ci_prob"])``
+    labels : sequence of str, optional
+        Sequence with the dimensions to be labelled in the plot. By default all dimensions
+        except "chain" and "model" (if present). The order of `labels` is ignored,
+        only elements being present in it matters.
+        It can include the special "__variable__" indicator, and does so by default.
+    shade_label : str, default None
+        Element of `labels` that should be used to add shading horizontal strips to the plot.
+        Note that labels and credible intervals are plotted in different :term:`plots`.
+        The shading is applied to both plots, and the spacing between them is set to 0
+        *if possible*, which is not always the case (one notable example being matplotlib's
+        constrained layout).
+    plot_collection : PlotCollection, optional
+    backend : {"matplotlib", "bokeh"}, optional
+    labeller : labeller, optional
+    aes_by_visuals : mapping of {str : sequence of str or False}, optional
+        Mapping of visuals to aesthetics that should use their mapping in `plot_collection`
+        when plotted. Valid keys are the same as for `visuals` except "ticklabels"
+        and "remove_axis" which do not apply, and "twig" and "trunk" which
+        take the same aesthetics through the "credible_interval" key.
+
+        By default, aesthetic mappings are generated for: y, alpha, overlay and color
+        (if multiple models are present). All aesthetic mappings but alpha are applied
+        to both the credible intervals and the point estimate; overlay is applied
+        to labels; and both overlay and alpha are applied to the shade.
+
+        "overlay" is a dummy aesthetic to trigger looping over variables and/or
+        dimensions using all aesthetics in every iteration. "alpha" gets two
+        values (0, 0.3) in order to trigger the alternate shading effect.
+    visuals : mapping of {str : mapping or bool}, optional
+        Valid keys are:
+
+        * trunk, twig -> passed to :func:`~.visuals.line_x`
+        * point_estimate -> passed to :func:`~.visuals.scatter_x`
+        * labels -> passed to :func:`~.visuals.annotate_label`
+        * shade -> passed to :func:`~.visuals.fill_between_y`
+        * ticklabels -> passed to :func:`~.backend.xticks`
+        * remove_axis -> not passed anywhere, can only take ``False`` as value to skip calling
+          :func:`~.visuals.remove_axis`
+
+    stats : mapping, optional
+        Valid keys are:
+
+        * trunk, twig -> passed to eti or hdi
+        * point_estimate -> passed to mean, median or mode
+
+    **pc_kwargs
+        Passed to :class:`arviz_plots.PlotCollection.grid`
+
+    Returns
+    -------
+    PlotCollection
+    """
+    models_to_plot, var_names = _get_models_to_plot(ppi, var_names, submodels, include_reference)
+
+    if stats is None:
+        stats = {}
+
+    stats.setdefault("trunk", {"skipna": True})
+    stats.setdefault("twig", {"skipna": True})
+
+    pc = azp_plot_forest(models_to_plot,
+                    var_names=var_names,
+                    filter_vars=filter_vars,
+                    coords=coords,
+                    sample_dims=sample_dims,
+                    combined=True,
+                    point_estimate=point_estimate,
+                    ci_kind=ci_kind,
+                    ci_probs=ci_probs,
+                    labels=labels,
+                    shade_label=shade_label,
+                    plot_collection=plot_collection,
+                    backend=backend,
+                    labeller=labeller,
+                    aes_by_visuals = aes_by_visuals,
+                    visuals = visuals,
+                    stats = stats,
+                    **pc_kwargs,
+                    )
+        
+    pc.add_legend("model")
+ 
+    return pc
+
+
+def plot_dist(ppi,
+    submodels=None,
+    include_reference=False,
+    var_names=None,
+    filter_vars=None,
+    coords=None,
+    sample_dims=None,
+    kind=None,
+    point_estimate=None,
+    ci_kind=None,
+    ci_prob=None,
+    plot_collection=None,
+    backend=None,
+    labeller=None,
+    aes_by_visuals = None,
+    visuals = None,
+    stats = None,
+    **pc_kwargs,
+):
+
+    """Plot 1D marginal densities.
+
+    This function is a thin wrapper around :func:`arviz_plots.plot_dist`
+    that prepares the data from a :class:`kulprit.ProjectionPredictive` object.
+
+    Parameters
+    ----------
+    ppi :`kulprit.ProjectionPredictive` object
+    submodels : list of {int, str}, optional
+        List of submodel sizes or names to be plotted.
+    include_reference : bool, default False
+        Whether to include the reference model in the plot.
+    var_names : str or list of str, optional
+        One or more variables to be plotted.
+        Prefix the variables by ~ when you want to exclude them from the plot.
+    filter_vars : {None, “like”, “regex”}, default=None
+        If None, interpret var_names as the real variables names.
+        If “like”, interpret var_names as substrings of the real variables names.
+        If “regex”, interpret var_names as regular expressions on the real variables names.
+    coords : dict, optional
+    sample_dims : str or sequence of hashable, optional
+        Dimensions to reduce unless mapped to an aesthetic.
+        Defaults to ``rcParams["data.sample_dims"]``
+    kind : {"kde", "hist", "dot", "ecdf"}, optional
+        How to represent the marginal density.
+        Defaults to ``rcParams["plot.density_kind"]``
+    point_estimate : {"mean", "median", "mode"}, optional
+        Which point estimate to plot. Defaults to rcParam :data:`stats.point_estimate`
+    ci_kind : {"eti", "hdi"}, optional
+        Which credible interval to use. Defaults to ``rcParams["stats.ci_kind"]``
+    ci_prob : float, optional
+        Indicates the probability that should be contained within the plotted credible interval.
+        Defaults to ``rcParams["stats.ci_prob"]``
+    plot_collection : PlotCollection, optional
+    backend : {"matplotlib", "bokeh"}, optional
+    labeller : labeller, optional
+    aes_by_visuals : mapping of {str : sequence of str}, optional
+        Mapping of visuals to aesthetics that should use their mapping in `plot_collection`
+        when plotted. Valid keys are the same as for `visuals`.
+
+        With a single model, no aesthetic mappings are generated by default,
+        each variable+coord combination gets a :term:`plot` but they all look the same,
+        unless there are user provided aesthetic mappings.
+        With multiple models, ``plot_dist`` maps "color" and "y" to the "model" dimension.
+
+        By default, all aesthetics but "y" are mapped to the density representation,
+        and if multiple models are present, "color" and "y" are mapped to the
+        credible interval and the point estimate.
+
+        When "point_estimate" key is provided but "point_estimate_text" isn't,
+        the values assigned to the first are also used for the second.
+    visuals : mapping of {str : mapping or bool}, optional
+        Valid keys are:
+
+        * dist -> depending on the value of `kind` passed to:
+
+          * "kde" -> passed to :func:`~arviz_plots.visuals.line_xy`
+          * "ecdf" -> passed to :func:`~arviz_plots.visuals.ecdf_line`
+          * "hist" -> passed to :func: `~arviz_plots.visuals.step_hist`
+
+        * face -> :term:`visual` that fills the area under the marginal distribution representation.
+
+          Defaults to False. Depending on the value of `kind` it is passed to:
+
+          * "kde" or "ecdf" -> passed to :func:`~arviz_plots.visuals.fill_between_y`
+          * "hist" -> passed to :func:`~arviz_plots.visuals.hist`
+
+        * credible_interval -> passed to :func:`~arviz_plots.visuals.line_x`. Defaults to False.
+        * point_estimate -> passed to :func:`~arviz_plots.visuals.scatter_x`. Defaults to False.
+        * point_estimate_text -> passed to :func:`~arviz_plots.visuals.point_estimate_text`. Defaults to False.
+        * title -> passed to :func:`~arviz_plots.visuals.labelled_title`
+        * rug -> passed to :func:`~arviz_plots.visuals.scatter_x`. Defaults to False.
+        * remove_axis -> not passed anywhere, can only be ``False`` to skip calling this function
+
+    stats : mapping, optional
+        Valid keys are:
+
+        * dist -> passed to kde, ecdf, ...
+        * credible_interval -> passed to eti or hdi
+        * point_estimate -> passed to mean, median or mode
+
+    **pc_kwargs
+        Passed to :class:`arviz_plots.PlotCollection.wrap`
+
+    Returns
+    -------
+    PlotCollection
+    """
+
+    if visuals is None:
+        visuals = {}
+
+    if stats is None:
+        stats = {}
+    
+    visuals.setdefault("point_estimate_text", False)
+    visuals.setdefault("credible_interval",False)
+    stats.setdefault("point_estimate", {"skipna": True})
+
+    models_to_plot, var_names = _get_models_to_plot(ppi, var_names, submodels, include_reference)
+
+    pc = azp_plot_dist(
+        models_to_plot,
+        var_names=var_names,
+        filter_vars=filter_vars,
+        coords=coords,
+        sample_dims=sample_dims,
+        kind=kind,
+        point_estimate=point_estimate,
+        ci_kind=ci_kind,
+        ci_prob=ci_prob,
+        plot_collection=plot_collection,
+        backend=backend,
+        labeller=labeller,
+        aes_by_visuals = aes_by_visuals,
+        visuals = visuals,
+        stats = stats,
+        **pc_kwargs,
+    )
+
+    pc.add_legend("model")
+    return pc
+
+def _get_models_to_plot(ppi, var_names, submodels, include_reference):
+    """Prepare a dictionary of models to be plotted."""
+    if submodels is None:
+        submodels = ppi.list_of_submodels
+    else:
+        submodels = ppi.submodels(submodels)
+
     if not var_names:
         if include_reference:
-            var_names = [fvar.name for fvar in model.backend.model.free_RVs]
+            var_names = ["Intercept"] + ppi.ref_terms
         else:
             var_names = ["Intercept"] + sorted(submodel.term_names for submodel in submodels)[-1]
 
     if include_reference:
-        data = [idata]
-        l_labels = ["Reference"]
+        models_to_plot = {"Reference": ppi.idata.posterior}
     else:
-        data = []
-        l_labels = []
+        models_to_plot = {}
 
-    if labels == "formula":
-        l_labels.extend([",".join(submodel.term_names) for submodel in submodels])
-    else:
-        l_labels.extend([submodel.size for submodel in submodels])
+    models_to_plot.update({
+        submodel.size: submodel.idata.posterior for submodel in submodels
+    })
 
-    data.extend([submodel.idata for submodel in submodels])
-
-    if kind == "density":
-        plot_kwargs.setdefault("outline", False)
-        plot_kwargs.setdefault("shade", 0.4)
-        plot_kwargs.setdefault("figsize", figsize)
-
-        axes = plot_density(
-            data=data,
-            var_names=var_names,
-            data_labels=l_labels,
-            **plot_kwargs,
-        )
-
-    else:
-        plot_kwargs.setdefault("combined", True)
-        plot_kwargs.setdefault("figsize", (10, 2 + len(var_names) ** 0.5))
-
-        axes = plot_forest(
-            data=data,
-            model_names=l_labels,
-            var_names=var_names,
-            **plot_kwargs,
-        )
-
-    return axes
+    return models_to_plot, var_names
