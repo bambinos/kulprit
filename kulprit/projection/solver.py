@@ -5,7 +5,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 
-def solve(neg_log_likelihood, preds, initial_guess, var_info, tolerance, weights):
+def solve(neg_log_likelihood, preds, initial_guess, var_info, weights, tolerance):
     """The primary projection method in the procedure.
 
     Parameters:
@@ -18,6 +18,11 @@ def solve(neg_log_likelihood, preds, initial_guess, var_info, tolerance, weights
         The initial guess for the optimization
     var_info: dict
         The dictionary containing information about the size and transformation of the variables
+    weights: array or None
+        The weights for the clustered predictions, if None, the loss is computed as the mean
+        of the objectives, i.e the weights are assumed to be the same for all predictions.
+    tolerance: float
+        The tolerance for the optimization procedure.
 
     Returns:
     -------
@@ -26,34 +31,27 @@ def solve(neg_log_likelihood, preds, initial_guess, var_info, tolerance, weights
     """
     num_samples = len(preds)
     posterior_array = np.zeros((num_samples, len(initial_guess)))
-    posterior_dict = {}
-    objectives = []
-
-    # As the initial guess may be far from the optimum, we optimize and use the
-    # result as the initial guess without saving the result yet.
-    opt = minimize(
-        neg_log_likelihood,
-        args=preds[0],
-        x0=initial_guess,
-        tol=tolerance,
-        method="powell",
-    )
-    initial_guess = opt.x
+    objectives = np.zeros(num_samples)
 
     for idx, pred in enumerate(preds):
+        if idx == 0:
+            tol = tolerance / 1000
+        else:
+            tol = tolerance
         opt = minimize(
             neg_log_likelihood,
             args=pred,
             x0=initial_guess,
-            tol=tolerance,
             method="powell",
+            tol=tol,
         )
 
         posterior_array[idx] = opt.x
-        objectives.append(opt.fun)
+        objectives[idx] = opt.fun
         initial_guess = opt.x
 
     if weights is None:
+        posterior_dict = {}
         size = 0
         for key, values in var_info.items():
             shape, new_size, transformation = values

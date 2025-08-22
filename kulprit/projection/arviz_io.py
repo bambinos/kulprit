@@ -3,13 +3,19 @@
 import warnings
 import numpy as np
 from sklearn.cluster import KMeans
-from arviz import convert_to_dataset, extract, loo
+from arviz_base import extract, from_dict
+from arviz_stats import loo
 
 
 def get_observed_data(idata, response_name):
     """Extract the observed data from the reference model."""
-    observed_data = {response_name: idata.observed_data.get(response_name).to_dict().get("data")}
-    return convert_to_dataset(observed_data), idata.observed_data.get(response_name).values
+    return idata.observed_data, idata.observed_data.get(response_name).values
+
+
+def get_new_datatree(posterior, observed_data, log_likelihood):
+    return from_dict(
+        {"posterior": posterior, "observed_data": observed_data, "log_likelihood": log_likelihood}
+    )
 
 
 def get_pps(idata, response_name, num_samples, num_clusters, rng):
@@ -32,7 +38,7 @@ def get_pps(idata, response_name, num_samples, num_clusters, rng):
         group="posterior_predictive",
         var_names=[response_name],
         num_samples=total_num_samples,
-        rng=rng,
+        random_seed=rng,
     ).values.T
 
     num_samples = min(num_samples, total_num_samples)
@@ -56,7 +62,7 @@ def compute_loo(submodel=None, idata=None):
         )
         if submodel is not None:
             elpd = loo(submodel.idata)
-            submodel.elpd_loo = elpd.elpd_loo
+            submodel.elpd = elpd.elpd
             submodel.elpd_se = elpd.se
 
         if idata is not None:
