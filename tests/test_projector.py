@@ -72,3 +72,21 @@ class TestProjector(KulpritTest):
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project()
         assert ref_model_copy.submodels(1).size == 1
+
+    def test_loo(self, ref_model):
+        """Test that the LOO score is as expected."""
+
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.project()
+        cmp_df = ref_model_copy.compare()
+        assert all(cmp_df.index == ["reference", "x", "y", "Intercept"])
+
+    def test_loo_with_no_search_path(self, ref_model):
+        """Test that an error is raised when no search path is found."""
+
+        with pytest.raises(UserWarning):
+            data = bmb.load_data("my_data")
+            bambi_model = bmb.Model("z ~ x + y", data, family="gaussian")
+            idata = bambi_model.fit(draws=self.NUM_DRAWS, chains=self.NUM_CHAINS)
+            ref_model = ProjectionPredictive(model=bambi_model, idata=idata)
+            ref_model.compare()
