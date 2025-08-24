@@ -84,7 +84,8 @@ def plot_compare(
     return pc
 
 
-def plot_forest(ppi,
+def plot_forest(
+    ppi,
     submodels=None,
     include_reference=False,
     var_names=None,
@@ -99,11 +100,10 @@ def plot_forest(ppi,
     plot_collection=None,
     backend=None,
     labeller=None,
-    aes_by_visuals = None,
-    visuals = None,
-    stats = None,
+    aes_by_visuals=None,
+    visuals=None,
+    stats=None,
     **pc_kwargs,
-
 ):
     """Plot 1D marginal credible intervals in a single plot.
 
@@ -201,32 +201,34 @@ def plot_forest(ppi,
     stats.setdefault("trunk", {"skipna": True})
     stats.setdefault("twig", {"skipna": True})
 
-    pc = azp_plot_forest(models_to_plot,
-                    var_names=var_names,
-                    filter_vars=filter_vars,
-                    coords=coords,
-                    sample_dims=sample_dims,
-                    combined=True,
-                    point_estimate=point_estimate,
-                    ci_kind=ci_kind,
-                    ci_probs=ci_probs,
-                    labels=labels,
-                    shade_label=shade_label,
-                    plot_collection=plot_collection,
-                    backend=backend,
-                    labeller=labeller,
-                    aes_by_visuals = aes_by_visuals,
-                    visuals = visuals,
-                    stats = stats,
-                    **pc_kwargs,
-                    )
-        
+    pc = azp_plot_forest(
+        models_to_plot,
+        var_names=var_names,
+        filter_vars=filter_vars,
+        coords=coords,
+        sample_dims=sample_dims,
+        combined=True,
+        point_estimate=point_estimate,
+        ci_kind=ci_kind,
+        ci_probs=ci_probs,
+        labels=labels,
+        shade_label=shade_label,
+        plot_collection=plot_collection,
+        backend=backend,
+        labeller=labeller,
+        aes_by_visuals=aes_by_visuals,
+        visuals=visuals,
+        stats=stats,
+        **pc_kwargs,
+    )
+
     pc.add_legend("model")
- 
+
     return pc
 
 
-def plot_dist(ppi,
+def plot_dist(
+    ppi,
     submodels=None,
     include_reference=False,
     var_names=None,
@@ -240,12 +242,11 @@ def plot_dist(ppi,
     plot_collection=None,
     backend=None,
     labeller=None,
-    aes_by_visuals = None,
-    visuals = None,
-    stats = None,
+    aes_by_visuals=None,
+    visuals=None,
+    stats=None,
     **pc_kwargs,
 ):
-
     """Plot 1D marginal densities.
 
     This function is a thin wrapper around :func:`arviz_plots.plot_dist`
@@ -340,9 +341,9 @@ def plot_dist(ppi,
 
     if stats is None:
         stats = {}
-    
+
     visuals.setdefault("point_estimate_text", False)
-    visuals.setdefault("credible_interval",False)
+    visuals.setdefault("credible_interval", False)
     stats.setdefault("point_estimate", {"skipna": True})
 
     models_to_plot, var_names = _get_models_to_plot(ppi, var_names, submodels, include_reference)
@@ -360,14 +361,15 @@ def plot_dist(ppi,
         plot_collection=plot_collection,
         backend=backend,
         labeller=labeller,
-        aes_by_visuals = aes_by_visuals,
-        visuals = visuals,
-        stats = stats,
+        aes_by_visuals=aes_by_visuals,
+        visuals=visuals,
+        stats=stats,
         **pc_kwargs,
     )
 
     pc.add_legend("model")
     return pc
+
 
 def _get_models_to_plot(ppi, var_names, submodels, include_reference):
     """Prepare a dictionary of models to be plotted."""
@@ -387,8 +389,6 @@ def _get_models_to_plot(ppi, var_names, submodels, include_reference):
     else:
         models_to_plot = {}
 
-    models_to_plot.update({
-        submodel.size: submodel.idata.posterior for submodel in submodels
-    })
+    models_to_plot.update({submodel.size: submodel.idata.posterior for submodel in submodels})
 
     return models_to_plot, var_names
