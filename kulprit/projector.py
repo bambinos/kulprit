@@ -351,7 +351,7 @@ class ProjectionPredictive:
             return [self.list_of_submodels[i] for i in index]
 
     def compare(self, stats="elpd", min_model_size=0, round_to=None):
-        """Return a DataFrame with the performance statistics of the reference and selected submodels.
+        """Return a DataFrame with the performance stats of the reference and submodels.
 
         Parameters:
         -----------
@@ -372,7 +372,8 @@ class ProjectionPredictive:
         --------
         DataFrame
             A DataFrame with the ELPD and standard error of the submodels and the reference model.
-            The index of the DataFrame is the term names of the submodels, and the last row is the reference model.
+            The index of the DataFrame is the term names of the submodels, and the first row is the
+            reference model.
         """
         # test that search has been previously run
         if not self.list_of_submodels:

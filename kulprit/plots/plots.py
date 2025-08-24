@@ -316,7 +316,7 @@ def plot_dist(
 
         * credible_interval -> passed to :func:`~arviz_plots.visuals.line_x`. Defaults to False.
         * point_estimate -> passed to :func:`~arviz_plots.visuals.scatter_x`. Defaults to False.
-        * point_estimate_text -> passed to :func:`~arviz_plots.visuals.point_estimate_text`. Defaults to False.
+        * point_estimate_text -> passed to :func:`~arviz_plots.visuals.point_estimate_text`. False.
         * title -> passed to :func:`~arviz_plots.visuals.labelled_title`
         * rug -> passed to :func:`~arviz_plots.visuals.scatter_x`. Defaults to False.
         * remove_axis -> not passed anywhere, can only be ``False`` to skip calling this function
