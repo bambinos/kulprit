@@ -48,9 +48,10 @@ class ProjectionPredictive:
         self.response_name = self.model.response_component.term.name
         self.ref_family = self.model.family.name
         self.priors = self.model.constant_components
-        self.ref_terms = list(
-            self.model.components[self.model.family.likelihood.parent].common_terms.keys()
-        )
+        self.ref_terms = [
+            v.alias if v.alias is not None else k
+            for k, v in model.components[model.family.likelihood.parent].common_terms.items()
+        ]
         self.categorical_terms = sum(
             term.categorical
             for term in self.model.components[
