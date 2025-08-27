@@ -124,7 +124,7 @@ class ProjectionPredictive:
         -----------
         method : str
             The search method to employ, either "forward" for a forward search, or "l1" for
-            a L1-regularized search. Ignored if "terms" is provided.
+            a L1-regularized search. Ignored if "user_terms" is provided.
         user_terms : list of list of str
             If a nested list of terms is provided, model with those terms will be projected
             directly.
