@@ -1,4 +1,5 @@
 """Module for storing fixtures used in kulprit tests."""
+
 # pylint: disable=redefined-outer-name
 import pytest
 

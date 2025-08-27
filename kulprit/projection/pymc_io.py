@@ -1,11 +1,11 @@
 """Functions to interact with PyMC models"""
 
-import numpy as np
+import warnings
 
 from pymc import do, compute_log_likelihood
 from pymc.util import is_transformed_name, get_untransformed_name
 from pymc.pytensorf import join_nonshared_inputs
-from pytensor import function
+from pytensor import function, shared
 from pytensor.tensor import matrix
 
 
@@ -15,7 +15,6 @@ def compile_mllk(model, initial_point):
     data and parameters.
     """
     obs_rvs = model.observed_RVs[0]
-    old_y_value = model.rvs_to_values[obs_rvs]
     new_y_value = obs_rvs.type()
     model.rvs_to_values[obs_rvs] = new_y_value
 
@@ -33,21 +32,26 @@ def compile_mllk(model, initial_point):
         else:
             return -(rv_logp_fn(params, pred[0]))
 
-    return fmodel, old_y_value, obs_rvs, initial_point
+    return fmodel
 
 
-def compute_new_model(model, ref_var_info, all_terms, term_names):
+def turn_off_terms(switches, all_terms, term_names):
     """
-    Compute a new model by excluding the terms not in term_names.
+    Turn off the terms not in term_names
     """
-    # get all the terms not in term_names
-    exclude_terms = {term: 0 for term in set(all_terms) - set(term_names)}
+    for term in all_terms:
+        if term not in term_names:
+            switches[term].set_value(0.0)
+        else:
+            switches[term].set_value(1.0)
 
-    for term in exclude_terms.keys():
-        shape = ref_var_info[term][0]
-        exclude_terms[term] = np.zeros(shape)
 
-    return do(model, exclude_terms)
+def add_switches(model, ref_terms):
+    switches = {term: shared(1.0) for term in ref_terms}
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Intervention expression references")
+        switched_terms = {term: model.named_vars[term] * switches[term] for term in ref_terms}
+        return do(model, switched_terms), switches
 
 
 def compute_llk(idata, model):

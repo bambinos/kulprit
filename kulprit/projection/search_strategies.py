@@ -191,9 +191,9 @@ def _early_stopping(submodel, elpd_ref, early_stop):
         if submodel.size == early_stop:
             return True
     if early_stop == "mean":
-        if elpd_ref.elpd_loo - submodel.elpd_loo <= 4:
+        if elpd_ref.elpd - submodel.elpd <= 4:
             return True
     elif early_stop == "se":
-        if submodel.elpd_loo + submodel.elpd_se >= elpd_ref.elpd_loo:
+        if submodel.elpd + submodel.elpd_se >= elpd_ref.elpd:
             return True
     return False

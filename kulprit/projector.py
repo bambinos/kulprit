@@ -10,9 +10,10 @@ from bambi import formula
 
 from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
 from kulprit.projection.pymc_io import (
+    add_switches,
     compile_mllk,
     compute_llk,
-    compute_new_model,
+    turn_off_terms,
     get_model_information,
 )
 from kulprit.projection.search_strategies import user_path, forward_search, l1_search
@@ -37,11 +38,22 @@ class ProjectionPredictive:
 
     def __init__(self, model, idata=None, rng=456):
         """Builder for projection predictive model selection."""
+        # initialize attributes
+        self.num_samples = None
+        self.num_clusters = None
+        self.early_stop = None
+        self.tolerance = None
+        self.pps = None
+        self.ppc = None
+        self.weights = None
+        self.list_of_submodels = []
+
         # set random number generator
         if rng is None:
             self.rng = np.random.default_rng()
         else:
             self.rng = np.random.default_rng(rng)
+
         # get information from Bambi's reference model
         self.model = model
         self.has_intercept = formula.formula_has_intercept(self.model.formula.main)
@@ -65,8 +77,15 @@ class ProjectionPredictive:
         if not self.model.built:
             self.model.build()
         self.pymc_model = copy(self.model.backend.model)
-        self.ref_var_info = get_model_information(self.pymc_model, self.pymc_model.initial_point())
+        initial_point = self.pymc_model.initial_point()
+        self.ref_var_info = get_model_information(self.pymc_model, initial_point)
         self.all_terms = [fvar.name for fvar in self.pymc_model.free_RVs]
+        self.initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
+
+        # add switches to the model to turn on/off terms in the model
+        # without having to rebuild the model
+        self.pymc_model_sw, self.switches = add_switches(self.pymc_model, self.ref_terms)
+        self.neg_log_likelihood = compile_mllk(self.pymc_model_sw, initial_point)
 
         # get information from ArviZ's InferenceData object
         self.idata = idata
@@ -74,16 +93,8 @@ class ProjectionPredictive:
         self.observed_dataset, self.observed_array = get_observed_data(
             self.idata, self.response_name
         )
-        self.num_samples = None
-        self.num_clusters = None
-        self.elpd_ref = compute_loo(idata=self.idata)
 
-        self.tolerance = None
-        self.early_stop = None
-        self.pps = None
-        self.ppc = None
-        self.weights = None
-        self.list_of_submodels = []
+        self.elpd_ref = compute_loo(idata=self.idata)
 
     def __repr__(self) -> str:
         """Return the terms of the submodels."""
@@ -103,9 +114,9 @@ class ProjectionPredictive:
         method="forward",
         user_terms=None,
         num_samples=400,
-        tolerance=0.01,
         num_clusters=20,
         early_stop=None,
+        tolerance=1,
     ):
         """Perform model projection.
 
@@ -124,8 +135,6 @@ class ProjectionPredictive:
             The number of clusters to use during the forward search. Defaults to 20.
         If None, the number of clusters is set to the number of samples.
         If num_clusters is larger than num_samples, it is set to num_samples.
-        tolerance : float
-            The tolerance for the optimization procedure. Defaults to 0.01
         early_stop : str or int, optional
             Whether to stop the search earlier. If an integer is provided, the search stops
             when the submodel size is equal to the integer. If a string is provided, the search
@@ -134,11 +143,14 @@ class ProjectionPredictive:
             The "mean" criterion stops the search when the difference between a the ELPD is smaller
             than 4. The "se" criterion stops the search when the ELPD of the submodel is within
             one standard error of the reference model. Defaults to None.
+        tolerance : float
+            The tolerance for the optimization procedure. Defaults to 1. Decreasing this value
+            will increase the accuracy of the projection at the cost of speed.
         """
         self.num_samples = num_samples
         self.num_clusters = num_clusters
-        self.tolerance = tolerance
         self.early_stop = early_stop
+        self.tolerance = tolerance
         self.pps, self.ppc, self.weights = get_pps(
             self.idata, self.response_name, self.num_samples, self.num_clusters, self.rng
         )
@@ -221,27 +233,16 @@ class ProjectionPredictive:
 
         for submodel in self.list_of_submodels:
             if criterion == "mean":
-                if (self.elpd_ref.elpd_loo - submodel.elpd_loo) < 4:
+                if (self.elpd_ref.elpd - submodel.elpd) < 4:
                     return submodel
             else:
-                if submodel.elpd_loo + submodel.elpd_se >= self.elpd_ref.elpd_loo:
+                if submodel.elpd + submodel.elpd_se >= self.elpd_ref.elpd:
                     return submodel
 
         return None
 
     def _project(self, term_names, clusters=True):
-        term_names_ = self.base_terms + term_names
-        new_model = compute_new_model(
-            self.pymc_model, self.ref_var_info, self.all_terms, term_names_
-        )
-
-        initial_point = new_model.initial_point()
-        neg_log_likelihood, old_y_value, obs_rvs, initial_point = compile_mllk(
-            new_model, initial_point
-        )
-
-        initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
-        var_info = get_model_information(new_model, initial_point)
+        turn_off_terms(self.switches, self.ref_terms, term_names)
 
         if clusters:
             samples = self.ppc
@@ -251,29 +252,33 @@ class ProjectionPredictive:
             weights = None
 
         new_idata, loss = solve(
-            neg_log_likelihood,
+            self.neg_log_likelihood,
             samples,
-            initial_guess,
-            var_info,
-            self.tolerance,
+            self.initial_guess,
+            self.ref_var_info,
             weights,
+            self.tolerance,
         )
-
-        # restore obs_rvs value in the model
-        new_model.rvs_to_values[obs_rvs] = old_y_value
 
         # Add observed data and log-likelihood to the projected InferenceData object
         # We only do this for the selected projected model, not the intermediate ones
         if new_idata is not None:
             new_idata.add_groups(observed_data=self.observed_dataset)
-            new_idata.add_groups(log_likelihood=compute_llk(new_idata, new_model))
+            new_idata.add_groups(log_likelihood=compute_llk(new_idata, self.pymc_model))
+            # remove the variables that are not in the submodel
+            vars_to_drop = [
+                var
+                for var in new_idata.posterior.data_vars
+                if var not in (term_names + self.base_terms)
+            ]
+            new_idata.posterior = new_idata.posterior.drop_vars(vars_to_drop)
 
         # build SubModel object and return
         sub_model = SubModel(
-            model=new_model,
+            model=self.pymc_model_sw,
             idata=new_idata,
             loss=loss,
-            elpd_loo=None,
+            elpd=None,
             elpd_se=None,
             size=len(term_names),
             term_names=term_names,
@@ -388,7 +393,7 @@ class ProjectionPredictive:
         performance_info = {stats: [], "se": []}
         for k, submodel in enumerate(self.list_of_submodels):
             if k >= min_model_size:
-                performance_info[stats].append(submodel.elpd_loo)
+                performance_info[stats].append(submodel.elpd)
                 performance_info["se"].append(submodel.elpd_se)
                 if submodel.term_names:
                     label_terms.append(submodel.term_names[-1])
@@ -396,7 +401,7 @@ class ProjectionPredictive:
                     label_terms.append("Intercept")
 
         label_terms.append("reference")
-        performance_info[stats].append(self.elpd_ref.elpd_loo)
+        performance_info[stats].append(self.elpd_ref.elpd)
         performance_info["se"].append(self.elpd_ref.se)
 
         if stats in ["mlpd", "gmpd"]:
@@ -429,18 +434,18 @@ class SubModel:
             projected posterior draws and log-likelihood.
         loo (float): The optimization loss of the submodel
         size (int): The number of common terms in the model, not including the intercept
-        elpd_loo (float): The expected log pointwise predictive density of the submodel
+        elpd (float): The expected log pointwise predictive density of the submodel
         elpd_se (float): The standard error of the expected log pointwise predictive
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
     """
 
-    def __init__(self, model, idata, loss, size, elpd_loo, elpd_se, term_names, has_intercept):
+    def __init__(self, model, idata, loss, size, elpd, elpd_se, term_names, has_intercept):
         self.model = model
         self.idata = idata
         self.loss = loss
         self.size = size
-        self.elpd_loo = elpd_loo
+        self.elpd = elpd
         self.elpd_se = elpd_se
         self.term_names = term_names
         self.has_intercept = has_intercept
