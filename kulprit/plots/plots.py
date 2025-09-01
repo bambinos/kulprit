@@ -374,18 +374,18 @@ def plot_dist(
 def _get_models_to_plot(ppi, var_names, submodels, include_reference):
     """Prepare a dictionary of models to be plotted."""
     if submodels is None:
-        submodels = ppi.list_of_submodels
+        submodels = ppi
     else:
-        submodels = ppi.submodels(submodels)
+        submodels = ppi[submodels]
 
     if not var_names:
         if include_reference:
-            var_names = ["Intercept"] + ppi.ref_terms
+            var_names = ["Intercept"] + ppi._ref_terms  # pylint: disable=protected-access
         else:
             var_names = ["Intercept"] + sorted(submodel.term_names for submodel in submodels)[-1]
 
     if include_reference:
-        models_to_plot = {"Reference": ppi.idata.posterior}
+        models_to_plot = {"Reference": ppi.reference_model.idata.posterior}
     else:
         models_to_plot = {}
 

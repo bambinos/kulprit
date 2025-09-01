@@ -18,7 +18,7 @@ class TestProjector(KulpritTest):
         """Test that some inference data is automatically produced when None."""
 
         no_idata_ref_model = ProjectionPredictive(bambi_model)
-        assert no_idata_ref_model.idata is not None
+        assert no_idata_ref_model.reference_model.idata is not None
 
     def test_different_variate_name(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
@@ -47,7 +47,7 @@ class TestProjector(KulpritTest):
         # project the reference model to some parameter subset
         ppi.project(user_terms=[["x"]])
 
-        sub_model_keys = ppi.list_of_submodels[0].idata.posterior.data_vars.keys()
+        sub_model_keys = ppi[0].idata.posterior.data_vars.keys()
         assert "x" in sub_model_keys
         assert "y" not in sub_model_keys
 
@@ -63,7 +63,7 @@ class TestProjector(KulpritTest):
         )
         ppi = ProjectionPredictive(model=model_cat, idata=fitted_cat)
         ppi.project(user_terms=[["gender"]])
-        assert ppi.list_of_submodels[0].size == 1
+        assert ppi[0].size == 1
 
     def test_project_one_term(self, ref_model):
         """Test that the projection method works for a single term."""
@@ -71,7 +71,7 @@ class TestProjector(KulpritTest):
         # project the reference model to some parameter subset
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project()
-        assert ref_model_copy.submodels(1).size == 1
+        assert ref_model_copy[1].size == 1
 
     def test_loo(self, ref_model):
         """Test that the LOO score is as expected."""

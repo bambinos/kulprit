@@ -31,7 +31,6 @@ def get_pps(idata, response_name, num_samples, num_clusters, rng):
             )
             num_clusters = num_samples
 
-    # Ideally we should thin the posterior and then use all the samples
     total_num_samples = idata.posterior.sizes["chain"] * idata.posterior.sizes["draw"]
     pps = extract(
         idata,
@@ -69,6 +68,35 @@ def compute_loo(submodel=None, idata=None):
             return loo(idata)
 
     return None
+
+
+def check_idata(idata, model, rng):
+    # build posterior if not provided
+    if idata is None:
+        warnings.warn("No InferenceData object provided. Building posterior from model.")
+        idata = model.fit(
+            idata_kwargs={"log_likelihood": True},
+            random_seed=rng,
+        )
+
+    # check compatibility between model and idata
+    if not model.response_component.term.name == list(idata.observed_data.data_vars.variables)[0]:
+        raise UserWarning("Incompatible model and inference data.")
+
+    # check if we have the log_likelihood group
+    if "log_likelihood" not in idata.groups():
+        warnings.warn(
+            "log_likelihood group is missing from idata, it will be computed.\n"
+            "To avoid this message, please run Bambi's fit method with the option "
+            "idata_kwargs={'log_likelihood': True}"
+        )
+        model.compute_log_likelihood(idata)
+
+    # check if we have the posterior_predictive group
+    if "posterior_predictive" not in idata.groups():
+        model.predict(idata, kind="response", inplace=True, random_seed=rng)
+
+    return idata
 
 
 def _get_clusters(pps, num_clusters, num_samples):
