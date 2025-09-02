@@ -8,7 +8,7 @@ from pandas import DataFrame
 
 from bambi import formula
 
-from kulprit.projection.arviz_io import compute_loo, get_observed_data, get_pps
+from kulprit.projection.arviz_io import check_idata, compute_loo, get_observed_data, get_pps
 from kulprit.projection.pymc_io import (
     add_switches,
     compile_mllk,
@@ -43,71 +43,92 @@ class ProjectionPredictive:
         self.num_clusters = None
         self.early_stop = None
         self.tolerance = None
-        self.pps = None
-        self.ppc = None
-        self.weights = None
-        self.list_of_submodels = []
+        self._pps = None
+        self._ppc = None
+        self._weights = None
+        self._list_of_submodels = []
 
         # set random number generator
         if rng is None:
-            self.rng = np.random.default_rng()
+            self._rng = np.random.default_rng()
         else:
-            self.rng = np.random.default_rng(rng)
+            self._rng = np.random.default_rng(rng)
 
         # get information from Bambi's reference model
-        self.model = model
-        self.has_intercept = formula.formula_has_intercept(self.model.formula.main)
-        self.response_name = self.model.response_component.term.name
-        self.ref_family = self.model.family.name
-        self.priors = self.model.constant_components
-        self.ref_terms = [
+        self._has_intercept = formula.formula_has_intercept(model.formula.main)
+        self._response_name = model.response_component.term.name
+        self._ref_terms = [
             v.alias if v.alias is not None else k
             for k, v in model.components[model.family.likelihood.parent].common_terms.items()
         ]
-        self.categorical_terms = sum(
+        self._categorical_terms = sum(
             term.categorical
-            for term in self.model.components[
-                self.model.family.likelihood.parent
-            ].common_terms.values()
+            for term in model.components[model.family.likelihood.parent].common_terms.values()
         )
 
-        self.base_terms = self._get_base_terms()
+        self._base_terms = _get_base_terms(self._has_intercept, model.constant_components)
 
         # get information from PyMC's reference model
-        if not self.model.built:
-            self.model.build()
-        self.pymc_model = copy(self.model.backend.model)
-        initial_point = self.pymc_model.initial_point()
-        self.ref_var_info = get_model_information(self.pymc_model, initial_point)
-        self.all_terms = [fvar.name for fvar in self.pymc_model.free_RVs]
-        self.initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
+        if not model.built:
+            model.build()
+        self._pymc_model = copy(model.backend.model)
+        initial_point = self._pymc_model.initial_point()
+        self._ref_var_info = get_model_information(self._pymc_model, initial_point)
+        self._initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
 
         # add switches to the model to turn on/off terms in the model
         # without having to rebuild the model
-        self.pymc_model_sw, self.switches = add_switches(self.pymc_model, self.ref_terms)
-        self.neg_log_likelihood = compile_mllk(self.pymc_model_sw, initial_point)
+        self._pymc_model_sw, self._switches = add_switches(self._pymc_model, self._ref_terms)
+        self._neg_log_likelihood = compile_mllk(self._pymc_model_sw, initial_point)
 
         # get information from ArviZ's InferenceData object
-        self.idata = idata
-        self._check_idata()
-        self.observed_dataset, self.observed_array = get_observed_data(
-            self.idata, self.response_name
-        )
+        idata = check_idata(idata, model, self._rng)
+        self._observed_dataset, self._observed_array = get_observed_data(idata, self._response_name)
 
-        self.elpd_ref = compute_loo(idata=self.idata)
+        elpd_ref = compute_loo(idata=idata)
+
+        self.reference_model = RefModel(
+            model=model,
+            idata=idata,
+            elpd=elpd_ref.elpd,
+            elpd_se=elpd_ref.se,
+            term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
+        )
 
     def __repr__(self) -> str:
         """Return the terms of the submodels."""
 
-        if not self.list_of_submodels:
+        if not self._list_of_submodels:
             return "ReferenceModel"
 
         else:
             str_of_submodels = "\n".join(
                 f"{idx:>3} " f"{value.term_names}"
-                for idx, value in enumerate(self.list_of_submodels)
+                for idx, value in enumerate(self._list_of_submodels)
             )
             return str_of_submodels
+
+    def __iter__(self):
+        """Iterate over the submodels."""
+        yield from self._list_of_submodels
+
+    def __len__(self):
+        """Return the number of submodels."""
+        return len(self._list_of_submodels)
+
+    def __getitem__(self, index):
+        """Return submodels by index or slice."""
+
+        if isinstance(index, int):
+            return self._list_of_submodels[index]
+        else:
+            n_submodels = len(self._list_of_submodels)
+            if not all(-n_submodels <= i < n_submodels for i in index):
+                warnings.warn(
+                    "At least one index is out of bounds. Ignoring out of bounds indices."
+                )
+                index = [i for i in index if -n_submodels <= i < n_submodels]
+            return [self._list_of_submodels[i] for i in index]
 
     def project(
         self,
@@ -151,8 +172,12 @@ class ProjectionPredictive:
         self.num_clusters = num_clusters
         self.early_stop = early_stop
         self.tolerance = tolerance
-        self.pps, self.ppc, self.weights = get_pps(
-            self.idata, self.response_name, self.num_samples, self.num_clusters, self.rng
+        self._pps, self._ppc, self._weights = get_pps(
+            self.reference_model.idata,
+            self._response_name,
+            self.num_samples,
+            self.num_clusters,
+            self._rng,
         )
 
         # if user provided the terms we used them directly, no search is performed
@@ -170,15 +195,19 @@ class ProjectionPredictive:
                 raise ValueError("Please provide a list of terms in increasing order")
             # check if the listed terms are valid
             for idx, term_names in enumerate(user_terms):
-                if not set(term_names).issubset(self.all_terms):
+                if not set(term_names).issubset(self.reference_model.term_names):
                     raise ValueError(f"Term {idx} is not a valid term in the reference")
 
-            self.list_of_submodels = user_path(self._project, user_terms)
+            self._list_of_submodels = user_path(self._project, user_terms)
         else:
             if method not in ["forward", "l1"]:
                 raise ValueError("Please select either forward search or L1 search.")
 
-            max_terms = len(self.model.components[self.model.family.likelihood.parent].common_terms)
+            max_terms = len(
+                self.reference_model.bambi_model.components[
+                    self.reference_model.bambi_model.family.likelihood.parent
+                ].common_terms
+            )
 
             if isinstance(self.early_stop, int):
                 if self.early_stop < 0:
@@ -193,20 +222,24 @@ class ProjectionPredictive:
                 max_terms = self.early_stop
 
             if method == "forward":
-                self.list_of_submodels = forward_search(
-                    self._project, self.ref_terms, max_terms, self.elpd_ref, self.early_stop
+                self._list_of_submodels = forward_search(
+                    self._project,
+                    self._ref_terms,
+                    max_terms,
+                    self.reference_model.elpd,
+                    self.early_stop,
                 )
             else:
                 # currently L1 search is not implemented for categorical models
-                if self.categorical_terms:
+                if self._categorical_terms:
                     raise NotImplementedError("Group-lasso not yet implemented")
 
-                self.list_of_submodels = l1_search(
+                self._list_of_submodels = l1_search(
                     self._project,
-                    self.model,
-                    self.ref_terms,
+                    self.reference_model.bambi_model,
+                    self._ref_terms,
                     max_terms,
-                    self.elpd_ref,
+                    self.reference_model.elpd,
                     self.early_stop,
                 )
 
@@ -231,31 +264,31 @@ class ProjectionPredictive:
         if criterion not in ["mean", "se"]:
             raise ValueError("Please select either mean or se as the methods.")
 
-        for submodel in self.list_of_submodels:
+        for submodel in self._list_of_submodels:
             if criterion == "mean":
-                if (self.elpd_ref.elpd - submodel.elpd) < 4:
+                if (self.reference_model.elpd - submodel.elpd) < 4:
                     return submodel
             else:
-                if submodel.elpd + submodel.elpd_se >= self.elpd_ref.elpd:
+                if submodel.elpd + submodel.elpd_se >= self.reference_model.elpd:
                     return submodel
 
         return None
 
     def _project(self, term_names, clusters=True):
-        turn_off_terms(self.switches, self.ref_terms, term_names)
+        turn_off_terms(self._switches, self._ref_terms, term_names)
 
         if clusters:
-            samples = self.ppc
-            weights = self.weights
+            samples = self._ppc
+            weights = self._weights
         else:
-            samples = self.pps
+            samples = self._pps
             weights = None
 
         new_idata, loss = solve(
-            self.neg_log_likelihood,
+            self._neg_log_likelihood,
             samples,
-            self.initial_guess,
-            self.ref_var_info,
+            self._initial_guess,
+            self._ref_var_info,
             weights,
             self.tolerance,
         )
@@ -263,97 +296,28 @@ class ProjectionPredictive:
         # Add observed data and log-likelihood to the projected InferenceData object
         # We only do this for the selected projected model, not the intermediate ones
         if new_idata is not None:
-            new_idata.add_groups(observed_data=self.observed_dataset)
-            new_idata.add_groups(log_likelihood=compute_llk(new_idata, self.pymc_model))
+            new_idata.add_groups(observed_data=self._observed_dataset)
+            new_idata.add_groups(log_likelihood=compute_llk(new_idata, self._pymc_model))
             # remove the variables that are not in the submodel
             vars_to_drop = [
                 var
                 for var in new_idata.posterior.data_vars
-                if var not in (term_names + self.base_terms)
+                if var not in (term_names + self._base_terms)
             ]
             new_idata.posterior = new_idata.posterior.drop_vars(vars_to_drop)
 
         # build SubModel object and return
         sub_model = SubModel(
-            model=self.pymc_model_sw,
+            model=self._pymc_model_sw,
             idata=new_idata,
             loss=loss,
             elpd=None,
             elpd_se=None,
             size=len(term_names),
             term_names=term_names,
-            has_intercept=self.has_intercept,
+            has_intercept=self._has_intercept,
         )
         return sub_model
-
-    def _get_base_terms(self):
-        """Extend the model term names to include dispersion terms."""
-
-        base_terms = []
-        # add intercept term if present
-        if self.has_intercept:
-            base_terms.append("Intercept")
-
-        # add the auxiliary parameters
-        if self.priors:
-            aux_params = [f"{str(k)}" for k in self.priors]
-            base_terms += aux_params
-        return base_terms
-
-    def _check_idata(self):
-        # build posterior if not provided
-        if self.idata is None:
-            warnings.warn("No InferenceData object provided. Building posterior from model.")
-            self.idata = self.model.fit(
-                idata_kwargs={"log_likelihood": True},
-                random_seed=self.rng,
-            )
-
-        # check compatibility between model and idata
-        if (
-            not self.model.response_component.term.name
-            == list(self.idata.observed_data.data_vars.variables)[0]
-        ):
-            raise UserWarning("Incompatible model and inference data.")
-
-        # check if we have the log_likelihood group
-        if "log_likelihood" not in self.idata.groups():
-            warnings.warn(
-                "log_likelihood group is missing from idata, it will be computed.\n"
-                "To avoid this message, please run Bambi's fit method with the option "
-                "idata_kwargs={'log_likelihood': True}"
-            )
-            self.model.compute_log_likelihood(self.idata)
-
-        # check if we have the posterior_predictive group
-        if "posterior_predictive" not in self.idata.groups():
-            self.model.predict(self.idata, kind="response", inplace=True, random_seed=self.rng)
-
-    def submodels(self, index):
-        """Return submodels by index
-
-        Parameters
-        ----------
-        index : int or list of int
-            The index or indices of the submodels to return. If a list of indices is provided,
-            the submodels will be returned in the order of the list.
-
-        Returns
-        -------
-        SubModel(s)
-            The submodel or list of submodels corresponding to the provided indices
-        """
-
-        if isinstance(index, int):
-            return self.list_of_submodels[index]
-        else:
-            n_submodels = len(self.list_of_submodels)
-            if not all(-n_submodels <= i < n_submodels for i in index):
-                warnings.warn(
-                    "At least one index is out of bounds. Ignoring out of bounds indices."
-                )
-                index = [i for i in index if -n_submodels <= i < n_submodels]
-            return [self.list_of_submodels[i] for i in index]
 
     def compare(self, stats="elpd", min_model_size=0, round_to=None):
         """Return a DataFrame with the performance stats of the reference and submodels.
@@ -381,7 +345,7 @@ class ProjectionPredictive:
             reference model.
         """
         # test that search has been previously run
-        if not self.list_of_submodels:
+        if not self._list_of_submodels:
             raise UserWarning("Please run search before comparing submodels.")
 
         if stats not in ["elpd", "mlpd", "gmpd"]:
@@ -391,7 +355,7 @@ class ProjectionPredictive:
 
         label_terms = []
         performance_info = {stats: [], "se": []}
-        for k, submodel in enumerate(self.list_of_submodels):
+        for k, submodel in enumerate(self._list_of_submodels):
             if k >= min_model_size:
                 performance_info[stats].append(submodel.elpd)
                 performance_info["se"].append(submodel.elpd_se)
@@ -401,15 +365,15 @@ class ProjectionPredictive:
                     label_terms.append("Intercept")
 
         label_terms.append("reference")
-        performance_info[stats].append(self.elpd_ref.elpd)
-        performance_info["se"].append(self.elpd_ref.se)
+        performance_info[stats].append(self.reference_model.elpd)
+        performance_info["se"].append(self.reference_model.elpd_se)
 
         if stats in ["mlpd", "gmpd"]:
             performance_info[stats] = np.array(performance_info[stats])
             performance_info["se"] = np.array(performance_info["se"])
 
-            performance_info[stats] = performance_info[stats] / self.observed_array.shape[0]
-            performance_info["se"] = performance_info["se"] / self.observed_array.shape[0]
+            performance_info[stats] = performance_info[stats] / self._observed_array.shape[0]
+            performance_info["se"] = performance_info["se"] / self._observed_array.shape[0]
 
             if stats == "gmpd":
                 performance_info[stats] = np.exp(performance_info[stats])
@@ -422,6 +386,21 @@ class ProjectionPredictive:
             summary_df = summary_df.round(round_to)
 
         return summary_df
+
+
+def _get_base_terms(has_intercept, priors):
+    """Extend the model term names to include dispersion terms."""
+
+    base_terms = []
+    # add intercept term if present
+    if has_intercept:
+        base_terms.append("Intercept")
+
+    # add the auxiliary parameters
+    if priors:
+        aux_params = [f"{str(k)}" for k in priors]
+        base_terms += aux_params
+    return base_terms
 
 
 class SubModel:
@@ -458,3 +437,30 @@ class SubModel:
             intercept = []
 
         return f"{intercept + self.term_names}"
+
+
+class RefModel:
+    """Reference model dataclass.
+
+    Attributes:
+        model (bambi.Model): The reference Bambi model, from which we can
+            extract a built pymc model.
+        idata (InferenceData): The inference data object of the reference model containing the
+            posterior draws and log-likelihood.
+        elpd (float): The expected log pointwise predictive density of the reference model
+        elpd_se (float): The standard error of the expected log pointwise predictive
+        term_names (list): The names of the terms in the model, including the intercept
+        has_intercept (bool): Whether the model has an intercept term
+    """
+
+    def __init__(self, model, idata, elpd, elpd_se, term_names):
+        self.bambi_model = model
+        self.idata = idata
+        self.size = len(term_names)
+        self.elpd = elpd
+        self.elpd_se = elpd_se
+        self.term_names = term_names
+
+    def __repr__(self) -> str:
+        """String representation of the submodel."""
+        return f"{self.term_names}"

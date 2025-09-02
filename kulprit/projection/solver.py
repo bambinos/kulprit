@@ -63,7 +63,7 @@ def solve(neg_log_likelihood, preds, initial_guess, var_info, weights, tolerance
             size += new_size
 
         new_idata = from_dict(posterior=posterior_dict)
-        loss = np.mean(objectives)
+        loss = np.mean(objectives) * 0.5
     else:
         new_idata = None
         loss = np.sum(np.array(objectives) * weights)

@@ -16,14 +16,14 @@ class TestSearch:
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project()
-        assert [submodel.size for submodel in ref_model_copy.submodels([0, 1, 2])] == [0, 1, 2]
+        assert [submodel.size for submodel in ref_model_copy[0, 1, 2]] == [0, 1, 2]
 
     def test_l1(self, ref_model):
         """Test that L1 search gives expected result."""
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project(method="l1")
-        assert [submodel.size for submodel in ref_model_copy.submodels([0, 1, 2])] == [0, 1, 2]
+        assert [submodel.size for submodel in ref_model_copy[0, 1, 2]] == [0, 1, 2]
 
     def test_l1_utils(self):
         """Test that L1 utility methods return expected result."""

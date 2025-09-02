@@ -51,6 +51,4 @@ line_length = 100
 convention = "numpy"
 
 [tool.pytest.ini_options]
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
