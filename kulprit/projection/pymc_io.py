@@ -69,9 +69,7 @@ def add_switches(model, ref_terms):
     switches = {term: shared(1.0) for term in extended_terms}
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message="Intervention expression references")
-        switched_terms = {}
-        for term in extended_terms:
-            switched_terms[term] = model.named_vars[term] * switches[term]
+        switched_terms = {term: model.named_vars[term] * switches[term] for term in extended_terms}
 
         return do(model, switched_terms), switches
 

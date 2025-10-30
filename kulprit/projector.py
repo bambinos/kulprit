@@ -66,7 +66,6 @@ class ProjectionPredictive:
             v.alias if v.alias is not None else k
             for k, v in model.components[model.family.likelihood.parent].terms.items()
         ]
-        print(self._ref_terms)
         self._categorical_terms = sum(
             term.categorical
             for term in model.components[model.family.likelihood.parent].common_terms.values()
@@ -93,14 +92,16 @@ class ProjectionPredictive:
 
         elpd_ref = compute_loo(idata=idata)
 
+        print([fvar.name for fvar in self._pymc_model.free_RVs])
         self.reference_model = RefModel(
             model=model,
             idata=idata,
             elpd=elpd_ref.elpd,
             elpd_se=elpd_ref.se,
-            # term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
+            #term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
             term_names=self._ref_terms,
         )
+        self._ref_terms.remove("Intercept")
 
     def __repr__(self) -> str:
         """Return the terms of the submodels."""
@@ -221,7 +222,7 @@ class ProjectionPredictive:
                 self.reference_model.bambi_model.components[
                     self.reference_model.bambi_model.family.likelihood.parent
                 ].terms
-            )
+            ) - 1  # exclude intercept
 
             if isinstance(self.early_stop, int):
                 if self.early_stop < 0:
