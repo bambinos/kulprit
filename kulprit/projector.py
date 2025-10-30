@@ -64,8 +64,9 @@ class ProjectionPredictive:
         self._response_name = model.response_component.term.name
         self._ref_terms = [
             v.alias if v.alias is not None else k
-            for k, v in model.components[model.family.likelihood.parent].common_terms.items()
+            for k, v in model.components[model.family.likelihood.parent].terms.items()
         ]
+        print(self._ref_terms)
         self._categorical_terms = sum(
             term.categorical
             for term in model.components[model.family.likelihood.parent].common_terms.values()
@@ -97,7 +98,8 @@ class ProjectionPredictive:
             idata=idata,
             elpd=elpd_ref.elpd,
             elpd_se=elpd_ref.se,
-            term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
+            # term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
+            term_names=self._ref_terms,
         )
 
     def __repr__(self) -> str:
@@ -218,7 +220,7 @@ class ProjectionPredictive:
             max_terms = len(
                 self.reference_model.bambi_model.components[
                     self.reference_model.bambi_model.family.likelihood.parent
-                ].common_terms
+                ].terms
             )
 
             if isinstance(self.early_stop, int):
