@@ -179,6 +179,7 @@ def _get_candidates(prev_subset, ref_terms, requiere_lower_terms=True):
     return candidates
 
 
+
 def _missing_lower_order_terms(interaction_term, term_list):
     """Return a set of missing lower-order terms for a given interaction term."""
     factors = interaction_term.split(":")

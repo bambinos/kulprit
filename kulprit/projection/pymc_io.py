@@ -39,9 +39,6 @@ def turn_off_terms(switches, all_terms, term_names):
     """
     Turn off the terms not in term_names
     """
-    # print("all_terms:", all_terms)
-    # print("term_names:", term_names)
-    # print("switches:", switches)
     for term in all_terms:
         if term not in term_names:
             if "|" in term:
@@ -65,13 +62,12 @@ def add_switches(model, ref_terms):
             extended_terms.append(term + "_sigma")
             extended_terms.append(term + "_offset")
 
-    print("extended_terms:", extended_terms)
     switches = {term: shared(1.0) for term in extended_terms}
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message="Intervention expression references")
         switched_terms = {term: model.named_vars[term] * switches[term] for term in extended_terms}
 
-        return do(model, switched_terms), switches
+        return do(model, switched_terms, prune_vars=True), switches
 
 
 def compute_llk(idata, model):
