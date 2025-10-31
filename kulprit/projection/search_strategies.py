@@ -1,6 +1,8 @@
 """This module contains the search strategies"""
 
+from itertools import combinations
 import numpy as np
+
 
 try:
     from sklearn.linear_model import lasso_path
@@ -18,7 +20,7 @@ def user_path(_project, user_terms):
     return submodels
 
 
-def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop):
+def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop, requiere_lower_terms):
     """Method for performing forward search.
 
     Parameters:
@@ -33,6 +35,9 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop):
         The expected log pointwise predictive density of the reference model.
     early_stop : str
         The early stopping criterion. Either "mean" or "se".
+    requiere_lower_terms : bool
+        Include higher-order interactions only if all lower-order interactions and main effects
+        are already in the subset. Defaults to True.
 
     Returns:
     -------
@@ -52,7 +57,7 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop):
 
         # get list of candidate submodels, project onto them, and compute
         # their distances
-        candidates = _get_candidates(submodel.term_names, ref_terms)
+        candidates = _get_candidates(submodel.term_names, ref_terms, requiere_lower_terms)
         projections = [_project(candidate, clusters=True) for candidate in candidates]
 
         # identify the best candidate by loss (equivalent to KL min)
@@ -133,8 +138,11 @@ def l1_search(_project, model, ref_terms, max_terms, elpd_ref, early_stop):
     return submodels
 
 
-def _get_candidates(prev_subset, ref_terms):
+def _get_candidates(prev_subset, ref_terms, requiere_lower_terms=True):
     """Method for extracting a list of all candidate submodels.
+
+    For interaction terms, ensures that all lower-order interactions and main effects
+    are included in the previous subset before considering the interaction as a candidate.
 
     Parameters:
     ----------
@@ -142,15 +150,46 @@ def _get_candidates(prev_subset, ref_terms):
         The terms of the previous submodel.
     ref_terms : list
         The terms of the reference model.
+    requiere_lower_terms : bool
+        Include higher-order interactions only if all lower-order interactions and main effects
+        are already in the subset. Defaults to True.
 
     Returns:
     -------
         List: A list of lists, each containing the terms of all candidate submodels
     """
+    prev_subset_set = set(prev_subset)
+    candidate_additions = []
 
-    candidate_additions = list(set(ref_terms).difference(prev_subset))
+    for term in ref_terms:  # pylint: disable=too-many-nested-blocks
+        # skip terms already in the previous subset
+        if term in prev_subset_set:
+            continue
+
+        if ":" in term and requiere_lower_terms:
+            # Only consider as candidate if all lower-order terms are present in prev_subset
+            missing = _missing_lower_order_terms(term, prev_subset)
+            if not missing:
+                candidate_additions.append(term)
+        # regular term, always consider as candidate
+        else:
+            candidate_additions.append(term)
+
     candidates = [prev_subset + [addition] for addition in candidate_additions]
     return candidates
+
+
+def _missing_lower_order_terms(interaction_term, term_list):
+    """Return a set of missing lower-order terms for a given interaction term."""
+    factors = interaction_term.split(":")
+    missing = set()
+
+    for k in range(1, len(factors)):
+        for combo in combinations(factors, k):
+            lower_term = ":".join(combo)
+            if lower_term not in term_list:
+                missing.add(lower_term)
+    return missing
 
 
 def _first_non_zero_idx(arr):
