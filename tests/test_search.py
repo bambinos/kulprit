@@ -4,6 +4,7 @@ import bambi as bmb
 import numpy as np
 from kulprit.projection.search_strategies import _first_non_zero_idx
 from kulprit import ProjectionPredictive
+from kulprit.projection.search_strategies import _get_candidates
 
 
 class TestSearch:
@@ -58,3 +59,54 @@ class TestSearch:
         with pytest.warns(UserWarning):
             ref_model_copy = copy.copy(ref_model)
             ref_model_copy.project(early_stop=10)
+
+
+def test_get_candidates_interactions():
+    """Test interactions are correctly identified as candidates."""
+    # start with no terms in the model
+    ref_terms = ["A", "B", "A:B"]
+    prev_subset = []
+    candidates = _get_candidates(prev_subset, ref_terms)
+
+    assert len(candidates) == 2
+    assert ["A"] in candidates
+    assert ["B"] in candidates
+    assert ["A:B"] not in candidates
+
+    # Now add one main effect
+    prev_subset = ["A"]
+    candidates = _get_candidates(prev_subset, ref_terms)
+
+    assert len(candidates) == 1
+    assert ["A", "B"] in candidates
+    assert ["A", "A:B"] not in candidates
+
+    # Now add both main effects, so we should get the interaction as candidate
+    prev_subset = ["A", "B"]
+    candidates = _get_candidates(prev_subset, ref_terms)
+
+    assert len(candidates) == 1
+    assert ["A", "B", "A:B"] in candidates
+
+    ##  Higher-order interactions
+    ref_terms = ["A", "B", "C", "A:B", "A:C", "B:C", "A:B:C"]
+
+    # Without all main effects, no 3-way interaction
+    prev_subset = ["A", "B"]
+    candidates = _get_candidates(prev_subset, ref_terms)
+    assert not any("A:B:C" in cand for cand in candidates)
+
+    # Without all 2-way interactions, no 3-way interaction
+    prev_subset = ["A", "B", "C"]
+    candidates = _get_candidates(prev_subset, ref_terms)
+    assert not any("A:B:C" in cand for cand in candidates)
+
+    # With all main effects and all 2-way interactions, should get 3-way interaction
+    prev_subset = ["A", "B", "C", "A:B", "A:C", "B:C"]
+    candidates = _get_candidates(prev_subset, ref_terms)
+    assert ["A", "B", "C", "A:B", "A:C", "B:C", "A:B:C"] in candidates
+
+    # No enforcement of lower-order terms
+    prev_subset = ["A", "B"]
+    candidates = _get_candidates(prev_subset, ref_terms, requiere_lower_terms=False)
+    assert any("A:C" in cand for cand in candidates)

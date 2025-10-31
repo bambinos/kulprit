@@ -16,7 +16,12 @@ from kulprit.projection.pymc_io import (
     turn_off_terms,
     get_model_information,
 )
-from kulprit.projection.search_strategies import user_path, forward_search, l1_search
+from kulprit.projection.search_strategies import (
+    user_path,
+    forward_search,
+    l1_search,
+    _missing_lower_order_terms,
+)
 from kulprit.projection.solver import solve
 
 
@@ -137,6 +142,7 @@ class ProjectionPredictive:
         num_samples=400,
         num_clusters=20,
         early_stop=None,
+        require_lower_terms=True,
         tolerance=1,
     ):
         """Perform model projection.
@@ -164,6 +170,10 @@ class ProjectionPredictive:
             The "mean" criterion stops the search when the difference between a the ELPD is smaller
             than 4. The "se" criterion stops the search when the ELPD of the submodel is within
             one standard error of the reference model. Defaults to None.
+        require_lower_terms : bool
+            Include higher-order interactions only if all lower-order interactions and main effects
+            are already in the subset. Defaults to True. Ignored if user_terms is provided or
+            if the method is not "forward".
         tolerance : float
             The tolerance for the optimization procedure. Defaults to 1. Decreasing this value
             will increase the accuracy of the projection at the cost of speed.
@@ -179,6 +189,9 @@ class ProjectionPredictive:
             self.num_clusters,
             self._rng,
         )
+
+        if method == "forward":
+            _check_interactions(self._ref_terms, require_lower_terms=True)
 
         # if user provided the terms we used them directly, no search is performed
         if user_terms is not None:
@@ -228,6 +241,7 @@ class ProjectionPredictive:
                     max_terms,
                     self.reference_model.elpd,
                     self.early_stop,
+                    requiere_lower_terms=require_lower_terms,
                 )
             else:
                 # currently L1 search is not implemented for categorical models
@@ -401,6 +415,24 @@ def _get_base_terms(has_intercept, priors):
         aux_params = [f"{str(k)}" for k in priors]
         base_terms += aux_params
     return base_terms
+
+
+def _check_interactions(term_names, require_lower_terms):
+    """Check that interaction terms are not included without their main effects."""
+    interaction_terms = [term for term in term_names if ":" in term]
+    if interaction_terms and require_lower_terms:
+        missing_lower_terms = set()
+        for interaction in interaction_terms:
+            missing = _missing_lower_order_terms(interaction, term_names)
+            missing_lower_terms.update(missing)
+        if missing_lower_terms:
+            raise ValueError(
+                "Interaction terms detected in the model, but the following lower-order "
+                f"terms are missing: {sorted(missing_lower_terms)}.\n"
+                "Please ensure that all lower-order interactions and main effects are included "
+                "in the model.\nIf you are sure that you want to exclude them, set "
+                "require_lower_terms=False to disable this check."
+            )
 
 
 class SubModel:
