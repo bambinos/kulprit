@@ -190,8 +190,7 @@ class ProjectionPredictive:
             self._rng,
         )
 
-        if method == "forward":
-            _check_interactions(self._ref_terms, require_lower_terms=True)
+        _check_interactions(self._ref_terms, method, require_lower_terms)
 
         # if user provided the terms we used them directly, no search is performed
         if user_terms is not None:
@@ -417,22 +416,23 @@ def _get_base_terms(has_intercept, priors):
     return base_terms
 
 
-def _check_interactions(term_names, require_lower_terms):
+def _check_interactions(term_names, method, require_lower_terms):
     """Check that interaction terms are not included without their main effects."""
-    interaction_terms = [term for term in term_names if ":" in term]
-    if interaction_terms and require_lower_terms:
-        missing_lower_terms = set()
-        for interaction in interaction_terms:
-            missing = _missing_lower_order_terms(interaction, term_names)
-            missing_lower_terms.update(missing)
-        if missing_lower_terms:
-            raise ValueError(
-                "Interaction terms detected in the model, but the following lower-order "
-                f"terms are missing: {sorted(missing_lower_terms)}.\n"
-                "Please ensure that all lower-order interactions and main effects are included "
-                "in the model.\nIf you are sure that you want to exclude them, set "
-                "require_lower_terms=False to disable this check."
-            )
+    if method == "forward":
+        interaction_terms = [term for term in term_names if ":" in term]
+        if interaction_terms and require_lower_terms:
+            missing_lower_terms = set()
+            for interaction in interaction_terms:
+                missing = _missing_lower_order_terms(interaction, term_names)
+                missing_lower_terms.update(missing)
+            if missing_lower_terms:
+                raise ValueError(
+                    "Interaction terms detected in the model, but the following lower-order "
+                    f"terms are missing: {sorted(missing_lower_terms)}.\n"
+                    "Please ensure that all lower-order interactions and main effects are included "
+                    "in the model.\nIf you are sure that you want to exclude them, set "
+                    "require_lower_terms=False to disable this check."
+                )
 
 
 class SubModel:

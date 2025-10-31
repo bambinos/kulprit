@@ -162,6 +162,7 @@ def _get_candidates(prev_subset, ref_terms, requiere_lower_terms=True):
     candidate_additions = []
 
     for term in ref_terms:  # pylint: disable=too-many-nested-blocks
+        # skip terms already in the previous subset
         if term in prev_subset_set:
             continue
 
@@ -170,6 +171,7 @@ def _get_candidates(prev_subset, ref_terms, requiere_lower_terms=True):
             missing = _missing_lower_order_terms(term, prev_subset)
             if not missing:
                 candidate_additions.append(term)
+        # regular term, always consider as candidate
         else:
             candidate_additions.append(term)
 
@@ -180,10 +182,9 @@ def _get_candidates(prev_subset, ref_terms, requiere_lower_terms=True):
 def _missing_lower_order_terms(interaction_term, term_list):
     """Return a set of missing lower-order terms for a given interaction term."""
     factors = interaction_term.split(":")
-    n = len(factors)
     missing = set()
 
-    for k in range(1, n):
+    for k in range(1, len(factors)):
         for combo in combinations(factors, k):
             lower_term = ":".join(combo)
             if lower_term not in term_list:
