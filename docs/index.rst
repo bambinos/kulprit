@@ -102,6 +102,7 @@ Contents
 
    examples/Overview
    examples/Examples
+   examples/References
    
    api_reference
 
