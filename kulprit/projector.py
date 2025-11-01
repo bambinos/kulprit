@@ -60,6 +60,7 @@ class ProjectionPredictive:
             self._rng = np.random.default_rng(rng)
 
         # get information from Bambi's reference model
+        self.noncentered = model.noncentered
         self._has_intercept = formula.formula_has_intercept(model.formula.main)
         self._response_name = model.response_component.term.name
         self._ref_terms = [
@@ -83,7 +84,7 @@ class ProjectionPredictive:
 
         # add switches to the model to turn on/off terms in the model
         # without having to rebuild the model
-        self._pymc_model_sw, self._switches = add_switches(self._pymc_model, self._ref_terms)
+        self._pymc_model_sw, self._switches = add_switches(self._pymc_model, self._ref_terms, self.noncentered)
         self._neg_log_likelihood = compile_mllk(self._pymc_model_sw, initial_point)
 
         # get information from ArviZ's InferenceData object
@@ -92,13 +93,11 @@ class ProjectionPredictive:
 
         elpd_ref = compute_loo(idata=idata)
 
-        print([fvar.name for fvar in self._pymc_model.free_RVs])
         self.reference_model = RefModel(
             model=model,
             idata=idata,
             elpd=elpd_ref.elpd,
             elpd_se=elpd_ref.se,
-            #term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
             term_names=self._ref_terms,
         )
         self._ref_terms.remove("Intercept")
@@ -291,7 +290,7 @@ class ProjectionPredictive:
         return None
 
     def _project(self, term_names, clusters=True):
-        turn_off_terms(self._switches, self._ref_terms, term_names)
+        turn_off_terms(self._switches, self._ref_terms, term_names, self.noncentered)
 
         if clusters:
             samples = self._ppc
@@ -318,7 +317,7 @@ class ProjectionPredictive:
             vars_to_drop = [
                 var
                 for var in new_idata.posterior.data_vars
-                if var not in (term_names + self._base_terms)
+                if np.all(new_idata.posterior[var] == 0.0) 
             ]
             new_idata.posterior = new_idata.posterior.drop_vars(vars_to_drop)
 

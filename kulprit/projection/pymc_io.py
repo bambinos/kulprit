@@ -35,32 +35,32 @@ def compile_mllk(model, initial_point):
     return fmodel
 
 
-def turn_off_terms(switches, all_terms, term_names):
+def turn_off_terms(switches, all_terms, term_names, noncentered):
     """
     Turn off the terms not in term_names
     """
     for term in all_terms:
         if term not in term_names:
+            switches[term].set_value(0.0)
             if "|" in term:
                 switches[term + "_sigma"].set_value(0.0)
-                switches[term + "_offset"].set_value(0.0)
-            else:
-                switches[term].set_value(0.0)
+                if noncentered:
+                    switches[term + "_offset"].set_value(0.0)
         else:
+            switches[term].set_value(1.0)
             if "|" in term:
                 switches[term + "_sigma"].set_value(1.0)
-                switches[term + "_offset"].set_value(1.0)
-            else:
-                switches[term].set_value(1.0)
+                if noncentered:
+                    switches[term + "_offset"].set_value(1.0)
 
-
-def add_switches(model, ref_terms):
+def add_switches(model, ref_terms, noncentered):
     extended_terms = []
     for term in ref_terms:
         extended_terms.append(term)
         if "|" in term:
             extended_terms.append(term + "_sigma")
-            extended_terms.append(term + "_offset")
+            if noncentered:
+                extended_terms.append(term + "_offset")
 
     switches = {term: shared(1.0) for term in extended_terms}
     with warnings.catch_warnings():
