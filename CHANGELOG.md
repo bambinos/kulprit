@@ -1,24 +1,3 @@
-<a id="0.5.0"></a>
-# [0.5.0](https://github.com/bambinos/kulprit/releases/tag/0.5.0) - 2025-11-01
-
-## What's Changed
-* Add clustering by [@aloctavodia](https://github.com/aloctavodia) in [#80](https://github.com/bambinos/kulprit/pull/80)
-* Properly handle alias by [@aloctavodia](https://github.com/aloctavodia) in [#81](https://github.com/bambinos/kulprit/pull/81)
-* use plots from arviz_plots by [@aloctavodia](https://github.com/aloctavodia) in [#82](https://github.com/bambinos/kulprit/pull/82)
-* Add switches to toggle on&off terms instead of recompiling models by [@aloctavodia](https://github.com/aloctavodia) in [#83](https://github.com/bambinos/kulprit/pull/83)
-* clean example by [@aloctavodia](https://github.com/aloctavodia) in [#84](https://github.com/bambinos/kulprit/pull/84)
-* make main class more user friendly by [@aloctavodia](https://github.com/aloctavodia) in [#85](https://github.com/bambinos/kulprit/pull/85)
-* DOC: Update ELPD link in `Examples.ipynb` by [@star1327p](https://github.com/star1327p) in [#87](https://github.com/bambinos/kulprit/pull/87)
-* DOC: Minor correction to reference format by [@star1327p](https://github.com/star1327p) in [#86](https://github.com/bambinos/kulprit/pull/86)
-* Ensure main effect and lower order interaction are added before higher order by [@aloctavodia](https://github.com/aloctavodia) in [#88](https://github.com/bambinos/kulprit/pull/88)
-* Add page with papers using Kulprit by [@yannmclatchie](https://github.com/yannmclatchie) in [#89](https://github.com/bambinos/kulprit/pull/89)
-
-
-**Full Changelog**: https://github.com/bambinos/kulprit/compare/0.4.0...0.5.0
-
-[Changes][0.5.0]
-
-
 <a id="0.4.0"></a>
 # [0.4.0](https://github.com/bambinos/kulprit/releases/tag/0.4.0) - 2025-04-11
 
