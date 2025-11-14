@@ -14,19 +14,19 @@ Kullback-Leibler projections for Bayesian model selection
 .. |Black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
 
-Variable selection refers to the process of identifying the most relevant variables in a model from a larger set of predictors. When performing this process we usually assume that variables contribute unevenly to
-the outcome and we want to identify the most important ones. Sometimes we also care about the order in which variables are included in the model.
+Variable selection refers to the process of identifying the most relevant variables in a model from a larger set of predictors. When performing this process, we usually assume that variables contribute unevenly to
+the outcome, and we want to identify the most important ones. Sometimes we also care about the order in which variables are included in the model.
 
-Besides this documentation, we also recommend you to read `Advances in projection predictive inference <https://projecteuclid.org/journals/statistical-science/volume-40/issue-1/Advances-in-Projection-Predictive-Inference/10.1214/24-STS949.full>`_. The paper is not about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find this `guide <https://avehtari.github.io/modelselection/CV-FAQ.html>`_
+Besides this documentation, we also recommend that you  read `Advances in projection predictive inference <https://projecteuclid.org/journals/statistical-science/volume-40/issue-1/Advances-in-Projection-Predictive-Inference/10.1214/24-STS949.full>`_. The paper is not about Kulprit, but introduces the theory behind Kulprit and also provides some practical advice. You may also find this `guide <https://avehtari.github.io/modelselection/CV-FAQ.html>`_
 on Cross-Validation and model selection is useful. A quick guide to variable selection and related tools in the PyMC ecosystem can be found `here <https://arviz-devs.github.io/Exploratory-Analysis-of-Bayesian-Models/Chapters/Variable_selection.html>`_
 
-Kulprit is under active development so use it with care. If you find any bugs or have any feature requests, please open an `issue <https://github.com/bambinos/kulprit/issues>`_ on GitHub.
+If you find any bugs or have any feature requests, please open an `issue <https://github.com/bambinos/kulprit/issues>`_ on GitHub.
 
 
 Installation
 ============
 
-Kulprit requires a working Python interpreter (3.10+). We recommend installing Python and key numerical libraries using the `Anaconda Distribution <https://www.anaconda.com/products/individual#Downloads>`_, which has one-click installers available on all major platforms.
+Kulprit requires a working Python interpreter (3.11+). We recommend installing Python and key numerical libraries using the `Anaconda Distribution <https://www.anaconda.com/products/individual#Downloads>`_, which has one-click installers available on all major platforms.
 
 Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using pip:
 
@@ -41,7 +41,7 @@ By default Kulprit performs a forward search, if you want to use Lasso (L1 searc
     
     pip install kulprit[lasso]
 
-Alternatively, if you want the bleeding edge version of the package you can install it from GitHub:
+Alternatively, if you want the bleeding-edge version of the package, you can install it from GitHub:
 
 .. code-block:: bash
 
@@ -51,7 +51,7 @@ Alternatively, if you want the bleeding edge version of the package you can inst
 Dependencies
 ============
 
-Kulprit is tested on Python 3.10+. Dependencies are listed in `pyproject.toml` and should all be installed by the Kulprit installer; no further action should be required.
+Kulprit is tested on Python 3.11+. Dependencies are listed in `pyproject.toml` and should all be installed by the Kulprit installer; no further action should be required.
 
 
 Contributing
