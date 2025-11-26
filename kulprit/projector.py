@@ -307,7 +307,6 @@ class ProjectionPredictive:
             "Use `compare` and `plot_compare()` to identify the problem."
             f"\n{msg}"
         )
-
         return None
 
     def _project(self, term_names, clusters=True):
@@ -316,9 +315,11 @@ class ProjectionPredictive:
         if clusters:
             samples = self._ppc
             weights = self._weights
+            w = None
         else:
             samples = self._pps
             weights = None
+            w = 0.5#len(term_names) / len(self._ref_terms) * 0.5
 
         new_idata, loss = solve(
             self._neg_log_likelihood,
@@ -327,6 +328,7 @@ class ProjectionPredictive:
             self._ref_var_info,
             weights,
             self.tolerance,
+            w
         )
 
         # Add observed data and log-likelihood to the projected InferenceData object

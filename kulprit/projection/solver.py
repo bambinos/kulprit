@@ -5,7 +5,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 
-def solve(neg_log_likelihood, preds, initial_guess, var_info, weights, tolerance):
+def solve(neg_log_likelihood, preds, initial_guess, var_info, weights, tolerance, w):
     """The primary projection method in the procedure.
 
     Parameters:
@@ -40,7 +40,7 @@ def solve(neg_log_likelihood, preds, initial_guess, var_info, weights, tolerance
             tol = tolerance
         opt = minimize(
             neg_log_likelihood,
-            args=pred,
+            args=(w, pred),
             x0=initial_guess,
             method="powell",
             tol=tol,

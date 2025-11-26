@@ -26,11 +26,11 @@ def compile_mllk(model, initial_point):
     rv_logp_fn = function([raveled_inp, new_y_value], logp)
     rv_logp_fn.trust_input = True
 
-    def fmodel(params, *pred):
-        if len(pred) == 2:
-            return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
+    def fmodel(params, w, pred):
+        if isinstance(pred, tuple):
+            return -((1-w) * rv_logp_fn(params, pred[0]) + w * rv_logp_fn(params, pred[1]))
         else:
-            return -(rv_logp_fn(params, pred[0]))
+            return -(rv_logp_fn(params, pred))
 
     return fmodel
 
