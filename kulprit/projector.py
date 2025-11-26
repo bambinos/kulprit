@@ -285,6 +285,20 @@ class ProjectionPredictive:
                 if submodel.elpd + submodel.elpd_se >= self.reference_model.elpd:
                     return submodel
 
+        if self.early_stop is None:
+            msg = ""
+        else:
+            msg = (
+                f"\n`early_stop` has been set to {self.early_stop}, "
+                "try using a larger value or `None`."
+            )
+
+        warnings.warn(
+            "No model has been selected.\n"
+            "Use `compare` and `plot_compare()` to identify the problem."
+            f"{msg}"
+        )
+
         return None
 
     def _project(self, term_names, clusters=True):
