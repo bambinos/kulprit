@@ -32,13 +32,12 @@ class ProjectionPredictive:
     Parameters:
     ----------
     model : Bambi model
-        The reference GLM model to project
-    idata : InferenceData
-        The ArviZ InferenceData object of the fitted reference model
+        The reference model to project
+    idata : InferenceData or DataTree
+        The result of fitting reference model
     rng : RandomState
-        Random number generator used for sampling from the posterior if idata is not provided.
-        And for sampling from the posterior predictive distribution.
-
+        Random number generator used for sampling from the posterior predictive if
+        the group is not present in idata.
     """
 
     def __init__(self, model, idata, rng=456):
