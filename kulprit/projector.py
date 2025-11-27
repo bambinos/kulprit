@@ -41,7 +41,7 @@ class ProjectionPredictive:
 
     """
 
-    def __init__(self, model, idata=None, rng=456):
+    def __init__(self, model, idata, rng=456):
         """Builder for projection predictive model selection."""
         # initialize attributes
         self.num_samples = None
@@ -59,6 +59,14 @@ class ProjectionPredictive:
         else:
             self._rng = np.random.default_rng(rng)
 
+        # check we have the model fitted
+        if not model.built:
+            raise ValueError(
+                "Before projecting, please fit the model, using the `fit` method.\n"
+                " Additionally, make sure that the sampling converged, "
+                "and that the model fits well the data."
+            )
+
         # get information from Bambi's reference model
         self._has_intercept = formula.formula_has_intercept(model.formula.main)
         self._response_name = model.response_component.term.name
@@ -74,8 +82,6 @@ class ProjectionPredictive:
         self._base_terms = _get_base_terms(self._has_intercept, model.constant_components)
 
         # get information from PyMC's reference model
-        if not model.built:
-            model.build()
         self._pymc_model = copy(model.backend.model)
         initial_point = self._pymc_model.initial_point()
         self._ref_var_info = get_model_information(self._pymc_model, initial_point)
@@ -285,18 +291,22 @@ class ProjectionPredictive:
                 if submodel.elpd + submodel.elpd_se >= self.reference_model.elpd:
                     return submodel
 
-        if self.early_stop is None:
-            msg = ""
-        else:
+        msg = ""
+        if isinstance(self.early_stop, int) and self.early_stop < len(self._ref_terms):
             msg = (
-                f"\n`early_stop` has been set to {self.early_stop}, "
+                f"`early_stop` has been set to {self.early_stop}, "
                 "try using a larger value or `None`."
+            )
+        elif isinstance(self.early_stop, str):
+            msg = (
+                f"`early_stop` has been set to {self.early_stop}, "
+                "try using a different criterion, an integer, or `None`."
             )
 
         warnings.warn(
             "No model has been selected.\n"
             "Use `compare` and `plot_compare()` to identify the problem."
-            f"{msg}"
+            f"\n{msg}"
         )
 
         return None
