@@ -71,14 +71,6 @@ def compute_loo(submodel=None, idata=None):
 
 
 def check_idata(idata, model, rng):
-    # build posterior if not provided
-    if idata is None:
-        warnings.warn("No InferenceData object provided. Building posterior from model.")
-        idata = model.fit(
-            idata_kwargs={"log_likelihood": True},
-            random_seed=rng,
-        )
-
     # check compatibility between model and idata
     if not model.response_component.term.name == list(idata.observed_data.data_vars.variables)[0]:
         raise UserWarning("Incompatible model and inference data.")

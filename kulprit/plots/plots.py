@@ -96,7 +96,7 @@ def plot_forest(
     ci_kind=None,
     ci_probs=None,
     labels=None,
-    shade_label=None,
+    shade_label="__variable__",
     plot_collection=None,
     backend=None,
     labeller=None,
@@ -200,6 +200,7 @@ def plot_forest(
 
     stats.setdefault("trunk", {"skipna": True})
     stats.setdefault("twig", {"skipna": True})
+    stats.setdefault("point_estimate", {"skipna": True})
 
     pc = azp_plot_forest(
         models_to_plot,
@@ -373,16 +374,21 @@ def plot_dist(
 
 def _get_models_to_plot(ppi, var_names, submodels, include_reference):
     """Prepare a dictionary of models to be plotted."""
+
+    add_intercept = []
+
     if submodels is None:
         submodels = ppi
     else:
+        if 0 in submodels:
+            add_intercept = ["Intercept"]
         submodels = ppi[submodels]
 
     if not var_names:
         if include_reference:
-            var_names = ["Intercept"] + ppi._ref_terms  # pylint: disable=protected-access
+            var_names = add_intercept + ppi._ref_terms  # pylint: disable=protected-access
         else:
-            var_names = ["Intercept"] + sorted(submodel.term_names for submodel in submodels)[-1]
+            var_names = add_intercept + sorted(submodel.term_names for submodel in submodels)[-1]
 
     if include_reference:
         models_to_plot = {"Reference": ppi.reference_model.idata.posterior}
