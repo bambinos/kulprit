@@ -62,7 +62,7 @@ class ProjectionPredictive:
         if not model.built:
             raise ValueError(
                 "Before projecting, please fit the model, using the `fit` method.\n"
-                " Additionally, make sure that the sampling converged, "
+                "Additionally, make sure that the sampling converged, "
                 "and that the model fits well the data."
             )
 

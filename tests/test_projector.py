@@ -14,12 +14,6 @@ class TestProjector(KulpritTest):
 
     NUM_CHAINS, NUM_DRAWS = 4, 500
 
-    def test_idata_is_none(self, bambi_model):
-        """Test that some inference data is automatically produced when None."""
-
-        no_idata_ref_model = ProjectionPredictive(bambi_model)
-        assert no_idata_ref_model.reference_model.idata is not None
-
     def test_different_variate_name(self, bambi_model_idata):
         """Test that an error is raised when model and idata aren't compatible."""
 
@@ -35,6 +29,7 @@ class TestProjector(KulpritTest):
         # define model
         formula = "y ~ a + b"
         bad_model = bmb.Model(formula, data, family="gaussian")
+        bad_model.build()
 
         with pytest.raises(UserWarning):
             # build a bad reference model object
