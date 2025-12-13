@@ -1,5 +1,5 @@
-<a id="0.6.0"></a>
-# [0.6.0](https://github.com/bambinos/kulprit/releases/tag/0.6.0) - 2025-12-13
+<a id="0.5.0l1"></a>
+# [0.5.1](https://github.com/bambinos/kulprit/releases/tag/0.6.0) - 2025-12-13
 
 ## What's Changed
 * DOC: Correct two typos in code comments by [@star1327p](https://github.com/star1327p) in [#90](https://github.com/bambinos/kulprit/pull/90)
