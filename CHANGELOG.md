@@ -1,3 +1,17 @@
+<a id="0.6.0"></a>
+# [0.6.0](https://github.com/bambinos/kulprit/releases/tag/0.6.0) - 2025-12-13
+
+## What's Changed
+* DOC: Correct two typos in code comments by [@star1327p](https://github.com/star1327p) in [#90](https://github.com/bambinos/kulprit/pull/90)
+* Add warning to select method when no model is selected by [@aloctavodia](https://github.com/aloctavodia) in [#91](https://github.com/bambinos/kulprit/pull/91)
+* idata is now a mandatory argument and models has to be fitted before passed to kulprit. Default change in plot_forest Intercept is excluded from plots, when no variables are specified, select warning message more specific by [@aloctavodia](https://github.com/aloctavodia) in [#92](https://github.com/bambinos/kulprit/pull/92)
+* Add python 3.13 to the tests by [@aloctavodia](https://github.com/aloctavodia) in [#93](https://github.com/bambinos/kulprit/pull/93)
+
+**Full Changelog**: https://github.com/bambinos/kulprit/compare/0.5.0...0.6.0
+
+[Changes][0.6.0]
+
+
 <a id="0.5.0"></a>
 # [0.5.0](https://github.com/bambinos/kulprit/releases/tag/0.5.0) - 2025-11-14
 
@@ -135,6 +149,7 @@
 [Changes][0.0.1]
 
 
+[0.6.0]: https://github.com/bambinos/kulprit/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/bambinos/kulprit/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/bambinos/kulprit/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/bambinos/kulprit/compare/0.2.0...0.3.0
