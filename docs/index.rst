@@ -41,6 +41,14 @@ By default Kulprit performs a forward search, if you want to use Lasso (L1 searc
     
     pip install kulprit[lasso]
 
+
+Kulprit can also be installed using conda:
+
+.. code-block:: bash
+
+    conda install -c conda-forge kulprit
+
+
 Alternatively, if you want the bleeding-edge version of the package, you can install it from GitHub:
 
 .. code-block:: bash
