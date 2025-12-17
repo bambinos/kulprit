@@ -16,15 +16,20 @@ If you find any bugs or have any feature requests, please open an [issue](https:
 
 ## Installation
 
-Kulprit requires a working Python interpreter (3.11+). We recommend installing Python and key numerical libraries using the [Anaconda Distribution](https://www.anaconda.com/products/individual#Downloads), which has one-click installers available on all major platforms.
+Kulprit requires a working Python interpreter (3.11+).
 
-Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using pip:
+Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using:
 
     pip install kulprit
 
 By default, Kulprit performs a forward search. If you want to use Lasso (L1 search), you need to install `scikit-learn` package. You can install it using pip:
 
     pip install kulprit[lasso]
+
+
+Kulprit can also be installed using conda:
+
+    conda install -c conda-forge kulprit
 
 Alternatively, if you want the bleeding-edge version of the package, you can install it from GitHub:
 
