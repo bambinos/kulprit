@@ -215,7 +215,7 @@ class ProjectionPredictive:
                 if not set(term_names).issubset(self.reference_model.term_names):
                     raise ValueError(f"Term {idx} is not a valid term in the reference")
 
-            self._list_of_submodels = user_path(self._project, user_terms)
+            self._list_of_submodels = user_path(self._project, user_terms, self.reference_model)
         else:
             if method not in ["forward", "l1"]:
                 raise ValueError("Please select either forward search or L1 search.")
@@ -243,7 +243,7 @@ class ProjectionPredictive:
                     self._project,
                     self._ref_terms,
                     max_terms,
-                    self.reference_model.elpd,
+                    self.reference_model,
                     self.early_stop,
                     requiere_lower_terms=require_lower_terms,
                 )
@@ -257,7 +257,7 @@ class ProjectionPredictive:
                     self.reference_model.bambi_model,
                     self._ref_terms,
                     max_terms,
-                    self.reference_model.elpd,
+                    self.reference_model,
                     self.early_stop,
                 )
 
@@ -349,6 +349,7 @@ class ProjectionPredictive:
             loss=loss,
             elpd=None,
             elpd_se=None,
+            elpd_dse=None,
             size=len(term_names),
             term_names=term_names,
             has_intercept=self._has_intercept,
@@ -470,17 +471,19 @@ class SubModel:
         size (int): The number of common terms in the model, not including the intercept
         elpd (float): The expected log pointwise predictive density of the submodel
         elpd_se (float): The standard error of the expected log pointwise predictive
+        elpd_dse (float): The standard error of the relative expected log pointwise predictive
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
     """
 
-    def __init__(self, model, idata, loss, size, elpd, elpd_se, term_names, has_intercept):
+    def __init__(self, model, idata, loss, size, elpd, elpd_se, elpd_dse, term_names, has_intercept):
         self.model = model
         self.idata = idata
         self.loss = loss
         self.size = size
         self.elpd = elpd
         self.elpd_se = elpd_se
+        self.elpd_dse = elpd_dse
         self.term_names = term_names
         self.has_intercept = has_intercept
 
@@ -503,17 +506,19 @@ class RefModel:
         idata (InferenceData): The inference data object of the reference model containing the
             posterior draws and log-likelihood.
         elpd (float): The expected log pointwise predictive density of the reference model
+        elpd_i (float): The log pointwise predictive densities of the reference model
         elpd_se (float): The standard error of the expected log pointwise predictive
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
     """
 
-    def __init__(self, model, idata, elpd, elpd_se, term_names):
+    def __init__(self, model, idata, elpd, elpd_se, elpd_i, term_names):
         self.bambi_model = model
         self.idata = idata
         self.size = len(term_names)
         self.elpd = elpd
         self.elpd_se = elpd_se
+        self.elpd_i = elpd_i
         self.term_names = term_names
 
     def __repr__(self) -> str:

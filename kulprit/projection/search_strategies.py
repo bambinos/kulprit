@@ -11,16 +11,16 @@ except ImportError:
 from kulprit.projection.arviz_io import compute_loo
 
 
-def user_path(_project, user_terms):
+def user_path(_project, user_terms, refmodel=None):
     submodels = []
     for term_names in user_terms:
         submodel = _project(term_names, clusters=False)
-        compute_loo(submodel=submodel)
+        compute_loo(submodel=submodel, refmodel=refmodel)
         submodels.append(submodel)
     return submodels
 
 
-def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop, requiere_lower_terms):
+def forward_search(_project, ref_terms, max_terms, refmodel, early_stop, requiere_lower_terms):
     """Method for performing forward search.
 
     Parameters:
@@ -31,8 +31,8 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop, requier
         A list of all terms in the model.
     max_terms : int
         The maximum number of terms to include in the submodel.
-    elpd_ref : float
-        The expected log pointwise predictive density of the reference model.
+    refmodel : RefModel
+        The reference model.
     early_stop : str
         The early stopping criterion. Either "mean" or "se".
     requiere_lower_terms : bool
@@ -67,9 +67,9 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop, requier
         submodel = _project(submodel.term_names, clusters=False)
 
         # compute loo for the best candidate and update inplace
-        compute_loo(submodel=submodel)
+        compute_loo(submodel=submodel, refmodel=refmodel)
 
-        if _early_stopping(submodel, elpd_ref, early_stop):
+        if _early_stopping(submodel, refmodel.elpd, early_stop):
             submodels.append(submodel)
             break
 
@@ -79,7 +79,7 @@ def forward_search(_project, ref_terms, max_terms, elpd_ref, early_stop, requier
     return submodels
 
 
-def l1_search(_project, model, ref_terms, max_terms, elpd_ref, early_stop):
+def l1_search(_project, model, ref_terms, max_terms, refmodel, early_stop):
     """Method for performing l1 search.
 
     Parameters:
@@ -92,8 +92,8 @@ def l1_search(_project, model, ref_terms, max_terms, elpd_ref, early_stop):
         A list of all terms in the model.
     max_terms : int
         The maximum number of terms to include in the submodel.
-    elpd_ref : float
-        The expected log pointwise predictive density of the reference model.
+    refmodel : RefModel
+        The reference model.
     early_stop : str
         The early stopping criterion. Either "mean" or "se".
 
@@ -125,9 +125,9 @@ def l1_search(_project, model, ref_terms, max_terms, elpd_ref, early_stop):
         submodel = _project(term_names, clusters=False)
 
         # compute loo for the best candidate and update inplace
-        compute_loo(submodel=submodel)
+        compute_loo(submodel=submodel, refmodel=refmodel)
 
-        if _early_stopping(submodel, elpd_ref, early_stop):
+        if _early_stopping(submodel, refmodel.elpd, early_stop):
             submodels.append(submodel)
             break
 
