@@ -365,7 +365,7 @@ class ProjectionPredictive:
             * "elpd": expected log (pointwise) predictive density (ELPD).
             * "mlpd": mean log predictive density (MLPD), that is, the ELPD divided by the
             number of observations.
-            * "gmpd": geometric mean predictive density (GMPD), that is, exp(MLDP).
+            * "gmpd": geometric mean predictive density (GMPD), that is, exp(MLPD).
             For discrete response families the GMPD is bounded by zero and one.
         min_model_size : int
             The minimum size of the submodels to compare. Defaults to 0, which means the
