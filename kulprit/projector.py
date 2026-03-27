@@ -1,6 +1,7 @@
 # pylint: disable=undefined-loop-variable
 # pylint: disable=too-many-instance-attributes
 """Core reference model class."""
+
 import warnings
 from copy import copy
 import numpy as np
@@ -392,7 +393,7 @@ class ProjectionPredictive:
             )
 
         label_terms = []
-        performance_info = {stats: [], "se": [], f"{stats}_diff": [], "dse":[]}
+        performance_info = {stats: [], "se": [], f"{stats}_diff": [], "dse": []}
         for k, submodel in enumerate(self._list_of_submodels):
             if k >= min_model_size:
                 performance_info[stats].append(submodel.elpd)
@@ -409,7 +410,7 @@ class ProjectionPredictive:
         performance_info[stats].append(self.reference_model.elpd)
         performance_info[f"{stats}_diff"].append(0)
         performance_info["se"].append(self.reference_model.elpd_se)
-        performance_info["dse"].append(0) # Standard Error (SE) of reference model is always 0
+        performance_info["dse"].append(0)  # Standard Error (SE) of reference model is always 0
 
         if stats in ["mlpd", "gmpd"]:
             performance_info[stats] = np.array(performance_info[stats])
@@ -419,7 +420,9 @@ class ProjectionPredictive:
 
             performance_info[stats] = performance_info[stats] / self._observed_array.shape[0]
             performance_info["se"] = performance_info["se"] / self._observed_array.shape[0]
-            performance_info[f"{stats}_diff"] = performance_info[f"{stats}_diff"] / self._observed_array.shape[0]
+            performance_info[f"{stats}_diff"] = (
+                performance_info[f"{stats}_diff"] / self._observed_array.shape[0]
+            )
             performance_info["dse"] = performance_info["dse"] / self._observed_array.shape[0]
 
             if stats == "gmpd":
@@ -427,7 +430,9 @@ class ProjectionPredictive:
                 performance_info[f"{stats}_diff"] = np.exp(performance_info[f"{stats}_diff"])
                 # delta method
                 performance_info["se"] = performance_info["se"] * performance_info[stats]
-                performance_info["dse"] = performance_info["dse"] * performance_info[f"{stats}_diff"]
+                performance_info["dse"] = (
+                    performance_info["dse"] * performance_info[f"{stats}_diff"]
+                )
 
         summary_df = DataFrame(performance_info, index=label_terms).iloc[::-1]
 
@@ -488,7 +493,9 @@ class SubModel:
         has_intercept (bool): Whether the model has an intercept term
     """
 
-    def __init__(self, model, idata, loss, size, elpd, elpd_se, elpd_dse, term_names, has_intercept):
+    def __init__(
+        self, model, idata, loss, size, elpd, elpd_se, elpd_dse, term_names, has_intercept
+    ):
         self.model = model
         self.idata = idata
         self.loss = loss
