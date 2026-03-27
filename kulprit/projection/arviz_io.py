@@ -65,7 +65,8 @@ def compute_loo(submodel=None, refmodel=None, idata=None):
             submodel.elpd_se = elpd.se
 
             if refmodel is not None:
-                submodel.elpd_dse = (elpd.elpd_i.data - refmodel.elpd_i.data).var()
+                n_obs = len(elpd.elpd_i)
+                submodel.elpd_dse = np.sqrt(n_obs * np.var(elpd.elpd_i - refmodel.elpd_i)).item()
 
         if idata is not None:
             return loo(idata, pointwise=True)
