@@ -488,7 +488,7 @@ class SubModel:
         size (int): The number of common terms in the model, not including the intercept
         elpd (float): The expected log pointwise predictive density of the submodel
         elpd_se (float): The standard error of the expected log pointwise predictive
-        elpd_dse (float): The standard error of the expected log pointwise predictive difference 
+        elpd_dse (float): The standard error of the expected log pointwise predictive difference
             wrt to the reference model
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
