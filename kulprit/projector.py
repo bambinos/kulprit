@@ -1,6 +1,7 @@
 # pylint: disable=undefined-loop-variable
 # pylint: disable=too-many-instance-attributes
 """Core reference model class."""
+
 import warnings
 from copy import copy
 import numpy as np
@@ -102,6 +103,7 @@ class ProjectionPredictive:
             idata=idata,
             elpd=elpd_ref.elpd,
             elpd_se=elpd_ref.se,
+            elpd_i=elpd_ref.elpd_i,
             term_names=[fvar.name for fvar in self._pymc_model.free_RVs],
         )
 
@@ -215,7 +217,7 @@ class ProjectionPredictive:
                 if not set(term_names).issubset(self.reference_model.term_names):
                     raise ValueError(f"Term {idx} is not a valid term in the reference")
 
-            self._list_of_submodels = user_path(self._project, user_terms)
+            self._list_of_submodels = user_path(self._project, user_terms, self.reference_model)
         else:
             if method not in ["forward", "l1"]:
                 raise ValueError("Please select either forward search or L1 search.")
@@ -243,7 +245,7 @@ class ProjectionPredictive:
                     self._project,
                     self._ref_terms,
                     max_terms,
-                    self.reference_model.elpd,
+                    self.reference_model,
                     self.early_stop,
                     requiere_lower_terms=require_lower_terms,
                 )
@@ -257,7 +259,7 @@ class ProjectionPredictive:
                     self.reference_model.bambi_model,
                     self._ref_terms,
                     max_terms,
-                    self.reference_model.elpd,
+                    self.reference_model,
                     self.early_stop,
                 )
 
@@ -349,6 +351,7 @@ class ProjectionPredictive:
             loss=loss,
             elpd=None,
             elpd_se=None,
+            elpd_dse=None,
             size=len(term_names),
             term_names=term_names,
             has_intercept=self._has_intercept,
@@ -390,11 +393,14 @@ class ProjectionPredictive:
             )
 
         label_terms = []
-        performance_info = {stats: [], "se": []}
+        performance_info = {stats: [], "se": [], f"{stats}_diff": [], "dse": []}
         for k, submodel in enumerate(self._list_of_submodels):
             if k >= min_model_size:
                 performance_info[stats].append(submodel.elpd)
+                performance_info[f"{stats}_diff"].append(submodel.elpd - self.reference_model.elpd)
                 performance_info["se"].append(submodel.elpd_se)
+                performance_info["dse"].append(submodel.elpd_dse)
+
                 if submodel.term_names:
                     label_terms.append(submodel.term_names[-1])
                 else:
@@ -402,19 +408,31 @@ class ProjectionPredictive:
 
         label_terms.append("reference")
         performance_info[stats].append(self.reference_model.elpd)
+        performance_info[f"{stats}_diff"].append(0)
         performance_info["se"].append(self.reference_model.elpd_se)
+        performance_info["dse"].append(0)  # Standard Error (SE) of reference model is always 0
 
         if stats in ["mlpd", "gmpd"]:
             performance_info[stats] = np.array(performance_info[stats])
+            performance_info[f"{stats}_diff"] = np.array(performance_info[f"{stats}_diff"])
             performance_info["se"] = np.array(performance_info["se"])
+            performance_info["dse"] = np.array(performance_info["dse"])
 
             performance_info[stats] = performance_info[stats] / self._observed_array.shape[0]
             performance_info["se"] = performance_info["se"] / self._observed_array.shape[0]
+            performance_info[f"{stats}_diff"] = (
+                performance_info[f"{stats}_diff"] / self._observed_array.shape[0]
+            )
+            performance_info["dse"] = performance_info["dse"] / self._observed_array.shape[0]
 
             if stats == "gmpd":
                 performance_info[stats] = np.exp(performance_info[stats])
+                performance_info[f"{stats}_diff"] = np.exp(performance_info[f"{stats}_diff"])
                 # delta method
                 performance_info["se"] = performance_info["se"] * performance_info[stats]
+                performance_info["dse"] = (
+                    performance_info["dse"] * performance_info[f"{stats}_diff"]
+                )
 
         summary_df = DataFrame(performance_info, index=label_terms).iloc[::-1]
 
@@ -470,17 +488,22 @@ class SubModel:
         size (int): The number of common terms in the model, not including the intercept
         elpd (float): The expected log pointwise predictive density of the submodel
         elpd_se (float): The standard error of the expected log pointwise predictive
+        elpd_dse (float): The standard error of the expected log pointwise predictive difference
+            wrt to the reference model
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
     """
 
-    def __init__(self, model, idata, loss, size, elpd, elpd_se, term_names, has_intercept):
+    def __init__(
+        self, model, idata, loss, size, elpd, elpd_se, elpd_dse, term_names, has_intercept
+    ):
         self.model = model
         self.idata = idata
         self.loss = loss
         self.size = size
         self.elpd = elpd
         self.elpd_se = elpd_se
+        self.elpd_dse = elpd_dse
         self.term_names = term_names
         self.has_intercept = has_intercept
 
@@ -503,17 +526,19 @@ class RefModel:
         idata (InferenceData): The inference data object of the reference model containing the
             posterior draws and log-likelihood.
         elpd (float): The expected log pointwise predictive density of the reference model
+        elpd_i (float): The log pointwise predictive densities of the reference model
         elpd_se (float): The standard error of the expected log pointwise predictive
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
     """
 
-    def __init__(self, model, idata, elpd, elpd_se, term_names):
+    def __init__(self, model, idata, elpd, elpd_se, elpd_i, term_names):
         self.bambi_model = model
         self.idata = idata
         self.size = len(term_names)
         self.elpd = elpd
         self.elpd_se = elpd_se
+        self.elpd_i = elpd_i
         self.term_names = term_names
 
     def __repr__(self) -> str:

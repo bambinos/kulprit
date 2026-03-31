@@ -53,19 +53,23 @@ def get_pps(idata, response_name, num_samples, num_clusters, rng):
     return pps_tuple, ppc, weights
 
 
-def compute_loo(submodel=None, idata=None):
+def compute_loo(submodel=None, refmodel=None, idata=None):
     """Compute the PSIS-LOO-CV for a submodel or InferenceData object."""
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", message="Estimated shape parameter of Pareto distribution"
         )
         if submodel is not None:
-            elpd = loo(submodel.idata)
+            elpd = loo(submodel.idata, pointwise=True)
             submodel.elpd = elpd.elpd
             submodel.elpd_se = elpd.se
 
+            if refmodel is not None:
+                n_obs = len(elpd.elpd_i)
+                submodel.elpd_dse = np.sqrt(n_obs * np.var(elpd.elpd_i - refmodel.elpd_i)).item()
+
         if idata is not None:
-            return loo(idata)
+            return loo(idata, pointwise=True)
 
     return None
 
