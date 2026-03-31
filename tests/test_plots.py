@@ -9,12 +9,13 @@ class TestPlots:
 
     NUM_CHAINS, NUM_DRAWS = 2, 50
 
-    def test_plot_comparison(self, ref_model):
+    @pytest.mark.parametrize("stats", ["elpd", "mlpd", "gmpd"])
+    def test_plot_comparison(self, ref_model, stats):
         """Test the compare plotting method."""
 
         ref_model_copy = copy.copy(ref_model)
         ref_model_copy.project()
-        plot_compare(ref_model_copy.compare(min_model_size=1))
+        plot_compare(ref_model_copy.compare(min_model_size=1, stats=stats))
 
     @pytest.mark.parametrize(
         "kwargs",
