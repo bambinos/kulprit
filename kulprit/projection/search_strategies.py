@@ -47,7 +47,7 @@ def forward_search(_project, ref_terms, max_terms, refmodel, early_stop, requier
     submodel_size = 0
     term_names = []
     submodel = _project(term_names, clusters=False)
-    compute_loo(submodel=submodel)
+    compute_loo(submodel=submodel, refmodel=refmodel)
     submodels = [submodel]
 
     while submodel_size < max_terms:

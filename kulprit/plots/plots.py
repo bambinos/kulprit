@@ -69,7 +69,6 @@ def plot_compare(
         visuals = {}
 
     visuals.setdefault("title", False)
-    visuals.setdefault("ref_band", True)
     visuals.setdefault("similar_line", False)
 
     pc = azp_plot_compare(
