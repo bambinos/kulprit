@@ -232,6 +232,6 @@ def _early_stopping(submodel, elpd_ref, early_stop):
         if elpd_ref - submodel.elpd <= 4:
             return True
     elif early_stop == "se":
-        if submodel.elpd + submodel.elpd_se >= elpd_ref:
+        if submodel.elpd + submodel.elpd_dse >= elpd_ref:
             return True
     return False
