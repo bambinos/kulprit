@@ -80,7 +80,7 @@ def check_idata(idata, model, rng):
         raise UserWarning("Incompatible model and inference data.")
 
     # check if we have the log_likelihood group
-    if "log_likelihood" not in idata.groups():
+    if "log_likelihood" not in idata.groups:
         warnings.warn(
             "log_likelihood group is missing from idata, it will be computed.\n"
             "To avoid this message, please run Bambi's fit method with the option "
@@ -89,7 +89,7 @@ def check_idata(idata, model, rng):
         model.compute_log_likelihood(idata)
 
     # check if we have the posterior_predictive group
-    if "posterior_predictive" not in idata.groups():
+    if "posterior_predictive" not in idata.groups:
         model.predict(idata, kind="response", inplace=True, random_seed=rng)
 
     return idata
