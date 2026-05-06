@@ -334,15 +334,15 @@ class ProjectionPredictive:
         # Add observed data and log-likelihood to the projected InferenceData object
         # We only do this for the selected projected model, not the intermediate ones
         if new_idata is not None:
-            new_idata.add_groups(observed_data=self._observed_dataset)
-            new_idata.add_groups(log_likelihood=compute_llk(new_idata, self._pymc_model))
+            new_idata["observed_data"] = self._observed_dataset
+            new_idata["log_likelihood"] = compute_llk(new_idata, self._pymc_model)
             # remove the variables that are not in the submodel
             vars_to_drop = [
                 var
-                for var in new_idata.posterior.data_vars
+                for var in new_idata["posterior"].ds.data_vars
                 if var not in (term_names + self._base_terms)
             ]
-            new_idata.posterior = new_idata.posterior.drop_vars(vars_to_drop)
+            new_idata["posterior"] = new_idata["posterior"].ds.drop_vars(vars_to_drop)
 
         # build SubModel object and return
         sub_model = SubModel(

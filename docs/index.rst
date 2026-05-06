@@ -26,7 +26,7 @@ If you find any bugs or have any feature requests, please open an `issue <https:
 Installation
 ============
 
-Kulprit requires a working Python interpreter (3.11+). We recommend installing Python and key numerical libraries using the `Anaconda Distribution <https://www.anaconda.com/products/individual#Downloads>`_, which has one-click installers available on all major platforms.
+Kulprit requires a working Python interpreter (3.12+). We recommend installing Python and key numerical libraries using the `Anaconda Distribution <https://www.anaconda.com/products/individual#Downloads>`_, which has one-click installers available on all major platforms.
 
 Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using pip:
 
@@ -59,7 +59,7 @@ Alternatively, if you want the bleeding-edge version of the package, you can ins
 Dependencies
 ============
 
-Kulprit is tested on Python 3.11+. Dependencies are listed in `pyproject.toml` and should all be installed by the Kulprit installer; no further action should be required.
+Kulprit is tested on Python 3.12+. Dependencies are listed in `pyproject.toml` and should all be installed by the Kulprit installer; no further action should be required.
 
 
 Contributing
