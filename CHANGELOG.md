@@ -1,5 +1,36 @@
-<a id="0.5.0l1"></a>
-# [0.5.1](https://github.com/bambinos/kulprit/releases/tag/0.6.0) - 2025-12-13
+<a id="0.6.0"></a>
+# [0.6.0](https://github.com/bambinos/kulprit/releases/tag/0.6.0) - 2026-05-19
+
+## What's Changed
+
+### New Feature
+
+* Compute elpd difference (and se) to the reference model by [@Cab14bacc](https://github.com/Cab14bacc) in [#98](https://github.com/bambinos/kulprit/pull/98)
+* misc compare plot by [@aloctavodia](https://github.com/aloctavodia) in [#101](https://github.com/bambinos/kulprit/pull/101)
+
+### Maintenance and Fixes
+
+* Add instructions for conda by [@aloctavodia](https://github.com/aloctavodia) in [#95](https://github.com/bambinos/kulprit/pull/95)
+* Fix log_likelihood warning by [@aloctavodia](https://github.com/aloctavodia) in [#107](https://github.com/bambinos/kulprit/pull/107)
+* modify requirement-dev.txt upgrade pylint to 3.3.0 and resolve config schema mismatch by [@Cab14bacc](https://github.com/Cab14bacc) in [#99](https://github.com/bambinos/kulprit/pull/99)
+* Update black by [@aloctavodia](https://github.com/aloctavodia) in [#102](https://github.com/bambinos/kulprit/pull/102)
+* Update to use ArviZ 1 by [@aloctavodia](https://github.com/aloctavodia) in [#105](https://github.com/bambinos/kulprit/pull/105)
+
+### Documentation
+* L1 -> an L1 by [@star1327p](https://github.com/star1327p) in [#96](https://github.com/bambinos/kulprit/pull/96)
+* docstring MLDP -> MLPD by [@Cab14bacc](https://github.com/Cab14bacc) in [#100](https://github.com/bambinos/kulprit/pull/100)
+
+
+## New Contributors
+* [@Cab14bacc](https://github.com/Cab14bacc) made their first contribution in [#99](https://github.com/bambinos/kulprit/pull/99)
+
+**Full Changelog**: https://github.com/bambinos/kulprit/compare/0.5.1...0.6.0
+
+[Changes][0.6.0]
+
+
+<a id="0.5.1"></a>
+# [0.5.1](https://github.com/bambinos/kulprit/releases/tag/0.5.1) - 2025-12-13
 
 ## What's Changed
 * DOC: Correct two typos in code comments by [@star1327p](https://github.com/star1327p) in [#90](https://github.com/bambinos/kulprit/pull/90)
@@ -9,7 +40,7 @@
 
 **Full Changelog**: https://github.com/bambinos/kulprit/compare/0.5.0...0.6.0
 
-[Changes][0.6.0]
+[Changes][0.5.1]
 
 
 <a id="0.5.0"></a>
@@ -149,7 +180,8 @@
 [Changes][0.0.1]
 
 
-[0.6.0]: https://github.com/bambinos/kulprit/compare/0.5.0...0.6.0
+[0.6.0]: https://github.com/bambinos/kulprit/compare/0.5.1...0.6.0
+[0.5.1]: https://github.com/bambinos/kulprit/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/bambinos/kulprit/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/bambinos/kulprit/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/bambinos/kulprit/compare/0.2.0...0.3.0
