@@ -34,7 +34,7 @@ def compile_mllk(model, initial_point):
                 return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
             return -(rv_logp_fn(params, pred[0]))
         except ParameterValueError:
-            # Invalid parameter regions (e.g., mu <= 0 or alpha <= 0 in negative binomial) 
+            # Invalid parameter regions (e.g., mu <= 0 or alpha <= 0 in negative binomial)
             # should be penalized.
             return np.inf
 
