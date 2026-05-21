@@ -34,8 +34,8 @@ def compile_mllk(model, initial_point):
                 return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
             return -(rv_logp_fn(params, pred[0]))
         except ParameterValueError:
-            # Handle floating-point edge cases underflow/overflow for extreme values on the transformed unbounded scale.
-            # should be penalized.
+            # Handle floating-point edge cases underflow/overflow for extreme values on the
+            #  transformed unbounded scale.
             return np.inf
 
     return fmodel
