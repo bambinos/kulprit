@@ -1,8 +1,10 @@
 """Functions to interact with PyMC models"""
 
 import warnings
+import numpy as np
 
 from pymc import do, compute_log_likelihood
+from pymc.logprob.utils import ParameterValueError
 from pymc.util import is_transformed_name, get_untransformed_name
 from pymc.pytensorf import join_nonshared_inputs
 from pytensor import function, shared
@@ -27,10 +29,14 @@ def compile_mllk(model, initial_point):
     rv_logp_fn.trust_input = True
 
     def fmodel(params, *pred):
-        if len(pred) == 2:
-            return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
-        else:
+        try:
+            if len(pred) == 2:
+                return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
             return -(rv_logp_fn(params, pred[0]))
+        except ParameterValueError:
+            # Handle floating-point edge cases underflow/overflow for extreme values on the
+            #  transformed unbounded scale.
+            return np.inf
 
     return fmodel
 
