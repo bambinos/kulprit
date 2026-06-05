@@ -3,6 +3,7 @@
 # pylint: disable=redefined-outer-name
 import pytest
 
+import numpy as np
 import bambi as bmb
 
 import kulprit as kpt
@@ -17,6 +18,9 @@ def bambi_model():  # pragma: no cover
 
     # define model data
     data = bmb.load_data("my_data")
+    # make y the clearly stronger predictor of z
+    data["z"] = data["y"] + 0.1 * np.random.normal(size=len(data))
+
     # define model
     model = bmb.Model("z ~ x + y", data, family="gaussian")
     return model
