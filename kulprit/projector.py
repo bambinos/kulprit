@@ -36,12 +36,18 @@ class ProjectionPredictive:
         The reference model to project
     idata : InferenceData or DataTree
         The result of fitting reference model
+    ref_elpd : arviz.ELPDData
+        The result of computing the ELPD for the reference model. If not provided, it will be
+        computed from the idata. This is useful when we want to use an arbitrary reference
+        model different from the `model` provided. In that case the idata and the
+        ref_elpd should be from the arbitrary reference model, and the `model` should be the
+        Bambi model that we want to project.
     rng : RandomState
         Random number generator used for sampling from the posterior predictive if
         the group is not present in idata.
     """
 
-    def __init__(self, model, idata, rng=456):
+    def __init__(self, model, idata, ref_elpd=None, rng=456):
         """Builder for projection predictive model selection."""
         # initialize attributes
         self.num_samples = None
@@ -96,7 +102,10 @@ class ProjectionPredictive:
         idata = check_idata(idata, model, self._rng)
         self._observed_dataset, self._observed_array = get_observed_data(idata, self._response_name)
 
-        elpd_ref = compute_loo(idata=idata)
+        if ref_elpd is None:
+            elpd_ref = compute_loo(idata=idata)
+        else:
+            elpd_ref = ref_elpd
 
         self.reference_model = RefModel(
             model=model,
