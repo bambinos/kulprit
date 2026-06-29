@@ -8,7 +8,7 @@ from pymc.logprob.utils import ParameterValueError
 from pymc.util import is_transformed_name, get_untransformed_name
 from pymc.pytensorf import join_nonshared_inputs
 from pytensor import function, shared
-from pytensor.tensor import matrix
+from pytensor.tensor import tensor
 
 
 def compile_mllk(model, initial_point):
@@ -75,7 +75,8 @@ def get_model_information(model, initial_point):
         name = v_var.name
         if is_transformed_name(name):
             name = get_untransformed_name(name)
-            x_var = matrix(f"{name}_transformed")
+            ndim = initial_point[v_var.name].ndim
+            x_var = tensor(dtype="float64", shape=(None,) * (ndim + 2), name=f"{name}_transformed")
             z_var = model.rvs_to_transforms[model.values_to_rvs[v_var]].backward(x_var)
             transformation = function(inputs=[x_var], outputs=z_var)
         else:
