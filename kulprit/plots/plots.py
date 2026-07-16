@@ -389,11 +389,34 @@ def _get_models_to_plot(ppi, var_names, submodels, include_reference):
         else:
             var_names = add_intercept + sorted(submodel.term_names for submodel in submodels)[-1]
 
+    # Expand Bambi term names (e.g. "1|Subject") to the actual PyMC variable names
+    # stored in the posterior (e.g. "1|Subject_offset", "1|Subject_sigma").
+    expanded_names = []
+    term_to_vars = ppi._term_to_vars  # pylint: disable=protected-access
+    for name in var_names:
+        if name in term_to_vars:
+            expanded_names.extend(sorted(term_to_vars[name]))
+            # For non-centered group-specific terms the term name itself corresponds to
+            # the centered coefficient, which is stored in the projected idata for plotting.
+            if name not in term_to_vars[name]:
+                expanded_names.append(name)
+        else:
+            expanded_names.append(name)
+    var_names = expanded_names
+
     if include_reference:
         models_to_plot = {"Reference": ppi.reference_model.idata.posterior}
     else:
         models_to_plot = {}
 
     models_to_plot.update({submodel.size: submodel.idata.posterior for submodel in submodels})
+
+    # Keep only variable names that actually exist in the plotted models.
+    available_vars = [set(dt.data_vars) for dt in models_to_plot.values()]
+    if include_reference:
+        keep_vars = set.intersection(*available_vars)
+    else:
+        keep_vars = set.union(*available_vars)
+    var_names = [name for name in var_names if name in keep_vars]
 
     return models_to_plot, var_names

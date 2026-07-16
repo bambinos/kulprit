@@ -110,3 +110,33 @@ def test_get_candidates_interactions():
     prev_subset = ["A", "B"]
     candidates = _get_candidates(prev_subset, ref_terms, requiere_lower_terms=False)
     assert any("A:C" in cand for cand in candidates)
+
+
+def test_get_candidates_group_specific_ordering():
+    """Test grouped terms are only candidates when fixed-effect prerequisites are present."""
+    ref_terms = ["A", "B", "A:B", "A|Group", "A:B|Group"]
+
+    candidates = _get_candidates([], ref_terms)
+    assert ["A"] in candidates
+    assert ["B"] in candidates
+    assert ["A|Group"] not in candidates
+    assert ["A:B|Group"] not in candidates
+
+    candidates = _get_candidates(["A"], ref_terms)
+    assert ["A", "A|Group"] in candidates
+    assert ["A", "A:B|Group"] not in candidates
+
+    candidates = _get_candidates(["A", "B"], ref_terms)
+    assert ["A", "B", "A:B"] in candidates
+    assert ["A", "B", "A:B|Group"] not in candidates
+
+    candidates = _get_candidates(["A", "B", "A:B"], ref_terms)
+    assert ["A", "B", "A:B", "A:B|Group"] in candidates
+
+
+def test_get_candidates_group_specific_without_hierarchy_checks():
+    """Test grouped terms can be proposed when hierarchy checks are disabled."""
+    ref_terms = ["A", "A|Group", "A:B|Group"]
+    candidates = _get_candidates([], ref_terms, requiere_lower_terms=False)
+    assert ["A|Group"] in candidates
+    assert ["A:B|Group"] in candidates

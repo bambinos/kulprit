@@ -4,6 +4,7 @@
 
 import warnings
 from copy import copy
+
 import numpy as np
 from pandas import DataFrame
 
@@ -16,12 +17,15 @@ from kulprit.projection.pymc_io import (
     compute_llk,
     turn_off_terms,
     get_model_information,
+    get_term_variables,
 )
 from kulprit.projection.search_strategies import (
     user_path,
     forward_search,
     l1_search,
     _missing_lower_order_terms,
+    _missing_fixed_effect_for_group_term,
+    _get_fixed_part,
 )
 from kulprit.projection.solver import solve
 
@@ -76,26 +80,30 @@ class ProjectionPredictive:
         # get information from Bambi's reference model
         self._has_intercept = formula.formula_has_intercept(model.formula.main)
         self._response_name = model.response_component.term.name
+        component = model.components[model.family.likelihood.parent]
         self._ref_terms = [
-            v.alias if v.alias is not None else k
-            for k, v in model.components[model.family.likelihood.parent].common_terms.items()
+            v.alias if v.alias is not None else k for k, v in component.common_terms.items()
+        ] + [
+            v.alias if v.alias is not None else k for k, v in component.group_specific_terms.items()
         ]
-        self._categorical_terms = sum(
-            term.categorical
-            for term in model.components[model.family.likelihood.parent].common_terms.values()
-        )
+        self._categorical_terms = sum(term.categorical for term in component.common_terms.values())
 
         self._base_terms = _get_base_terms(self._has_intercept, model.constant_components)
 
         # get information from PyMC's reference model
         self._pymc_model = copy(model.backend.model)
-        initial_point = self._pymc_model.initial_point()
-        self._ref_var_info = get_model_information(self._pymc_model, initial_point)
-        self._initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
 
         # add switches to the model to turn on/off terms in the model
-        # without having to rebuild the model
+        # without having to rebuild the model.
         self._pymc_model_sw, self._switches = add_switches(self._pymc_model, self._ref_terms)
+
+        initial_point = self._pymc_model_sw.initial_point()
+        self._ref_var_info = get_model_information(self._pymc_model_sw, initial_point)
+        self._initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
+
+        # map each switchable term to the free RVs that belong to it
+        self._term_to_vars = get_term_variables(self._pymc_model_sw, self._ref_terms)
+
         self._neg_log_likelihood = compile_mllk(self._pymc_model_sw, initial_point)
 
         # get information from ArviZ's InferenceData object
@@ -231,11 +239,7 @@ class ProjectionPredictive:
             if method not in ["forward", "l1"]:
                 raise ValueError("Please select either forward search or L1 search.")
 
-            max_terms = len(
-                self.reference_model.bambi_model.components[
-                    self.reference_model.bambi_model.family.likelihood.parent
-                ].common_terms
-            )
+            max_terms = len(self._ref_terms)
 
             if isinstance(self.early_stop, int):
                 if self.early_stop < 0:
@@ -260,8 +264,13 @@ class ProjectionPredictive:
                 )
             else:
                 # currently L1 search is not implemented for categorical models
+                # or hierarchical models with group-specific terms
                 if self._categorical_terms:
                     raise NotImplementedError("Group-lasso not yet implemented")
+                if any("|" in term for term in self._ref_terms):
+                    raise NotImplementedError(
+                        "L1 search is not implemented for models with group-specific terms."
+                    )
 
                 self._list_of_submodels = l1_search(
                     self._project,
@@ -331,6 +340,25 @@ class ProjectionPredictive:
             samples = self._pps
             weights = None
 
+        # determine the free-RV names that belong to active terms + base terms
+        active_var_names = set(self._base_terms)
+        for term_name in term_names:
+            active_var_names.update(self._term_to_vars[term_name])
+
+        # map active variable names to flat indices in the optimization vector
+        keys = list(self._ref_var_info.keys())
+        sizes = [self._ref_var_info[k][1] for k in keys]
+        flat_keys = []
+        for k, s in zip(keys, sizes):
+            flat_keys += [k] * s
+        flat_keys = np.array(flat_keys)
+        active_idx = np.where(np.isin(flat_keys, list(active_var_names)))[0]
+        if active_idx.size == 0:
+            raise ValueError(
+                "No active parameters selected for projection. "
+                f"Submodel terms: {term_names}; base terms: {self._base_terms}."
+            )
+
         new_idata, loss = solve(
             self._neg_log_likelihood,
             samples,
@@ -338,6 +366,7 @@ class ProjectionPredictive:
             self._ref_var_info,
             weights,
             self.tolerance,
+            active_idx=active_idx,
         )
 
         # Add observed data and log-likelihood to the projected InferenceData object
@@ -345,11 +374,44 @@ class ProjectionPredictive:
         if new_idata is not None:
             new_idata["observed_data"] = self._observed_dataset
             new_idata["log_likelihood"] = compute_llk(new_idata, self._pymc_model)
+
+            # For non-centered group-specific terms the projected idata contains the
+            # offset variables (e.g. "1|Subject_offset") while the reference idata
+            # contains the deterministic coefficients (e.g. "1|Subject"). Compute and
+            # store those coefficients, and keep the sigmas, so plotting can align
+            # reference and projected models on the same variable names.
+            vars_to_keep = set(active_var_names)
+            for term_name in term_names:
+                if "|" not in term_name:
+                    continue
+                offset_name = next(
+                    (v for v in self._term_to_vars[term_name] if v.endswith("_offset")),
+                    None,
+                )
+                if offset_name is None:
+                    continue
+                sigma_name = f"{term_name}_sigma"
+                if sigma_name not in new_idata["posterior"].data_vars:
+                    continue
+                coef_name = term_name
+                offset = new_idata["posterior"][offset_name]
+                sigma = new_idata["posterior"][sigma_name]
+                coef = offset * sigma
+                # Rename the group dimension and copy its coordinates from the reference
+                # model idata, so arviz-plots can align reference and projected models.
+                ref_var = self.reference_model.idata.posterior[coef_name]
+                old_dim = coef.dims[-1]
+                new_dim = ref_var.dims[-1]
+                if old_dim != new_dim:
+                    coef = coef.rename({old_dim: new_dim})
+                coef = coef.assign_coords({new_dim: ref_var.coords[new_dim]})
+                new_idata["posterior"][coef_name] = coef
+                vars_to_keep.add(sigma_name)
+                vars_to_keep.add(coef_name)
+
             # remove the variables that are not in the submodel
             vars_to_drop = [
-                var
-                for var in new_idata["posterior"].ds.data_vars
-                if var not in (term_names + self._base_terms)
+                var for var in new_idata["posterior"].ds.data_vars if var not in vars_to_keep
             ]
             new_idata["posterior"] = new_idata["posterior"].ds.drop_vars(vars_to_drop)
 
@@ -469,18 +531,24 @@ def _get_base_terms(has_intercept, priors):
 def _check_interactions(term_names, method, require_lower_terms):
     """Check that interaction terms are not included without their main effects."""
     if method == "forward":
-        interaction_terms = [term for term in term_names if ":" in term]
-        if interaction_terms and require_lower_terms:
-            missing_lower_terms = set()
-            for interaction in interaction_terms:
-                missing = _missing_lower_order_terms(interaction, term_names)
-                missing_lower_terms.update(missing)
-            if missing_lower_terms:
+        if require_lower_terms:
+            missing_terms = set()
+            for term_name in term_names:
+                if "|" in term_name:
+                    missing_terms.update(
+                        _missing_fixed_effect_for_group_term(term_name, term_names)
+                    )
+
+                fixed_part = _get_fixed_part(term_name)
+                if ":" in fixed_part:
+                    missing_terms.update(_missing_lower_order_terms(fixed_part, term_names))
+
+            if missing_terms:
                 raise ValueError(
-                    "Interaction terms detected in the model, but the following lower-order "
-                    f"terms are missing: {sorted(missing_lower_terms)}.\n"
-                    "Please ensure that all lower-order interactions and main effects are included "
-                    "in the model.\nIf you are sure that you want to exclude them, set "
+                    "Interaction or group-specific terms detected in the model, but the "
+                    f"following required lower-order terms are missing: {sorted(missing_terms)}.\n"
+                    "Ensure that all required fixed-effect terms are included in the model.\n"
+                    "If you are sure that you want to exclude them, set "
                     "require_lower_terms=False to disable this check."
                 )
 
@@ -495,7 +563,7 @@ class SubModel:
             projected posterior draws and log-likelihood.
         loo (float): The optimization loss of the submodel
         size (int): The number of common terms in the model, not including the intercept
-        elpd (float): The expected log pointwise predictive density of the submodel
+        elpd (float): The expected log pointwise p_get_clusterredictive density of the submodel
         elpd_se (float): The standard error of the expected log pointwise predictive
         elpd_dse (float): The standard error of the expected log pointwise predictive difference
             wrt to the reference model

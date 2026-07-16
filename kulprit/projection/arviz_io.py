@@ -48,7 +48,7 @@ def get_pps(idata, response_name, num_samples, num_clusters, rng):
         ppc = pps[:num_samples]
         weights = 1
     else:
-        ppc, weights = _get_clusters(pps, num_clusters, total_num_samples)
+        ppc, weights = _get_clusters(pps, num_clusters)
 
     return pps_tuple, ppc, weights
 
@@ -95,7 +95,7 @@ def check_idata(idata, model, rng):
     return idata
 
 
-def _get_clusters(pps, num_clusters, num_samples):
+def _get_clusters(pps, num_clusters):
     """Get clusters of posterior predictive samples."""
     kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(pps)
     labels = kmeans.labels_
@@ -111,8 +111,8 @@ def _get_clusters(pps, num_clusters, num_samples):
             np.argmin(np.linalg.norm(cluster_points - centroid, axis=1))
         ]
         representatives.append(pps[closest_index])
-        weights = len(cluster_indices) / num_samples
+        weights[cluster_id] = len(cluster_indices)
 
-    weights /= np.sum(weights)
+    weights /= weights.sum()
 
     return representatives, weights

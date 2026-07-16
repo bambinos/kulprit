@@ -6,6 +6,8 @@ import pandas as pd
 import bambi as bmb
 
 from kulprit import ProjectionPredictive
+from kulprit.projector import _check_interactions
+from kulprit.projection.solver import solve
 from tests import KulpritTest
 
 
@@ -85,3 +87,65 @@ class TestProjector(KulpritTest):
             idata = bambi_model.fit(draws=self.NUM_DRAWS, chains=self.NUM_CHAINS)
             ref_model = ProjectionPredictive(model=bambi_model, idata=idata)
             ref_model.compare()
+
+    def test_project_hierarchical_centered(self):
+        """Test projection with centered group-specific terms."""
+
+        data = bmb.load_data("sleepstudy")
+        model = bmb.Model("Reaction ~ Days + (Days | Subject)", data, noncentered=False)
+        idata = model.fit(draws=100, tune=100, chains=2, cores=1, random_seed=1234)
+        model.compute_log_likelihood(idata)
+        model.predict(idata, kind="response", random_seed=1234)
+
+        ppi = ProjectionPredictive(model, idata)
+        ppi.project(num_samples=30, num_clusters=5)
+
+        elpd_values = [sub.elpd for sub in ppi]
+        assert all(elpd_values[i] <= elpd_values[i + 1] for i in range(len(elpd_values) - 1))
+        assert abs(ppi[-1].elpd - ppi.reference_model.elpd) < 20
+
+    def test_project_hierarchical_non_centered(self):
+        """Test projection with non-centered group-specific terms."""
+
+        data = bmb.load_data("sleepstudy")
+        model = bmb.Model("Reaction ~ Days + (Days | Subject)", data, noncentered=True)
+        idata = model.fit(draws=100, tune=100, chains=2, cores=1, random_seed=1234)
+        model.compute_log_likelihood(idata)
+        model.predict(idata, kind="response", random_seed=1234)
+
+        ppi = ProjectionPredictive(model, idata)
+        ppi.project(num_samples=30, num_clusters=5)
+
+        elpd_values = [sub.elpd for sub in ppi]
+        assert all(elpd_values[i] <= elpd_values[i + 1] for i in range(len(elpd_values) - 1))
+        assert abs(ppi[-1].elpd - ppi.reference_model.elpd) < 20
+
+
+def test_check_interactions_group_specific_interaction_ok():
+    """Grouped interactions are valid when fixed lower-order terms are present."""
+    term_names = ["A", "B", "A:B", "A:B|Group"]
+    _check_interactions(term_names, method="forward", require_lower_terms=True)
+
+
+def test_check_interactions_group_specific_interaction_missing_fixed():
+    """Grouped interactions raise when fixed-effect prerequisites are missing."""
+    with pytest.raises(ValueError):
+        _check_interactions(["A", "B", "A:B|Group"], method="forward", require_lower_terms=True)
+
+
+def test_solve_raises_when_active_idx_empty():
+    """The optimizer should fail fast when no parameters are active."""
+
+    def neg_log_likelihood(params, pred):
+        return np.sum((params - pred) ** 2)
+
+    with pytest.raises(ValueError):
+        solve(
+            neg_log_likelihood=neg_log_likelihood,
+            preds=[(np.array([0.0, 0.0]),)],
+            initial_guess=np.array([0.0, 0.0]),
+            var_info={"x": ((2,), 2, None)},
+            weights=None,
+            tolerance=1,
+            active_idx=np.array([], dtype=int),
+        )
