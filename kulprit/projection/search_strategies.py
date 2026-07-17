@@ -165,17 +165,58 @@ def _get_candidates(prev_subset, ref_terms, requiere_lower_terms=True):
         if term in prev_subset_set:
             continue
 
-        if ":" in term and requiere_lower_terms:
-            # Only consider as candidate if all lower-order terms are present in prev_subset
-            missing = _missing_lower_order_terms(term, prev_subset)
-            if not missing:
-                candidate_additions.append(term)
-        # regular term, always consider as candidate
-        else:
-            candidate_additions.append(term)
+        if requiere_lower_terms:
+            # group-specific terms require their fixed-effect term to be present
+            if _is_group_specific_term(term):
+                missing = _missing_fixed_effect_for_group_term(term, prev_subset)
+                if missing:
+                    continue
+
+            # interaction checks are done on the fixed-effect part.
+            # e.g. for "A:B|group" we check lower-order terms of "A:B".
+            interaction_term = _get_fixed_part(term)
+            if ":" in interaction_term:
+                missing = _missing_lower_order_terms(interaction_term, prev_subset)
+                if missing:
+                    continue
+
+        candidate_additions.append(term)
 
     candidates = [prev_subset + [addition] for addition in candidate_additions]
     return candidates
+
+
+def _missing_fixed_effect_for_group_term(group_term, term_list):
+    """Return the missing fixed-effect term required by a group-specific term.
+
+    For example, 'Days|Subject' requires 'Days' to be present. '1|Subject'
+    only requires the intercept, which is always assumed present.
+    """
+    fixed_part = _get_fixed_part(group_term)
+    if fixed_part == "1":
+        return set()
+    if fixed_part not in term_list:
+        return {fixed_part}
+    return set()
+
+
+def _is_group_specific_term(term_name):
+    """Return True when the term represents a group-specific effect."""
+    return "|" in term_name
+
+
+def _get_fixed_part(term_name):
+    """Return the fixed-effect part of a term.
+
+    For group-specific terms this strips the grouping part, e.g.:
+    - "Days|Subject" -> "Days"
+    - "A:B | group" -> "A:B"
+    For non group-specific terms it returns the term unchanged (trimmed).
+    """
+    if not _is_group_specific_term(term_name):
+        return term_name.strip()
+    fixed_part, _ = term_name.split("|", maxsplit=1)
+    return fixed_part.strip()
 
 
 def _missing_lower_order_terms(interaction_term, term_list):
