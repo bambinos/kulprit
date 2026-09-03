@@ -40,18 +40,12 @@ class ProjectionPredictive:
         The reference model to project
     idata : InferenceData or DataTree
         The result of fitting reference model
-    ref_elpd : arviz.ELPDData
-        The result of computing the ELPD for the reference model. If not provided, it will be
-        computed from the idata. This is useful when we want to use an arbitrary reference
-        model different from the `model` provided. In that case the idata and the
-        ref_elpd should be from the arbitrary reference model, and the `model` should be the
-        Bambi model that we want to project.
     rng : RandomState
         Random number generator used for sampling from the posterior predictive if
         the group is not present in idata.
     """
 
-    def __init__(self, model, idata, ref_elpd=None, rng=456):
+    def __init__(self, model, idata, rng=456):
         """Builder for projection predictive model selection."""
         # initialize attributes
         self.num_samples = None
@@ -110,10 +104,7 @@ class ProjectionPredictive:
         idata = check_idata(idata, model, self._rng)
         self._observed_dataset, self._observed_array = get_observed_data(idata, self._response_name)
 
-        if ref_elpd is None:
-            elpd_ref = compute_loo(idata=idata)
-        else:
-            elpd_ref = ref_elpd
+        elpd_ref = compute_loo(idata=idata)
 
         self.reference_model = RefModel(
             model=model,
@@ -281,7 +272,7 @@ class ProjectionPredictive:
                     self.early_stop,
                 )
 
-    def select(self, criterion="mean"):
+    def select(self, criterion="mean", relative_to="reference"):
         """Select the smallest submodel
 
         The selection is based on comparing the ELPDs of the reference and submodels.
@@ -293,6 +284,9 @@ class ProjectionPredictive:
             The "mean" criterion selects the smallest submodel with an ELPD that is within
             4 units of the reference model. The "se" criterion selects the smallest submodel
             with an ELPD that is within one standard error of the reference model.
+        relative_to : str
+            Whether to compare the ELPD of the submodels to the "reference" model or to
+            the "full" submodel. Defaults to "reference".
 
         Returns
         -------
@@ -302,12 +296,29 @@ class ProjectionPredictive:
         if criterion not in ["mean", "se"]:
             raise ValueError("Please select either mean or se as the methods.")
 
+        if relative_to not in ["reference", "full"]:
+            raise ValueError(
+                "Please select either 'reference' or 'full' for the relative_to parameter."
+            )
+
+        if relative_to == "reference":
+            base_elpd = self.reference_model.elpd
+            base_elpd_i = self.reference_model.elpd_i
+        else:
+            base_elpd = self._list_of_submodels[-1].elpd
+            base_elpd_i = self._list_of_submodels[-1].elpd_i
+
+        n_obs = len(base_elpd_i)
         for submodel in self._list_of_submodels:
             if criterion == "mean":
-                if (self.reference_model.elpd - submodel.elpd) < 4:
+                if (base_elpd - submodel.elpd) < 4:
                     return submodel
             else:
-                if submodel.elpd + submodel.elpd_se >= self.reference_model.elpd:
+                if relative_to == "reference":
+                    dse = submodel.elpd_dse
+                else:
+                    dse = np.sqrt(n_obs * np.var(submodel.elpd_i - base_elpd_i)).item()
+                if submodel.elpd + dse >= base_elpd:
                     return submodel
 
         msg = ""
@@ -423,13 +434,14 @@ class ProjectionPredictive:
             elpd=None,
             elpd_se=None,
             elpd_dse=None,
+            elpd_i=None,
             size=len(term_names),
             term_names=term_names,
             has_intercept=self._has_intercept,
         )
         return sub_model
 
-    def compare(self, stats="elpd", min_model_size=0, round_to=None):
+    def compare(self, stats="elpd", min_model_size=0, relative_to="reference", round_to=None):
         """Return a DataFrame with the performance stats of the reference and submodels.
 
         Parameters:
@@ -444,6 +456,10 @@ class ProjectionPredictive:
         min_model_size : int
             The minimum size of the submodels to compare. Defaults to 0, which means the
             intercept-only model is included in the comparison.
+        relative_to : str
+            If "reference", the ELPD differences are computed relative to the reference model.
+            If "full", the ELPD differences are computed relative to the full submodel.
+            Defaults to "reference".
         round_to : int
             Number of decimals used to round results. Defaults to None
 
@@ -463,14 +479,28 @@ class ProjectionPredictive:
                 "Please select one of the following statistics: 'elpd', 'mlpd', or 'gmpd'."
             )
 
+        if relative_to not in ["reference", "full"]:
+            raise ValueError("Please select either 'reference' or 'full' for relative_to.")
+
+        if relative_to == "reference":
+            base_elpd = self.reference_model.elpd
+            base_elpd_se = self.reference_model.elpd_se
+            base_elpd_i = self.reference_model.elpd_i
+        else:
+            base_elpd = self._list_of_submodels[-1].elpd
+            base_elpd_se = self._list_of_submodels[-1].elpd_se
+            base_elpd_i = self._list_of_submodels[-1].elpd_i
+
+        n_obs = len(base_elpd_i)
         label_terms = []
         performance_info = {stats: [], "se": [], f"{stats}_diff": [], "dse": []}
         for k, submodel in enumerate(self._list_of_submodels):
             if k >= min_model_size:
                 performance_info[stats].append(submodel.elpd)
-                performance_info[f"{stats}_diff"].append(submodel.elpd - self.reference_model.elpd)
+                performance_info[f"{stats}_diff"].append(submodel.elpd - base_elpd)
                 performance_info["se"].append(submodel.elpd_se)
-                performance_info["dse"].append(submodel.elpd_dse)
+                dse = np.sqrt(n_obs * np.var(submodel.elpd_i - base_elpd_i)).item()
+                performance_info["dse"].append(dse)
 
                 if submodel.term_names:
                     label_terms.append(submodel.term_names[-1])
@@ -478,9 +508,9 @@ class ProjectionPredictive:
                     label_terms.append("Intercept")
 
         label_terms.append("reference")
-        performance_info[stats].append(self.reference_model.elpd)
+        performance_info[stats].append(base_elpd)
         performance_info[f"{stats}_diff"].append(0)
-        performance_info["se"].append(self.reference_model.elpd_se)
+        performance_info["se"].append(base_elpd_se)
         performance_info["dse"].append(0)  # Standard Error (SE) of reference model is always 0
 
         if stats in ["mlpd", "gmpd"]:
@@ -567,12 +597,13 @@ class SubModel:
         elpd_se (float): The standard error of the expected log pointwise predictive
         elpd_dse (float): The standard error of the expected log pointwise predictive difference
             wrt to the reference model
+        elpd_i (numpy.ndarray): The log pointwise predictive densities of the submodel
         term_names (list): The names of the terms in the model, including the intercept
         has_intercept (bool): Whether the model has an intercept term
     """
 
     def __init__(
-        self, model, idata, loss, size, elpd, elpd_se, elpd_dse, term_names, has_intercept
+        self, model, idata, loss, size, elpd, elpd_se, elpd_dse, elpd_i, term_names, has_intercept
     ):
         self.model = model
         self.idata = idata
@@ -581,6 +612,7 @@ class SubModel:
         self.elpd = elpd
         self.elpd_se = elpd_se
         self.elpd_dse = elpd_dse
+        self.elpd_i = elpd_i
         self.term_names = term_names
         self.has_intercept = has_intercept
 
