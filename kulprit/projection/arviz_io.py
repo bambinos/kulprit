@@ -63,6 +63,7 @@ def compute_loo(submodel=None, refmodel=None, idata=None):
             elpd = loo(submodel.idata, pointwise=True)
             submodel.elpd = elpd.elpd
             submodel.elpd_se = elpd.se
+            submodel.elpd_i = elpd.elpd_i
 
             if refmodel is not None:
                 n_obs = len(elpd.elpd_i)

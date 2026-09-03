@@ -1,3 +1,4 @@
+# pylint: disable=protected-access
 import copy
 import pytest
 
@@ -77,6 +78,73 @@ class TestProjector(KulpritTest):
         ref_model_copy.project()
         cmp_df = ref_model_copy.compare()
         assert all(cmp_df.index == ["reference", "x", "y", "Intercept"])
+
+    def test_compare_relative_to_reference(self, ref_model):
+        """Test that compare with relative_to='reference' works correctly."""
+
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.project()
+        cmp_df = ref_model_copy.compare(relative_to="reference")
+
+        assert cmp_df.loc["reference", "elpd_diff"] == 0
+        assert cmp_df.loc["reference", "dse"] == 0
+
+        # Check that elpd_diff is computed correctly for submodels
+        for idx in cmp_df.index:
+            if idx != "reference":
+                expected_diff = cmp_df.loc[idx, "elpd"] - cmp_df.loc["reference", "elpd"]
+                assert abs(cmp_df.loc[idx, "elpd_diff"] - expected_diff) < 1e-10
+
+    def test_compare_relative_to_full(self, ref_model):
+        """Test that compare with relative_to='full' works correctly."""
+
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.project()
+        cmp_df = ref_model_copy.compare(relative_to="full")
+
+        # Find the full submodel (largest, last in the list)
+        full_idx = cmp_df.index[1]  # First non-reference row is the full model
+
+        # Full submodel should have 0 difference and 0 dse
+        assert cmp_df.loc[full_idx, "elpd_diff"] == 0
+        assert cmp_df.loc[full_idx, "dse"] == 0
+
+        # Reference should have non-positive elpd_diff (worse or equal to full)
+        assert cmp_df.loc["reference", "elpd_diff"] <= 0
+
+        # Check that elpd_diff is computed correctly for all rows
+        for idx in cmp_df.index:
+            expected_diff = cmp_df.loc[idx, "elpd"] - cmp_df.loc[full_idx, "elpd"]
+            assert abs(cmp_df.loc[idx, "elpd_diff"] - expected_diff) < 1e-10
+
+    def test_select_relative_to_reference(self, ref_model):
+        """Test that select with relative_to='reference' uses correct base."""
+
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.project()
+
+        ref_elpd = ref_model_copy.reference_model.elpd
+        selected = ref_model_copy.select(criterion="mean", relative_to="reference")
+        assert (ref_elpd - selected.elpd) < 4
+
+        for submodel in ref_model_copy._list_of_submodels:
+            if submodel.size < selected.size:
+                assert (ref_elpd - submodel.elpd) >= 4
+
+    def test_select_relative_to_full(self, ref_model):
+        """Test that select with relative_to='full' uses correct base."""
+
+        ref_model_copy = copy.copy(ref_model)
+        ref_model_copy.project()
+
+        full_elpd = ref_model_copy._list_of_submodels[-1].elpd
+        selected = ref_model_copy.select(criterion="mean", relative_to="full")
+
+        assert (full_elpd - selected.elpd) < 4
+
+        for submodel in ref_model_copy._list_of_submodels:
+            if submodel.size < selected.size:
+                assert (full_elpd - submodel.elpd) >= 4
 
     def test_loo_with_no_search_path(self, ref_model):
         """Test that an error is raised when no search path is found."""
