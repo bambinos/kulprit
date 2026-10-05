@@ -14,10 +14,12 @@ from kulprit.projection.arviz_io import check_idata, compute_loo, get_observed_d
 from kulprit.projection.pymc_io import (
     add_switches,
     compile_mllk,
+    compile_marginal_mllk,
     compute_llk,
     turn_off_terms,
     get_model_information,
-    get_term_variables,
+    get_term_partition,
+    ProbedMarginalObjective,
 )
 from kulprit.projection.search_strategies import (
     user_path,
@@ -92,13 +94,25 @@ class ProjectionPredictive:
         self._pymc_model_sw, self._switches = add_switches(self._pymc_model, self._ref_terms)
 
         initial_point = self._pymc_model_sw.initial_point()
+        self._initial_point = initial_point
         self._ref_var_info = get_model_information(self._pymc_model_sw, initial_point)
         self._initial_guess = np.concatenate([np.ravel(value) for value in initial_point.values()])
 
-        # map each switchable term to the free RVs that belong to it
-        self._term_to_vars = get_term_variables(self._pymc_model_sw, self._ref_terms)
+        # map each switchable term to its free-RV partition: the coefficient/offset
+        # RVs it owns, and the sigma RVs that feed its group-effect scale
+        self._term_partition = get_term_partition(self._pymc_model_sw, self._ref_terms)
+        self._term_to_vars = {
+            term_name: coefficient_vars
+            for term_name, (coefficient_vars, _) in self._term_partition.items()
+        }
+        # name of the variable each entry of the flat optimization vector belongs to
+        self._flat_keys = np.array(
+            [key for key, info in self._ref_var_info.items() for _ in range(info[1])]
+        )
 
         self._neg_log_likelihood = compile_mllk(self._pymc_model_sw, initial_point)
+        self._marginal_objective = None
+        self._marginal_start = None
 
         # get information from ArviZ's InferenceData object
         idata = check_idata(idata, model, self._rng)
@@ -175,8 +189,8 @@ class ProjectionPredictive:
             projection procedure and ELPD computation. Defaults to 400.
         num_clusters : int
             The number of clusters to use during the forward search. Defaults to 20.
-        If None, the number of clusters is set to the number of samples.
-        If num_clusters is larger than num_samples, it is set to num_samples.
+            If None, the number of clusters is set to the number of samples.
+            If num_clusters is larger than num_samples, it is set to num_samples.
         early_stop : str or int, optional
             Whether to stop the search earlier. If an integer is provided, the search stops
             when the submodel size is equal to the integer. If a string is provided, the search
@@ -222,7 +236,7 @@ class ProjectionPredictive:
                 raise ValueError("Please provide a list of terms in increasing order")
             # check if the listed terms are valid
             for idx, term_names in enumerate(user_terms):
-                if not set(term_names).issubset(self.reference_model.term_names):
+                if not set(term_names).issubset(self._ref_terms):
                     raise ValueError(f"Term {idx} is not a valid term in the reference")
 
             self._list_of_submodels = user_path(self._project, user_terms, self.reference_model)
@@ -341,6 +355,31 @@ class ProjectionPredictive:
 
         return None
 
+    def _build_marginal_start(self):
+        """Starting point for the projection optimization.
+
+        With group-specific terms, every parameter starts at its reference posterior
+        mean (unconstrained scale); from the PyMC initial point the outer optimizer
+        can collapse a group sigma to zero. Otherwise the PyMC initial point is used.
+        """
+        start = self._initial_guess.copy()
+        if not any("|" in term for term in self._ref_terms):
+            return start
+        post = self.reference_model.idata.posterior
+        size = 0
+        for name, (shape, n_elem, _, inverse) in self._ref_var_info.items():
+            if name in post:
+                try:
+                    mean = np.asarray(post[name].values).mean(axis=(0, 1)).reshape((1, 1, *shape))
+                    value = mean if inverse is None else inverse(mean)
+                    value = np.ravel(value)
+                    if value.size == n_elem and np.all(np.isfinite(value)):
+                        start[size : size + n_elem] = value
+                except (ValueError, FloatingPointError):
+                    pass
+            size += n_elem
+        return start
+
     def _project(self, term_names, clusters=True):
         turn_off_terms(self._switches, self._ref_terms, term_names)
 
@@ -351,33 +390,72 @@ class ProjectionPredictive:
             samples = self._pps
             weights = None
 
-        # determine the free-RV names that belong to active terms + base terms
+        # group-effect coefficients/offsets become inner (profiled) parameters and
+        # each group's sigma joins the outer optimization; sigma's own ancestors
+        # and terms without group effects stay outside the inner set
         active_var_names = set(self._base_terms)
+        inner_var_names = set()
         for term_name in term_names:
-            active_var_names.update(self._term_to_vars[term_name])
+            coefficient_vars, _ = self._term_partition[term_name]
+            if "|" in term_name:
+                inner_var_names.update(coefficient_vars)
+                active_var_names.add(f"{term_name}_sigma")
+            else:
+                active_var_names.update(coefficient_vars)
+        active_var_names -= inner_var_names
 
-        # map active variable names to flat indices in the optimization vector
-        keys = list(self._ref_var_info.keys())
-        sizes = [self._ref_var_info[k][1] for k in keys]
-        flat_keys = []
-        for k, s in zip(keys, sizes):
-            flat_keys += [k] * s
-        flat_keys = np.array(flat_keys)
-        active_idx = np.where(np.isin(flat_keys, list(active_var_names)))[0]
+        # map variable names to flat indices in the optimization vector
+        active_idx = np.where(np.isin(self._flat_keys, list(active_var_names)))[0]
+        inner_idx = None
+        if inner_var_names:
+            inner_idx = np.where(np.isin(self._flat_keys, list(inner_var_names)))[0]
+            if inner_idx.size == 0:
+                raise ValueError(
+                    "No inner parameters selected for the marginal group-effect "
+                    f"projection. Submodel terms: {term_names}."
+                )
+            if self._marginal_objective is None:
+                self._marginal_objective = compile_marginal_mllk(
+                    self._pymc_model_sw,
+                    self._initial_point,
+                    self._term_partition,
+                    self._switches,
+                )
         if active_idx.size == 0:
             raise ValueError(
                 "No active parameters selected for projection. "
                 f"Submodel terms: {term_names}; base terms: {self._base_terms}."
             )
 
+        if self._marginal_start is None:
+            self._marginal_start = self._build_marginal_start()
+        # parameters excluded from the submodel stay at the PyMC initial point so that
+        # their (switched-off) values carry no signal into the projected posterior
+        frozen = np.ones(self._initial_guess.size, dtype=bool)
+        frozen[active_idx] = False
+        if inner_idx is not None:
+            frozen[inner_idx] = False
+        initial_guess = np.where(frozen, self._initial_guess, self._marginal_start)
+        objective = self._neg_log_likelihood
+        if inner_idx is not None:
+            # group effects are profiled out with a Laplace correction
+            objective = ProbedMarginalObjective(
+                self._marginal_objective,
+                inner_idx,
+                initial_guess,
+                samples[0],
+                samples[1] if len(samples) > 1 else None,
+            )
+
         new_idata, loss = solve(
-            self._neg_log_likelihood,
+            objective,
             samples,
-            self._initial_guess,
+            initial_guess,
             self._ref_var_info,
             weights,
             self.tolerance,
             active_idx=active_idx,
+            inner_idx=inner_idx,
         )
 
         # Add observed data and log-likelihood to the projected InferenceData object
@@ -391,17 +469,21 @@ class ProjectionPredictive:
             # contains the deterministic coefficients (e.g. "1|Subject"). Compute and
             # store those coefficients, and keep the sigmas, so plotting can align
             # reference and projected models on the same variable names.
-            vars_to_keep = set(active_var_names)
+            # the inner (profiled) group-effect variables are not in active_var_names
+            # under the marginal method, but they are part of the projected posterior
+            vars_to_keep = set(active_var_names) | set(inner_var_names)
             for term_name in term_names:
                 if "|" not in term_name:
                     continue
+                sigma_name = f"{term_name}_sigma"
+                if sigma_name in new_idata["posterior"].data_vars:
+                    vars_to_keep.add(sigma_name)
                 offset_name = next(
                     (v for v in self._term_to_vars[term_name] if v.endswith("_offset")),
                     None,
                 )
                 if offset_name is None:
                     continue
-                sigma_name = f"{term_name}_sigma"
                 if sigma_name not in new_idata["posterior"].data_vars:
                     continue
                 coef_name = term_name
@@ -417,7 +499,6 @@ class ProjectionPredictive:
                     coef = coef.rename({old_dim: new_dim})
                 coef = coef.assign_coords({new_dim: ref_var.coords[new_dim]})
                 new_idata["posterior"][coef_name] = coef
-                vars_to_keep.add(sigma_name)
                 vars_to_keep.add(coef_name)
 
             # remove the variables that are not in the submodel
