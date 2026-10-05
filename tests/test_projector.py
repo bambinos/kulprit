@@ -8,7 +8,7 @@ import bambi as bmb
 
 from kulprit import ProjectionPredictive
 from kulprit.projector import _check_interactions
-from kulprit.projection.solver import solve
+from kulprit.projection.solver import _blocks_logdet, _newton_inner, _solve_blocks, solve
 from tests import KulpritTest
 
 
@@ -171,6 +171,7 @@ class TestProjector(KulpritTest):
         elpd_values = [sub.elpd for sub in ppi]
         assert all(elpd_values[i] <= elpd_values[i + 1] for i in range(len(elpd_values) - 1))
         assert abs(ppi[-1].elpd - ppi.reference_model.elpd) < 20
+        assert "Days|Subject_sigma" in ppi[-1].idata.posterior
 
     def test_project_hierarchical_non_centered(self):
         """Test projection with non-centered group-specific terms."""
@@ -186,6 +187,53 @@ class TestProjector(KulpritTest):
 
         elpd_values = [sub.elpd for sub in ppi]
         assert all(elpd_values[i] <= elpd_values[i + 1] for i in range(len(elpd_values) - 1))
+        assert abs(ppi[-1].elpd - ppi.reference_model.elpd) < 20
+
+    def test_project_hierarchical_marginal_non_centered(self):
+        """Marginal group-effect projection: per-draw sigma, ELPD parity, no side effects."""
+
+        data = bmb.load_data("sleepstudy")
+        model = bmb.Model("Reaction ~ Days + (Days | Subject)", data, noncentered=True)
+        idata = model.fit(draws=100, tune=100, chains=2, cores=1, random_seed=1234)
+        model.compute_log_likelihood(idata)
+        model.predict(idata, kind="response", random_seed=1234)
+
+        user_terms = [["Days"], ["Days", "Days|Subject"]]
+        ppi = ProjectionPredictive(model, idata)
+        ppi.project(user_terms=user_terms, num_samples=30)
+
+        # sigma is re-estimated per projected draw near the reference scale
+        # instead of being frozen at its initial value
+        sigma = ppi[-1].idata.posterior["Days|Subject_sigma"].values
+        reference_sigma = idata.posterior["Days|Subject_sigma"].values
+        assert sigma.std() > 0
+        assert 0.5 < sigma.mean() / reference_sigma.mean() < 2.0
+
+        # submodels without group terms carry no group sigma
+        assert "Days|Subject_sigma" not in ppi[0].idata.posterior
+        assert "Days" in ppi[0].idata.posterior
+
+        # predictive adequacy of the full projected model
+        elpd_values = [sub.elpd for sub in ppi]
+        assert all(elpd_values[i] <= elpd_values[i + 1] for i in range(len(elpd_values) - 1))
+        assert abs(ppi[-1].elpd - ppi.reference_model.elpd) < 20
+
+    def test_project_hierarchical_marginal_centered(self):
+        """Marginal group-effect projection with a centered parameterization."""
+
+        data = bmb.load_data("sleepstudy")
+        model = bmb.Model("Reaction ~ Days + (Days | Subject)", data, noncentered=False)
+        idata = model.fit(draws=100, tune=100, chains=2, cores=1, random_seed=1234)
+        model.compute_log_likelihood(idata)
+        model.predict(idata, kind="response", random_seed=1234)
+
+        ppi = ProjectionPredictive(model, idata)
+        ppi.project(user_terms=[["Days", "Days|Subject"]], num_samples=30)
+
+        posterior = ppi[-1].idata.posterior
+        sigma = posterior["Days|Subject_sigma"].values
+        assert sigma.std() > 0
+        assert "Days|Subject" in posterior
         assert abs(ppi[-1].elpd - ppi.reference_model.elpd) < 20
 
 
@@ -209,11 +257,94 @@ def test_solve_raises_when_active_idx_empty():
 
     with pytest.raises(ValueError):
         solve(
-            neg_log_likelihood=neg_log_likelihood,
+            objective=neg_log_likelihood,
             preds=[(np.array([0.0, 0.0]),)],
             initial_guess=np.array([0.0, 0.0]),
-            var_info={"x": ((2,), 2, None)},
+            var_info={"x": ((2,), 2, None, None)},
             weights=None,
             tolerance=1,
             active_idx=np.array([], dtype=int),
         )
+
+
+def _single_block(matrix):
+    matrix = np.atleast_2d(matrix)
+    return [(np.arange(len(matrix))[None], matrix[None])]
+
+
+def test_blocks_logdet_rejects_indefinite_blocks():
+    """Indefinite or non-finite blocks are unusable instead of floored."""
+
+    assert _blocks_logdet(_single_block(np.diag([2.0, 3.0]))) == pytest.approx(np.log(6.0))
+    assert _blocks_logdet(_single_block(np.diag([2.0, -1.0]))) is None
+    assert _blocks_logdet(_single_block(np.array([[np.nan]]))) is None
+
+
+def test_solve_blocks_matches_dense_solve():
+    """Batched blocks of different sizes give the dense Newton step and log-determinant."""
+
+    rng = np.random.default_rng(0)
+    pairs = np.array([[0, 3], [1, 4]])
+    triple = np.array([[2, 5, 6]])
+    mats2 = np.array([[[2.0, 0.5], [0.5, 1.0]], [[3.0, -1.0], [-1.0, 2.0]]])
+    raw = rng.normal(size=(3, 3))
+    mats3 = (raw @ raw.T + 3 * np.eye(3))[None]
+    dense = np.zeros((7, 7))
+    for idx, mats in [(pairs, mats2), (triple, mats3)]:
+        for ids, mat in zip(idx, mats):
+            dense[np.ix_(ids, ids)] = mat
+    grad = rng.normal(size=7)
+
+    step, logdet = _solve_blocks([(pairs, mats2), (triple, mats3)], grad)
+    np.testing.assert_allclose(step, -np.linalg.solve(dense, grad))
+    assert logdet == pytest.approx(np.linalg.slogdet(dense)[1])
+
+
+class _ScalarObjective:
+    """One-dimensional inner objective defined by value, gradient and Hessian callables."""
+
+    def __init__(self, value, grad, hess):
+        self._value, self._grad, self._hess = value, grad, hess
+
+    def system(self, params):
+        z = params[0]
+        return float(self._value(z)), np.array([self._grad(z)]), _single_block(self._hess(z))
+
+
+def test_newton_inner_reaches_exact_mode():
+    """The Newton inner solve converges to the exact mode of a non-quadratic objective."""
+
+    objective = _ScalarObjective(lambda z: np.exp(z) - z, lambda z: np.exp(z) - 1, np.exp)
+    z, value, logdet = _newton_inner(objective, np.array([3.0]), np.array([0]), ())
+    np.testing.assert_allclose(z, [0.0], atol=1e-3)
+    assert value == pytest.approx(1.0, abs=1e-6)
+    assert logdet == pytest.approx(0.0, abs=1e-3)
+
+
+def test_newton_inner_acts_on_inner_entries_only():
+    """Outer entries of the full vector are held fixed while the inner ones are solved."""
+
+    class Quadratic:
+        def system(self, params):
+            return 0.5 * float(np.sum(params**2)), params[:1].copy(), _single_block(np.eye(1))
+
+    z, value, logdet = _newton_inner(Quadratic(), np.array([1.0, 2.0]), np.array([0]), ())
+    np.testing.assert_allclose(z, [0.0], atol=1e-6)
+    assert value == pytest.approx(2.0)
+    assert logdet == 0.0
+
+
+def test_newton_inner_handles_indefinite_hessian():
+    """An indefinite Hessian is shifted away from the mode and reported unusable at one."""
+
+    objective = _ScalarObjective(
+        lambda z: 0.25 * z**4 - 0.5 * z**2, lambda z: z**3 - z, lambda z: 3 * z**2 - 1
+    )
+    # the stationary start is a local maximum: the block is unusable, not floored
+    _, _, logdet = _newton_inner(objective, np.array([0.0]), np.array([0]), ())
+    assert logdet is None
+
+    # away from the saddle the shifted Newton steps reach a proper minimum
+    z, _, logdet = _newton_inner(objective, np.array([0.5]), np.array([0]), ())
+    assert abs(z[0]) == pytest.approx(1.0, abs=0.1)
+    assert np.isfinite(logdet)
