@@ -306,7 +306,7 @@ class _ScalarObjective:
     def __init__(self, value, grad, hess):
         self._value, self._grad, self._hess = value, grad, hess
 
-    def system(self, params):
+    def system(self, params, pred):  # disable pylint: disable=unused-argument
         z = params[0]
         return float(self._value(z)), np.array([self._grad(z)]), _single_block(self._hess(z))
 
@@ -325,7 +325,7 @@ def test_newton_inner_acts_on_inner_entries_only():
     """Outer entries of the full vector are held fixed while the inner ones are solved."""
 
     class Quadratic:
-        def system(self, params):
+        def system(self, params, pred):  # disable pylint: disable=unused-argument
             return 0.5 * float(np.sum(params**2)), params[:1].copy(), _single_block(np.eye(1))
 
     z, value, logdet = _newton_inner(Quadratic(), np.array([1.0, 2.0]), np.array([0]), ())
