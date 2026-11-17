@@ -15,7 +15,7 @@ from kulprit.projection.pymc_io import (
     add_switches,
     compile_mllk,
     compile_marginal_mllk,
-    compute_llk,
+    ComputeLogLikelihood,
     turn_off_terms,
     get_model_information,
     get_term_partition,
@@ -111,6 +111,7 @@ class ProjectionPredictive:
         )
 
         self._neg_log_likelihood = compile_mllk(self._pymc_model_sw, initial_point)
+        self._pointwise_log_likelihood = ComputeLogLikelihood(self._pymc_model_sw, self._switches)
         self._marginal_objective = None
         self._marginal_start = None
 
@@ -462,7 +463,7 @@ class ProjectionPredictive:
         # We only do this for the selected projected model, not the intermediate ones
         if new_idata is not None:
             new_idata["observed_data"] = self._observed_dataset
-            new_idata["log_likelihood"] = compute_llk(new_idata, self._pymc_model)
+            new_idata["log_likelihood"] = self._pointwise_log_likelihood(new_idata)
 
             # For non-centered group-specific terms the projected idata contains the
             # offset variables (e.g. "1|Subject_offset") while the reference idata

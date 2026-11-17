@@ -216,6 +216,7 @@ def solve(
         full[active_idx] = active_params
         return objective(full, *(pred if isinstance(pred, tuple) else (pred,)))
 
+    direc = None
     for idx, pred in enumerate(preds):
         if idx == 0:
             tol = tolerance / 1000
@@ -227,7 +228,9 @@ def solve(
             x0=guess,
             method="powell",
             tol=tol,
+            options={"direc": direc},
         )
+        direc = opt.direc
 
         if use_laplace:
             full, objectives[idx] = profile(opt.x, pred)
