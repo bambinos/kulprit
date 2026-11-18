@@ -6,13 +6,16 @@ import pytensor
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 
-from pymc import do, compute_log_likelihood
+from pymc import do
+from pymc.backends.arviz import apply_function_over_dataset, coords_and_dims_for_inferencedata
 from pymc.logprob.utils import ParameterValueError
+from pymc.model.transform.conditioning import remove_value_transforms
 from pymc.util import is_transformed_name, get_untransformed_name
 from pymc.pytensorf import join_nonshared_inputs
 from pytensor import function, shared
+from pytensor.compile.sharedvalue import SharedVariable
 from pytensor.tensor import tensor
-from pytensor.graph import ancestors
+from pytensor.graph import ancestors, clone_replace
 
 
 def compile_mllk(model, initial_point):
@@ -30,8 +33,10 @@ def compile_mllk(model, initial_point):
     Returns
     -------
     fmodel : callable
-        A function that takes parameters and pseudo-observations and returns
-        the negative log-likelihood.
+        A function that takes parameters and one or two pseudo-observations and
+        returns the sum of their negative log-likelihoods. For a pair, the
+        observations remain separate while parameter-dependent graph operations
+        can be shared.
     """
     obs_rvs = model.observed_RVs[0]
     new_y_value = obs_rvs.type()
@@ -46,15 +51,19 @@ def compile_mllk(model, initial_point):
         )
         rv_logp_fn = function([raveled_inp, new_y_value], logp)
         rv_logp_fn.trust_input = True
+        second_y_value = obs_rvs.type()
+        second_logp = clone_replace(logp, replace={new_y_value: second_y_value})
+        paired_logp_fn = function([raveled_inp, new_y_value, second_y_value], logp + second_logp)
+        paired_logp_fn.trust_input = True
 
         def fmodel(params, *pred):
             try:
                 if len(pred) == 2:
-                    return -(rv_logp_fn(params, pred[0]) + rv_logp_fn(params, pred[1]))
+                    return -paired_logp_fn(params, pred[0], pred[1])
                 return -(rv_logp_fn(params, pred[0]))
             except ParameterValueError:
                 # Handle floating-point edge cases underflow/overflow for extreme values on the
-                #  transformed unbounded scale.
+                # transformed unbounded scale.
                 return np.inf
 
         return fmodel
@@ -379,9 +388,97 @@ def add_switches(model, ref_terms):
         return do(model, switched_terms), switches
 
 
-def compute_llk(idata, model):
-    """Compute log-likelihood for the submodel."""
-    return compute_log_likelihood(idata, model=model, progressbar=False, extend_inferencedata=False)
+class ComputeLogLikelihood:
+    """Reuse the pointwise log-likelihood, recompiling only when model data changes.
+
+    Switch variables (term on/off flags) are treated as runtime state: updating them
+    does not invalidate the compiled function. This allows one compilation to serve
+    every projected submodel. Shared model data, which transform removal may copy,
+    still triggers a recompilation when its value changes.
+    """
+
+    def __init__(self, model, switches=None):
+        self._model = model
+        self._switches = switches or {}
+        self._function = None
+        self._compiled_switches = {}
+        self._names = ()
+        self._free_names = []
+        self._dtypes = {}
+        outputs = model.logp(vars=model.observed_RVs, sum=False)
+        outputs += list(model.dim_lengths.values())
+        switch_containers = {id(var.container) for var in self._switches.values()}
+        self._shared = [
+            var
+            for var in ancestors(outputs)
+            if isinstance(var, SharedVariable) and id(var.container) not in switch_containers
+        ]
+        self._shared_values = None
+
+    def _sync_switches(self):
+        for term, variable in self._switches.items():
+            compiled_variable = self._compiled_switches[term]
+            value = variable.get_value(borrow=True)
+            if not np.array_equal(compiled_variable.get_value(borrow=True), value):
+                compiled_variable.set_value(value)
+
+    def __call__(self, idata):
+        if self._shared_values is not None and any(
+            not np.array_equal(var.get_value(borrow=True), value)
+            for var, value in zip(self._shared, self._shared_values)
+        ):
+            self._function = None
+        if self._function is None:
+            model = remove_value_transforms(self._model)
+            observed = model.observed_RVs
+            outputs = model.logp(vars=observed, sum=False)
+            compiled = model.compile_fn(
+                inputs=model.value_vars,
+                outs=outputs,
+                on_unused_input="ignore",
+            )
+            self._names = tuple(rv.name for rv in observed)
+            self._free_names = [rv.name for rv in self._model.free_RVs]
+            self._dtypes = {
+                model.rvs_to_values[rv].name: model.rvs_to_values[rv].type.dtype
+                for rv in model.free_RVs
+            }
+            transformed_shared = [
+                var for var in ancestors(outputs) if isinstance(var, SharedVariable)
+            ]
+            by_container = {id(var.container): var for var in transformed_shared}
+            self._compiled_switches = {}
+            for term, variable in self._switches.items():
+                compiled_variable = by_container.get(id(variable.container))
+                if compiled_variable is None:
+                    compiled_variable = next(
+                        (candidate for candidate in transformed_shared if candidate is variable),
+                        None,
+                    )
+                if compiled_variable is None:
+                    raise RuntimeError(
+                        "Could not locate the switch variable for term "
+                        f"{term!r} in the transformed model."
+                    )
+                self._compiled_switches[term] = compiled_variable
+            self._shared_values = [var.get_value(borrow=False) for var in self._shared]
+            self._function = compiled
+
+        self._sync_switches()
+
+        posterior = idata["posterior"]
+        dataset = posterior.to_dataset() if hasattr(posterior, "to_dataset") else posterior
+        dataset = dataset[self._free_names].astype(self._dtypes, copy=False)
+        coords, dims = coords_and_dims_for_inferencedata(self._model)
+        return apply_function_over_dataset(
+            self._function,
+            dataset,
+            output_var_names=self._names,
+            coords=coords,
+            dims=dims,
+            sample_dims=("chain", "draw"),
+            progressbar=False,
+        )
 
 
 def get_term_partition(model, term_names):
