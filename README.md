@@ -16,7 +16,7 @@ If you find any bugs or have any feature requests, please open an [issue](https:
 
 ## Installation
 
-Kulprit requires a working Python interpreter (3.12+).
+Kulprit requires a working Python interpreter (3.13+).
 
 Assuming a standard Python environment is installed on your machine (including pip), Kulprit itself can be installed in one line using:
 
